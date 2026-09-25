@@ -100,10 +100,11 @@ function SplitCell({ line }: { line?: NumberedLine }) {
 }
 
 export function CodeDiff({ node }: TemplateProps) {
-	const { title, description, file, hunks } = node.data as {
+	const { title, description, file, url, hunks } = node.data as {
 		title: string;
 		description: string;
 		file: string;
+		url?: string;
 		hunks: DiffHunk[];
 	};
 	const [mode, setMode] = useState<Mode>("split");
@@ -134,14 +135,10 @@ export function CodeDiff({ node }: TemplateProps) {
 				<Card.Header className="flex-row items-center gap-2 border-b border-divider bg-surface-secondary px-4 py-2">
 					<FileCode2 size={15} className="shrink-0 text-muted" />
 					<Card.Title className="min-w-0 flex-1 truncate font-mono text-xs">
-						{file}
+						{url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-primary" href={url}>{file}</a> : file}
 					</Card.Title>
-					<Chip size="sm" color="success">
-						+{additions}
-					</Chip>
-					<Chip size="sm" color="danger">
-						-{removals}
-					</Chip>
+					{additions > 0 && <Chip size="sm" color="success">+{additions}</Chip>}
+					{removals > 0 && <Chip size="sm" color="danger">-{removals}</Chip>}
 				</Card.Header>
 				<Card.Content className="gap-0 font-mono text-xs leading-5">
 					{hunks.map((hunk) => (

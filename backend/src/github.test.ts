@@ -27,13 +27,14 @@ const prompt = githubPullRequestPrompt("acme/repo", 12, {
 	head: "feature/context",
 	additions: 4,
 	deletions: 1,
-	files: [{ filename: "src/context.ts", status: "added", additions: 4, deletions: 0, patch: "+export const context = true;" }],
+	files: [{ filename: "src/context.ts", url: "https://github.com/acme/repo/blob/feature/context/src/context.ts", status: "added", additions: 4, deletions: 0, patch: "+export const context = true;" }],
 	feedback: [{ author: "reviewer", state: "approved", body: "Ship it", path: "" }],
 	commits: [{ sha: "123456789", author: "author", message: "Add context" }],
-	checks: [{ name: "Unit tests", status: "completed", conclusion: "success" }],
+	checks: [{ name: "Unit tests", url: "https://github.com/acme/repo/actions/runs/1", status: "completed", conclusion: "success" }],
 });
 assert.match(prompt, /Title: Add context/);
 assert.match(prompt, /added: src\/context\.ts/);
+assert.match(prompt, /https:\/\/github\.com\/acme\/repo\/actions\/runs\/1/);
 assert.match(prompt, /Reviewer feedback:/);
 assert.match(prompt, /CI checks:/);
 const largePrompt = githubPullRequestPrompt("acme/repo", 13, {
@@ -45,7 +46,7 @@ const largePrompt = githubPullRequestPrompt("acme/repo", 13, {
 	head: "feature/large",
 	additions: 9,
 	deletions: 1,
-	files: Array.from({ length: 9 }, (_, index) => ({ filename: `src/${index}.ts`, status: "modified", additions: 1, deletions: 0, patch: "secret diff" })),
+	files: Array.from({ length: 9 }, (_, index) => ({ filename: `src/${index}.ts`, url: "", status: "modified", additions: 1, deletions: 0, patch: "secret diff" })),
 	feedback: [],
 	commits: [],
 	checks: [],
