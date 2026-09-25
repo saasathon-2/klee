@@ -120,7 +120,7 @@ export function GitHubPullRequestStory() {
 						</div>
 						<div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#8b949e] sm:text-base">
 							<span className="font-semibold text-[#e6edf3]">
-								jragascoigne
+								winkingleek
 							</span>
 							wants to merge {commits.length} commits into
 							<code className="rounded-md bg-[#161b22] px-2 py-1 font-semibold text-[#58a6ff]">
@@ -145,11 +145,11 @@ export function GitHubPullRequestStory() {
 									<GitBranch aria-hidden size={17} />
 								</span>
 								<div className="size-8 shrink-0 overflow-hidden rounded-full">
-									<UserAvatar name="jragascoigne" size="sm" />
+									<UserAvatar name="winkingleek" size="sm" />
 								</div>
 								<p className="text-sm text-[#8b949e] sm:text-base">
 									<strong className="text-[#e6edf3]">
-										jragascoigne
+										winkingleek
 									</strong>{" "}
 									added {commits.length} commits{" "}
 									<time>5 hours ago</time>
@@ -175,7 +175,7 @@ export function GitHubPullRequestStory() {
 										</span>
 										<div className="size-8 shrink-0 overflow-hidden rounded-full">
 											<UserAvatar
-												name="jragascoigne"
+												name="winkingleek"
 												size="sm"
 											/>
 										</div>
@@ -241,18 +241,17 @@ export function GitHubPullRequestStory() {
 												PR #42: GitHub Context Fixtures
 											</h3>
 											<p className="mx-auto mt-2 max-w-3xl text-xs leading-5 text-[#56505e] sm:text-base">
-												Adds disposable GitHub and
-												code-context fixtures. The
-												supplied CI check passed, but
-												reviewer comments contain no
-												explicit verdict or actionable
-												text, so merge readiness is
-												undetermined.
+												Adds GitHub and code-context
+												fixtures. A reviewer left an
+												explicit verdict, and the
+												pipeline and checks pass.
+												Everything should be good to go.
 											</p>
 											<div className="mt-3 flex flex-wrap justify-center gap-1.5 text-[10px] text-[#4e4657] sm:text-xs">
 												{[
-													"saasathon-2/app",
-													"PR #4",
+													"backend",
+													"integration",
+													"PR #42",
 													"fixtures",
 												].map((tag) => (
 													<span
@@ -283,10 +282,10 @@ export function GitHubPullRequestStory() {
 														Changes
 													</p>
 													<strong className="text-lg">
-														+19 / -0
+														+456 / -28
 													</strong>
 													<p className="mt-1 text-xs text-[#6e6870]">
-														Six added fixture files
+														2 Implemented Fixtures
 													</p>
 												</div>
 												<div className="rounded-md bg-[#ebe7e8] p-3">
@@ -294,10 +293,11 @@ export function GitHubPullRequestStory() {
 														CI
 													</p>
 													<strong className="text-lg">
-														1 passed
+														5 passed
 													</strong>
 													<p className="mt-1 text-xs text-[#6e6870]">
-														generate-artefact
+														generate-artefact and 4
+														others
 													</p>
 												</div>
 												<div className="rounded-md bg-[#ebe7e8] p-3">
@@ -305,11 +305,10 @@ export function GitHubPullRequestStory() {
 														Review
 													</p>
 													<strong className="text-lg">
-														Undetermined
+														LGTM
 													</strong>
 													<p className="mt-1 text-xs text-[#6e6870]">
-														No explicit reviewer
-														verdict
+														Reviewed by Jane
 													</p>
 												</div>
 											</div>
@@ -318,7 +317,9 @@ export function GitHubPullRequestStory() {
 											</h4>
 											<p className="mt-2 max-w-4xl text-xs leading-5 sm:text-base">
 												The PR adds context fixtures for
-												GitHub integration
+												GitHub integration, purely
+												backend focused, with some
+												automated tests.
 											</p>
 											<h4 className="mt-6 text-base font-bold sm:text-xl">
 												Architecture

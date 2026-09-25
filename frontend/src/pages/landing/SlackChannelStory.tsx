@@ -101,10 +101,6 @@ export function SlackChannelStory() {
 							/>
 							Messages
 						</button>
-						<button className="hidden items-center gap-2 px-3 font-medium text-[#a4a6aa] sm:flex">
-							<PanelsTopLeft aria-hidden size={19} />
-							Add canvas
-						</button>
 						<button
 							aria-label="Add channel tab"
 							className="grid size-10 place-items-center self-center text-[#a4a6aa]"
