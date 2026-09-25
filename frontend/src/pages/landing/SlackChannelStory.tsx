@@ -6,6 +6,7 @@ import {
 	Star,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
 
 const shareUrl =
@@ -179,18 +180,21 @@ export function SlackChannelStory() {
 									inert={!artefactVisible}
 									className={`relative mt-5 max-w-5xl ${pop(artefactVisible)}`}
 								>
-									<div className="overflow-hidden rounded-2xl border border-[#d6d477] bg-white text-[#1e1e1e] shadow-lg">
-										<header className="bg-[#fbf463] px-6 py-5 sm:px-12 sm:py-7">
-											<h3 className="text-xl font-bold sm:text-2xl">
+									<div
+										className="overflow-hidden rounded-md border border-[#30363d] bg-white text-[#1f2328] shadow-sm"
+										style={{ fontFamily: "var(--font-sans)" }}
+									>
+										<header className="bg-[#fbf463] px-4 py-5 text-center sm:px-10 sm:py-8">
+											<h3 className="text-lg font-bold sm:text-2xl">
 												Linking authentication API to
 												backend
 											</h3>
-											<p className="mt-2 max-w-3xl text-xs leading-5 text-[#4c4b35] sm:text-sm">
+											<p className="mx-auto mt-2 max-w-3xl text-xs leading-5 text-[#56505e] sm:text-base">
 												PR #482 routes authentication
 												through the API gateway and
 												stores expiring session keys.
 											</p>
-											<div className="mt-3 flex flex-wrap gap-1.5 text-[10px] text-[#393829] sm:text-xs">
+											<div className="mt-3 flex flex-wrap justify-center gap-1.5 text-[10px] text-[#4e4657] sm:text-xs">
 												{[
 													"saasathon-2/app",
 													"PR #482",
@@ -204,20 +208,65 @@ export function SlackChannelStory() {
 														{tag}
 													</span>
 												))}
+												<span className="px-1.5 py-0.5">
+													Sep 25, 2026
+												</span>
 											</div>
 										</header>
-										<Scallop edge="bottom" />
-										<div className="px-6 py-6 sm:px-12 sm:py-8">
-											<h4 className="text-lg font-bold">
+										<div
+											style={{ "--brand": "#fbf463" } as CSSProperties}
+										>
+											<Scallop edge="bottom" />
+										</div>
+										<div className="p-4 sm:p-8">
+											<div className="grid gap-2 sm:grid-cols-3">
+												<div className="rounded-md bg-[#ebe7e8] p-3">
+													<p className="text-xs text-[#6e6870]">
+														Changes
+													</p>
+													<strong className="text-lg">
+														+2 / -0
+													</strong>
+													<p className="mt-1 text-xs text-[#6e6870]">
+														Session flow updated
+													</p>
+												</div>
+												<div className="rounded-md bg-[#ebe7e8] p-3">
+													<p className="text-xs text-[#6e6870]">
+														CI
+													</p>
+													<strong className="text-lg">
+														4 passed
+													</strong>
+													<p className="mt-1 text-xs text-[#6e6870]">
+														All required checks
+													</p>
+												</div>
+												<div className="rounded-md bg-[#ebe7e8] p-3">
+													<p className="text-xs text-[#6e6870]">
+														Review
+													</p>
+													<strong className="text-lg">
+														Approved
+													</strong>
+													<p className="mt-1 text-xs text-[#6e6870]">
+														Rotation follow-up noted
+													</p>
+												</div>
+											</div>
+											<h4 className="mt-7 text-lg font-bold sm:text-2xl">
 												PR overview
 											</h4>
-											<p className="mt-2 max-w-4xl text-xs leading-5 sm:text-sm">
+											<p className="mt-2 max-w-4xl text-xs leading-5 sm:text-base">
 												Three reviewers approved the
 												change. Session-key rotation
 												remains the main follow-up
 												before merge.
 											</p>
-											<div className="mt-5 rounded-lg border border-[#e5e5dc] bg-[#f5f5eb] p-3 font-mono text-[10px] leading-5 sm:text-xs">
+											<h4 className="mt-6 text-base font-bold sm:text-xl">
+												Session creation change
+											</h4>
+											<div className="mt-3 rounded-md border border-[#e5e2e4] bg-[#f4f1f2] p-3 font-mono text-[10px] leading-5 sm:text-xs">
 												<p className="font-semibold">
 													src/auth/session.ts
 												</p>

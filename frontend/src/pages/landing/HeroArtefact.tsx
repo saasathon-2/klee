@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import type { ArtefactDocument, ArtefactNode } from "../../artefacts/model";
 import { ArtefactRenderer } from "../../artefacts/templates/renderer";
 import { landingSamples } from "./samples";
-import { GitHubPullRequestStory } from "./GitHubPullRequestStory";
-import { SlackChannelStory } from "./SlackChannelStory";
 
 const blocksOf = (document: ArtefactDocument) =>
 	document.root.children?.[0]?.children ?? [];
@@ -39,10 +37,6 @@ const demo: ArtefactDocument = {
 					transition("to-next", "So what happens next?"),
 					flow,
 					tasks,
-					transition(
-						"to-slack",
-						"The same context, shared with your team",
-					),
 				],
 			},
 		],
@@ -102,9 +96,6 @@ export function HeroArtefact() {
 					edgeToEdge
 					showFooter={false}
 				/>
-				{/* A separate scroll scene after the artefact's closing glue. */}
-				<SlackChannelStory />
-				<GitHubPullRequestStory />
 			</div>
 		</Card>
 	);

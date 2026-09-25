@@ -6,8 +6,11 @@ import polyphony from "../assets/klee-polyphony.jpg";
 import { useSession } from "../lib/auth-client";
 import { useTheme } from "../lib/use-theme";
 import { Scallop } from "../artefacts/templates/page/Scallop";
+import { GlueBand } from "../artefacts/templates/blocks/Glue";
 import { Footer } from "./landing/Footer";
+import { GitHubPullRequestStory } from "./landing/GitHubPullRequestStory";
 import { HeroArtefact } from "./landing/HeroArtefact";
+import { SlackChannelStory } from "./landing/SlackChannelStory";
 
 const paintings = {
 	light: {
@@ -63,6 +66,10 @@ export function Landing() {
 					</div>
 				</div>
 			</section>
+
+			<GlueBand>The same context, shared with your team</GlueBand>
+			<SlackChannelStory />
+			<GitHubPullRequestStory />
 
 			{/* Pulled up over the demo's bottom edge so the scallops cut across it and the page. */}
 			<div aria-hidden className="relative z-10 -mt-10">

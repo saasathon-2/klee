@@ -95,7 +95,7 @@ export function GitHubPullRequestStory() {
 	return (
 		<div
 			ref={storyRef}
-			className="h-[260vh] px-3 py-8 sm:px-6 lg:-mx-72 lg:w-[calc(100%+36rem)] lg:px-10"
+			className="h-[260vh] px-3 py-8 sm:px-6 lg:px-10"
 		>
 			<div
 				ref={stageRef}
