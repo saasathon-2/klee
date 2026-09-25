@@ -45,6 +45,7 @@ import {
 } from "react-router-dom";
 import { signOut, useSession } from "../lib/auth-client";
 import { UserAvatar } from "../components/UserAvatar";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 type Revision = { id: string; content: string; createdAt: string };
 type Artefact = {
@@ -255,6 +256,7 @@ export function Artefacts() {
 						)}
 					</Button>
 					<h1 className="text-2xl font-semibold tracking-tight">{isProfile ? "Profile" : `Good morning, ${user.name?.split(" ")[0] || "there"}`}</h1>
+					<ThemeToggle className="ml-auto" />
 				</header>
 				{isProfile ? <div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20"><Card className="w-full"><Card.Header className="flex items-center gap-4"><UserAvatar image={user.image} name={user.name || user.email} size="lg" /><div><Card.Title>{user.name || "Unnamed"}</Card.Title><Card.Description>{user.email}</Card.Description></div></Card.Header><Card.Content><dl className="divide-y divide-divider text-sm"><div className="flex items-center justify-between py-3"><dt className="text-muted">Email verified</dt><dd>{user.emailVerified ? "Yes" : "No"}</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted">Member since</dt><dd>{new Date(user.createdAt).toLocaleDateString()}</dd></div></dl></Card.Content></Card></div> : <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 					<div className="mx-auto w-full max-w-2xl">

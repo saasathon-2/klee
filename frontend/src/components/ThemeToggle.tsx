@@ -25,7 +25,7 @@ function MoonIcon() {
 	);
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
 	const { theme, toggleTheme } = useTheme();
 
 	return (
@@ -35,6 +35,7 @@ export function ThemeToggle() {
 			onChange={toggleTheme}
 			variant="ghost"
 			aria-label="Toggle theme"
+			className={className}
 		>
 			{theme === "dark" ? <MoonIcon /> : <SunIcon />}
 		</ToggleButton>
