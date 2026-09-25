@@ -72,7 +72,7 @@ const generationSchema = z.object({
 const jsonSchema = generationSchema.toJSONSchema({ target: "draft-7" });
 delete jsonSchema.$schema;
 
-const instructions = `Create a useful artefact by selecting and filling only these supported blocks. Return the requested structured output. Every string is plain text: never use markdown syntax such as **, #, bullet lists, or code fences. Choose developer-page for engineering work and generic-page otherwise. Blocks are prose (title/body), metric-row (2-3 comparable items), architecture-flow (2-3 ordered nodes), glue (short transition), task-list (ordered tasks with id/key/title/detail/meta/status), next-steps (concrete follow-up suggestions), code-diff (one file's changes as hunks of context/add/remove lines, one source line per entry, without the leading +/- marker but keeping the line's original indentation exactly; use the @@ hunk line as the header when one is given), review-comments (each reviewer's handle without their verdict, their verdict as approved/changes-requested/commented, and their feedback, plus the consensus), commit-list (commits with sha/message/author/detail; use an empty sha when none is given), and check-list (CI checks, tests, or merge requirements marked passed/failed/pending). Always prefer the specialised block that matches the content over prose: code or a diff becomes code-diff, reviewer feedback becomes review-comments, commits or history become commit-list, and build or test results become check-list. Use prose only for narrative that no other block represents. When the user asks for an example or demo of a block, fill it with realistic illustrative data and say it is an example in the summary. Only choose blocks that fit the category: developer-page supports all blocks; generic-page supports prose, metric-row, glue, and next-steps. Do not claim that an integration or action has been performed, and do not present illustrative data as fetched from a connected service.`;
+const instructions = `Create a useful artefact by selecting and filling only these supported blocks. Return the requested structured output. Every string is plain text: never use markdown syntax such as **, #, bullet lists, or code fences. Choose developer-page for engineering work and generic-page otherwise. Blocks are prose (title/body), metric-row (2-3 comparable items), architecture-flow (2-3 ordered nodes), glue (short transition), task-list (ordered tasks with id/key/title/detail/meta/status), next-steps (concrete follow-up suggestions), code-diff (one file's changes as hunks of context/add/remove lines, one source line per entry, without the leading +/- marker but keeping the line's original indentation exactly; use the @@ hunk line as the header when one is given), review-comments (each reviewer's handle without their verdict, their verdict as approved/changes-requested/commented, and their feedback, plus the consensus), commit-list (commits with sha/message/author/detail; use an empty sha when none is given), and check-list (CI checks, tests, or merge requirements marked passed/failed/pending). Always prefer the specialised block that matches the content over prose: code or a diff becomes code-diff, reviewer feedback becomes review-comments, commits or history become commit-list, and build or test results become check-list. Include a specialised block only when the supplied source has at least one matching item. Use prose only for narrative that no other block represents. When the user asks for an example or demo of a block, fill it with realistic illustrative data and say it is an example in the summary. Only choose blocks that fit the category: developer-page supports all blocks; generic-page supports prose, metric-row, glue, and next-steps. Do not claim that an integration or action has been performed, and do not present illustrative data as fetched from a connected service.`;
 
 export class ArtefactAgentError extends Error {
 	readonly kind: string;
@@ -86,7 +86,7 @@ export class ArtefactAgentError extends Error {
 
 type Generation = z.infer<typeof generationSchema>;
 
-function toDocument(generation: Generation): ArtefactDocument {
+export function toDocument(generation: Generation): ArtefactDocument {
 	if (generation.blocks.length === 0 || generation.blocks.length > 8 || generation.tags.length === 0) {
 		throw new Error("The generated artefact is incomplete");
 	}
@@ -96,17 +96,21 @@ function toDocument(generation: Generation): ArtefactDocument {
 	if (generation.blocks.some((block) => !allowed.has(block.template))) {
 		throw new Error("The generated artefact contains an unsupported block");
 	}
-	for (const block of generation.blocks) {
+	const blocks = generation.blocks.filter((block) => {
+		if (block.template === "task-list") return block.data.tasks.length > 0;
+		if (block.template === "next-steps") return block.data.actions.length > 0;
+		if (block.template === "code-diff") return block.data.hunks.some((hunk) => hunk.lines.length > 0);
+		if (block.template === "review-comments") return block.data.comments.length > 0;
+		if (block.template === "commit-list") return block.data.commits.length > 0;
+		if (block.template === "check-list") return block.data.checks.length > 0;
+		return true;
+	});
+	if (blocks.length === 0) throw new Error("The generated artefact is incomplete");
+	for (const block of blocks) {
 		if (block.template === "metric-row" && block.data.items.length < 2) throw new Error("Metric rows need at least two items");
 		if (block.template === "architecture-flow" && block.data.nodes.length < 2) throw new Error("Architecture flows need at least two nodes");
-		if (block.template === "task-list" && block.data.tasks.length === 0) throw new Error("Task lists cannot be empty");
-		if (block.template === "next-steps" && block.data.actions.length === 0) throw new Error("Next steps cannot be empty");
-		if (block.template === "code-diff" && !block.data.hunks.some((hunk) => hunk.lines.length > 0)) throw new Error("Code diffs cannot be empty");
-		if (block.template === "review-comments" && block.data.comments.length === 0) throw new Error("Review comments cannot be empty");
-		if (block.template === "commit-list" && block.data.commits.length === 0) throw new Error("Commit lists cannot be empty");
-		if (block.template === "check-list" && block.data.checks.length === 0) throw new Error("Check lists cannot be empty");
 	}
-	const nodes: ArtefactNode[] = generation.blocks.map((block, index) => ({
+	const nodes: ArtefactNode[] = blocks.map((block, index) => ({
 		id: `block-${index + 1}`,
 		template: block.template,
 		data: block.data,
