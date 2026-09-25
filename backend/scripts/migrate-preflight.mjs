@@ -4,7 +4,11 @@ import { Client } from "pg";
 const legacyName = "1790163000000_artefact-unify-id";
 const canonicalName = "1790163500000_artefact-unify-id";
 const interimName = "1790166000000_artefact-unify-id";
-const contentName = "1790165000000_artefact_content";
+const legacyContentNames = [
+	"1790163000000_artefact_content",
+	"1790165000000_artefact_content",
+];
+const contentName = "1790168000000_artefact_content";
 const legacyGithubNames = [
 	"1790164000000_github-installations",
 	"1790165000000_github-installations",
@@ -39,6 +43,16 @@ try {
 				appliedNames.add(githubName);
 			}
 		}
+		for (const legacyContentName of legacyContentNames) {
+			if (appliedNames.has(legacyContentName)) {
+				if (appliedNames.has(contentName))
+					await client.query("delete from pgmigrations where name = $1", [legacyContentName]);
+				else
+					await client.query("update pgmigrations set name = $1 where name = $2", [contentName, legacyContentName]);
+				appliedNames.delete(legacyContentName);
+				appliedNames.add(contentName);
+			}
+		}
 		const recordedName = appliedNames.has(legacyName)
 			? legacyName
 			: appliedNames.has(interimName)
@@ -49,14 +63,8 @@ try {
 			appliedNames.delete(recordedName);
 			appliedNames.add(canonicalName);
 		}
-		if (!appliedNames.has(contentName) && appliedNames.has(githubName)) {
-			await client.query('alter table "artefact" add column if not exists "content" jsonb');
-			await client.query("insert into pgmigrations (name, run_on) values ($1, now())", [contentName]);
-			appliedNames.add(contentName);
-		}
 		if (
 			!appliedNames.has(canonicalName) &&
-			appliedNames.has(contentName) &&
 			appliedNames.has(githubName)
 		) {
 			await client.query('alter table "artefact" add column if not exists "is_shared" boolean not null default false');
