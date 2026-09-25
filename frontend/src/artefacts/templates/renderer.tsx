@@ -24,18 +24,21 @@ export function ArtefactRenderer({
 	createdAt,
 	canInteract,
 	edgeToEdge = false,
+	showFooter = true,
 	onAction,
 }: {
 	document: ArtefactDocument;
 	createdAt: string;
 	canInteract: boolean;
 	edgeToEdge?: boolean;
+	/** Draws the scalloped band at the bottom of the artefact. */
+	showFooter?: boolean;
 	onAction?: (label: string) => void;
 }) {
 	return (
 		<RenderNode
 			node={document.root}
-			context={{ createdAt, canInteract, edgeToEdge, onAction }}
+			context={{ createdAt, canInteract, edgeToEdge, showFooter, onAction }}
 		/>
 	);
 }

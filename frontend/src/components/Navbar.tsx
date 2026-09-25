@@ -1,48 +1,64 @@
-import { Button } from "@heroui/react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
-import { signOut, useSession } from "../lib/auth-client";
+import { Button, Description, Dropdown, Label, Link } from "@heroui/react";
+import { ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useSession } from "../lib/auth-client";
+import { navMenus, pricingSection } from "../pages/landing/links";
 import { ThemeToggle } from "./ThemeToggle";
-import { UserAvatar } from "./UserAvatar";
 
 export function Navbar() {
 	const { data: session, isPending } = useSession();
-	const user = session?.user;
 	const navigate = useNavigate();
-
-	async function handleSignOut() {
-		await signOut();
-		navigate("/");
-	}
+	const goToSection = (section: string) => navigate(`/welcome#${section}`);
 
 	return (
-		<header className="border-b border-divider bg-background">
-			<nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-				<RouterLink to="/" aria-label="Klee home">
+		<header className="sticky top-0 z-40 bg-background">
+			<nav className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-6">
+				<Link href="/welcome" aria-label="Klee home" className="justify-self-start">
 					<img src="/klee.svg" alt="Klee" className="h-5 w-auto" />
-				</RouterLink>
+				</Link>
 
-				<div className="flex items-center gap-2">
-					{user && <RouterLink to="/" className="text-sm text-black/60 dark:text-white/60">Artefacts</RouterLink>}
-					{isPending ? (
-						<div
-							className="h-8 w-36 animate-pulse rounded bg-black/5 dark:bg-white/10"
-							aria-label="Loading account"
-						/>
-					) : user ? (
-						<>
-							<Button variant="ghost" className="gap-2" onPress={() => navigate("/profile")}>
-								<UserAvatar image={user.image} name={user.name || user.email} size="sm" />
-								{user.name || user.email}
+				<div className="hidden items-center gap-2 md:flex">
+					{navMenus.map((menu) => (
+						<Dropdown key={menu.label}>
+							<Button variant="ghost" size="sm" className="gap-2 px-3 py-1.5">
+								{menu.label}
+								<ChevronDown size={14} className="text-muted" />
 							</Button>
-							<Button variant="ghost" onPress={handleSignOut}>
-								Sign out
-							</Button>
-						</>
+							<Dropdown.Popover placement="bottom start" className="min-w-72">
+								<Dropdown.Menu
+									aria-label={menu.label}
+									onAction={(key) => goToSection(String(key).split(":")[1])}
+								>
+									{menu.links.map((link) => (
+										<Dropdown.Item
+											key={link.label}
+											id={`${link.label}:${link.section}`}
+											textValue={link.label}
+										>
+											<div className="flex flex-col">
+												<Label>{link.label}</Label>
+												<Description>{link.description}</Description>
+											</div>
+										</Dropdown.Item>
+									))}
+								</Dropdown.Menu>
+							</Dropdown.Popover>
+						</Dropdown>
+					))}
+					<Button variant="ghost" size="sm" className="px-3 py-1.5" onPress={() => goToSection(pricingSection)}>
+						Pricing
+					</Button>
+				</div>
+
+				<div className="col-start-3 flex items-center justify-self-end gap-3">
+					{isPending ? null : session?.user ? (
+						<Button size="sm" onPress={() => navigate("/")}>
+							Dashboard
+						</Button>
 					) : (
-						<>
-							<RouterLink to="/login">Login</RouterLink>
-							<RouterLink to="/register">Register</RouterLink>
-						</>
+						<Button size="sm" onPress={() => navigate("/login")}>
+							Sign in
+						</Button>
 					)}
 					<ThemeToggle />
 				</div>
