@@ -2,7 +2,6 @@ import {
 	ChevronDown,
 	ExternalLink,
 	MessageSquare,
-	PanelsTopLeft,
 	Plus,
 	Star,
 } from "lucide-react";
