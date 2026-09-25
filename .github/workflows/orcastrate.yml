@@ -1,0 +1,17 @@
+name: Orcastrate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  id-token: write
+
+jobs:
+  generate-artefact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: saasathon-2/integrations/github@main
+        with:
+          api-url: https://<your-api-domain>
+          pull-request: ${{ github.event.pull_request.number }}
