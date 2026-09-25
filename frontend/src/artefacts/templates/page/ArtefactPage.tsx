@@ -22,7 +22,8 @@ export function ArtefactPage({ children, context }: TemplateProps) {
 }
 
 ArtefactPage.template = "artefact-page" as const;
-ArtefactPage.info = "Root document shell for every artefact. Select exactly one category page as its child; never place content blocks directly inside it.";
+ArtefactPage.info =
+	"Root document shell for every artefact. Select exactly one category page as its child; never place content blocks directly inside it.";
 ArtefactPage.children = {
 	min: 1,
 	max: 1,

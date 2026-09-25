@@ -13,44 +13,43 @@ const CategoryPage: Template = ({ node, children, context }) => {
 	return (
 		<>
 			<header className="text-brand-foreground">
-				<div className="relative flex flex-col items-center gap-3 bg-brand px-6 pt-10 pb-5 text-center sm:px-10">
-					<img
-						src="/kleelogo.svg"
-						alt="klee"
-						className="klee-logo absolute top-5 left-6 size-12 sm:left-10"
-					/>
-					<Heading
-						level={2}
-						align="center"
-						className="text-balance text-inherit"
-					>
-						{data.title}
-					</Heading>
-					<Paragraph
-						align="center"
-						className="max-w-2xl text-inherit opacity-80"
-					>
-						{data.summary}
-					</Paragraph>
-					<div className="flex flex-wrap items-center justify-center gap-2">
-						{data.tags.map((tag) => (
-							<Chip key={tag} size="sm">
-								{tag}
-							</Chip>
-						))}
-						<Paragraph
-							size="xs"
-							className="text-inherit opacity-70"
+				<div className="relative bg-brand pt-10 pb-5">
+					<div className="mx-auto flex w-full max-w-[1000px] flex-col items-start gap-3 px-6 text-left sm:px-10">
+						<Heading
+							level={1}
+							align="start"
+							className="text-balance text-inherit"
 						>
-							{new Date(context.createdAt).toLocaleDateString(
-								undefined,
-								{
-									day: "numeric",
-									month: "short",
-									year: "numeric",
-								},
-							)}
+							{data.title}
+						</Heading>
+						<Paragraph
+							align="start"
+							className="max-w-2xl text-inherit opacity-80"
+						>
+							{data.summary}
 						</Paragraph>
+						<div className="inline-flex flex-wrap justify-between gap-2 w-full">
+							<div className="inline-flex flex-wrap gap-2">
+								{data.tags.map((tag) => (
+									<Chip key={tag} size="sm">
+										{tag}
+									</Chip>
+								))}
+							</div>
+							<Paragraph
+								size="xs"
+								className="text-inherit opacity-70"
+							>
+								{new Date(context.createdAt).toLocaleDateString(
+									undefined,
+									{
+										day: "numeric",
+										month: "short",
+										year: "numeric",
+									},
+								)}
+							</Paragraph>
+						</div>
 					</div>
 				</div>
 				<Scallop edge="bottom" />
