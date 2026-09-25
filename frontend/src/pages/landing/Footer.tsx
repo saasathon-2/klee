@@ -33,23 +33,23 @@ export function Footer() {
 	return (
 		<footer>
 			<div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[2fr_repeat(4,1fr)]">
-				<div>
+				<div className="flex h-full flex-col">
 					<div className="flex items-center gap-2">
-						<img src="/kleelogo.svg" alt="" className="size-12" />
+						<img src="/kleelogo.svg" alt="" className="size-10" />
 						<img
 							src="/klee.svg"
 							alt="Klee"
 							className="h-6 w-auto"
 						/>
 					</div>
-					<Paragraph
-						size="sm"
-						color="muted"
-						className="mt-2 max-w-xs"
-					>
-						Turn engineering context into clear, shareable
-						artefacts.
-					</Paragraph>
+					<div className="mt-auto pt-6">
+						<Paragraph size="sm" color="muted" className="max-w-xs">
+							"One eye sees, the other feels.”
+						</Paragraph>
+						<Paragraph size="sm" color="muted" className="mt-2 max-w-xs">
+							- Paul Klee
+						</Paragraph>
+					</div>
 				</div>
 				{columns.map((column) => (
 					<div key={column.label}>
