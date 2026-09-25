@@ -36,6 +36,10 @@ This repository deploys as three Railway services:
 
 `PORT` is supplied by Railway. Do not set it manually. `CORS_ORIGIN` should be the exact web origin (no trailing slash).
 
+## Migrations
+
+Create migrations with `pnpm --dir backend migrate:create -- <name>`. Migration files already present on `main` are immutable: never rename, edit, or delete them; add a new migration instead. Pull requests run a guard that enforces timestamp-style unique prefixes and rejects changes to existing migrations. Run it locally with `MIGRATIONS_BASE_REF=origin/main pnpm --dir backend migrations:check`.
+
 ## GitHub App
 
 Set the GitHub App's setup URL and webhook URL to `https://<api-domain>/api/integrations/github/setup` and `https://<api-domain>/api/integrations/github/webhook`. The API service needs `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET` as Railway variables. A signed-in user connects GitHub from their profile; the API stores the resulting installation and verifies every webhook before processing it.
