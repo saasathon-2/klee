@@ -62,7 +62,6 @@ DeveloperPage.children = {
 		"task-list",
 		"next-steps",
 		"prose",
-		"code-diff",
 		"review-comments",
 		"commit-list",
 		"check-list",

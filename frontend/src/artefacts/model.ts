@@ -47,12 +47,12 @@ export type ArtefactNode = {
 		| "developer-page"
 		| "generic-page"
 		| "metric-row"
+		| "code-diff"
 		| "architecture-flow"
 		| "glue"
 		| "task-list"
 		| "next-steps"
 		| "prose"
-		| "code-diff"
 		| "review-comments"
 		| "commit-list"
 		| "check-list";
