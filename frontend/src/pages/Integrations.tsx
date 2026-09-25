@@ -20,7 +20,7 @@ type GitHubInstallation = {
 
 const apiUrl = import.meta.env.VITE_API_URL || "https://<api-domain>";
 
-const workflow = `name: Orcastrate
+const workflow = `name: klee
 
 on:
   pull_request:
@@ -62,7 +62,9 @@ function IntegrationCard({
 					{icon}
 				</div>
 				<div className="min-w-0 flex-1">
-					<Card.Title className="text-base font-semibold">{name}</Card.Title>
+					<Card.Title className="text-base font-semibold">
+						{name}
+					</Card.Title>
 					<Card.Description>{summary}</Card.Description>
 				</div>
 				{status}
@@ -116,9 +118,9 @@ export function IntegrationsPanel() {
 				Integrations
 			</Heading>
 			<Paragraph color="muted" className="max-w-2xl">
-				Bring artefacts to where your team already works. Each integration
-				uses shared artefact links, so only artefacts you have shared are
-				visible outside Orcastrate.
+				Bring artefacts to where your team already works. Each
+				integration uses shared artefact links, so only artefacts you
+				have shared are visible outside Klee.
 			</Paragraph>
 			<div className="mt-6 space-y-4">
 				<IntegrationCard
@@ -126,7 +128,8 @@ export function IntegrationsPanel() {
 					name="GitHub"
 					summary="Generate an artefact for every pull request."
 					status={
-						installations === undefined ? null : installations.length ? (
+						installations ===
+						undefined ? null : installations.length ? (
 							<Chip size="sm" color="success">
 								Connected as {installations[0].accountLogin}
 							</Chip>
@@ -143,18 +146,26 @@ export function IntegrationsPanel() {
 					]}
 					steps={[
 						<>
-							Connect GitHub and choose which repositories the Orcastrate App can
-							access.
+							Connect GitHub and choose which repositories the
+							Orcastrate App can access.
 						</>,
 						<>
 							Add the workflow below to{" "}
-							<Code className="text-xs">.github/workflows/orcastrate.yml</Code> in each
-							repository.
+							<Code className="text-xs">
+								.github/workflows/orcastrate.yml
+							</Code>{" "}
+							in each repository.
 						</>,
-						<>Open or update a pull request to generate its artefact.</>,
+						<>
+							Open or update a pull request to generate its
+							artefact.
+						</>,
 					]}
 				>
-					<Surface variant="secondary" className="overflow-x-auto rounded-xl p-4">
+					<Surface
+						variant="secondary"
+						className="overflow-x-auto rounded-xl p-4"
+					>
 						<Code className="block bg-transparent p-0 text-xs leading-5 whitespace-pre">
 							{workflow}
 						</Code>
@@ -174,12 +185,15 @@ export function IntegrationsPanel() {
 					steps={[
 						<>
 							A workspace admin installs the Klee app from the{" "}
-							<Code className="text-xs">slack</Code> folder of the integrations
-							repository.
+							<Code className="text-xs">slack</Code> folder of the
+							integrations repository.
 						</>,
 						<>Share an artefact from Orcastrate to get its link.</>,
 						<>
-							Paste the link, or run <Code className="text-xs">/artefact &lt;link or ID&gt;</Code>{" "}
+							Paste the link, or run{" "}
+							<Code className="text-xs">
+								/artefact &lt;link or ID&gt;
+							</Code>{" "}
 							in any channel.
 						</>,
 					]}
@@ -191,19 +205,23 @@ export function IntegrationsPanel() {
 					summary="Show linked artefacts on Jira issues."
 					status={<Chip size="sm">Site app</Chip>}
 					features={[
-						"Adds an Orcastrate artefacts panel to every Jira issue.",
+						"Adds an Klee artefacts panel to every Jira issue.",
 						"Embeds each artefact linked in the issue's description or comments.",
 						"Reads issues with the viewer's own Jira permissions.",
 					]}
 					steps={[
 						<>
-							A Jira admin deploys and installs the Forge app from the{" "}
-							<Code className="text-xs">jira/klee</Code> folder with{" "}
+							A Jira admin deploys and installs the Forge app from
+							the <Code className="text-xs">jira/klee</Code>{" "}
+							folder with{" "}
 							<Code className="text-xs">forge deploy</Code> and{" "}
 							<Code className="text-xs">forge install</Code>.
 						</>,
-						<>Paste a shared artefact link into an issue's description or a comment.</>,
-						<>Open the Orcastrate artefacts panel on the issue.</>,
+						<>
+							Paste a shared artefact link into an issue's
+							description or a comment.
+						</>,
+						<>Open the Klee artefacts panel on the issue.</>,
 					]}
 				/>
 			</div>
