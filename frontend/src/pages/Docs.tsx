@@ -6,15 +6,7 @@ import {
 	Paragraph,
 	Separator,
 } from "@heroui/react";
-import {
-	BookOpen,
-	ChevronRight,
-	ExternalLink,
-	GitPullRequest,
-	Plug,
-	Share2,
-	Sparkles,
-} from "lucide-react";
+import { ChevronRight, ExternalLink, LibraryBig } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -81,8 +73,8 @@ export function Docs() {
 		<main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl grid-cols-1 lg:h-[calc(100vh-4rem)] lg:grid-cols-[15rem_minmax(0,1fr)] lg:overflow-hidden">
 			<aside className="border-b border-divider px-6 py-8 lg:overflow-hidden lg:border-r lg:border-b-0">
 				<div className="flex items-center gap-2 text-sm font-semibold">
-					<BookOpen size={16} />
-					Documentation
+					<LibraryBig size={16} />
+					Klee Docs
 				</div>
 				<nav aria-label="Documentation" className="mt-6 grid gap-6">
 					{sections.map((section) => (
@@ -117,19 +109,19 @@ export function Docs() {
 				<div className="flex items-center gap-2">
 					<Chip size="sm">Docs</Chip>
 					<span className="text-sm text-muted">
-						Klee documentation
+						Klee Documentation
 					</span>
 				</div>
 				<Heading
 					level={1}
 					className="mt-5 text-4xl tracking-tight sm:text-5xl"
 				>
-					Build a shared understanding of your work.
+					Map out your project, ideas, and changes.
 				</Heading>
 				<Paragraph className="mt-5 max-w-2xl text-lg text-muted">
-					Klee turns engineering context into clear, shareable
-					artefacts: decisions, pull-request briefs, architecture
-					views, and implementation plans.
+					Klee turns context into clear, shareable artefacts:
+					decisions, pull-request briefs, architecture views, and
+					implementation plans.
 				</Paragraph>
 				<div className="mt-8 flex flex-wrap gap-3">
 					<Button onPress={() => navigate("/")}>
@@ -143,70 +135,61 @@ export function Docs() {
 					</Button>
 				</div>
 
-				<DocsSection
-					id="overview"
-					icon={<Sparkles size={19} />}
-					title="What is Klee?"
-				>
+				<DocsSection id="overview" title="What is Klee?">
+					<img src="/kleelogo.svg" alt="Klee" className="size-10" />
+
 					<Paragraph>
 						Klee turns a prompt or connected pull request into a
 						structured artefact. Artefacts are private by default
 						and can include code diffs, review feedback, commits, CI
-						status, and architecture flow.
+						status, and software architecture.
 					</Paragraph>
 					<DocsCard
 						title="Core concepts"
 						items={[
-							"Artefact — a generated, editable document for a decision or change.",
-							"Template — a purposeful visual block such as a diff, check list, or review summary.",
-							"Share link — a read-only URL you explicitly enable for an artefact.",
+							"Artefact - a generated, editable document for a decision or change.",
+							"Template - a purposeful visual block such as a diff, check list, or review summary.",
+							"Share link - a read-only URL you explicitly enable for an artefact.",
 						]}
 					/>
 				</DocsSection>
 
-				<DocsSection
-					id="start"
-					icon={<Share2 size={19} />}
-					title="Create and share an artefact"
-				>
+				<DocsSection id="start" title="Create and share an artefact">
 					<ol className="list-decimal space-y-3 pl-5 text-muted">
 						<li>
-							Describe the outcome you need, or connect GitHub and
-							open a pull request.
+							Describe the outcome you need, or connect GitHub,
+							GitLab or BitBucket and open a pull request.
 						</li>
 						<li>
 							Review the generated artefact and add any follow-up
-							context.
+							context, either through comments or editing it
+							directly.
 						</li>
 						<li>
-							Use Share to create a read-only link for
-							collaborators.
+							Use Share to create a read-only, commentable link
+							for collaborators.
 						</li>
 					</ol>
 					<blockquote className="mt-6 border-l-2 border-brand pl-4 text-sm text-muted">
-						Sharing is opt-in. Creating an artefact does not make it
-						public.
+						NOTE: Sharing is opt-in. Creating an artefact does not
+						make it public.
 					</blockquote>
 				</DocsSection>
 
-				<DocsSection
-					id="github"
-					icon={<GitPullRequest size={19} />}
-					title="GitHub pull-request artefacts"
-				>
+				<DocsSection id="github" title="GitHub pull-request artefacts">
 					<Paragraph>
-						Install tasdasdsadasdadhe Klee GitHub App from your
-						profile, then grant it access to the repositories you
-						want Klee to read. Klee fetches the pull request,
+						Install the Klee GitHub App from your profile, then
+						grant it access to the repositories you want Klee to
+						read. Klee fetches pull requests, and then grabs the
 						important file changes, reviews, commits, and check runs
 						to generate a focused brief.
 					</Paragraph>
 					<DocsCard
 						title="GitHub App permissions"
 						items={[
-							"Pull requests: Read-only — PR metadata, files, reviews, and commits.",
-							"Checks: Read-only — CI check status and pipeline links.",
-							"Issues: Read and write — Klee posts and refreshes the PR artefact comment.",
+							"Pull requests: Read-only - PR metadata, files, reviews, and commits.",
+							"Checks: Read-only - CI check status and pipeline links.",
+							"Issues: Read and write - Klee posts and refreshes the PR artefact comment.",
 						]}
 					/>
 					<DocsCard
@@ -226,11 +209,7 @@ export function Docs() {
 					</Link>
 				</DocsSection>
 
-				<DocsSection
-					id="help"
-					icon={<Plug size={19} />}
-					title="Troubleshooting and security"
-				>
+				<DocsSection id="help" title="Troubleshooting and security">
 					<DocsCard
 						title="A pull request did not update"
 						items={[
@@ -253,12 +232,10 @@ export function Docs() {
 
 function DocsSection({
 	id,
-	icon,
 	title,
 	children,
 }: {
 	id: string;
-	icon: ReactNode;
 	title: string;
 	children: ReactNode;
 }) {
@@ -268,7 +245,6 @@ function DocsSection({
 			className="scroll-mt-24 border-t border-divider pt-10 mt-12"
 		>
 			<Heading level={2} className="flex items-center gap-2 text-2xl">
-				{icon}
 				{title}
 			</Heading>
 			<div className="mt-5 space-y-4 leading-7 text-muted">
