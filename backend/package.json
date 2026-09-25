@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch --env-file=.env src/app.ts",
-    "start": "node --env-file-if-exists=.env src/app.ts",
+    "dev": "node --experimental-strip-types --watch --env-file=.env src/app.ts",
+    "start": "node --experimental-strip-types --env-file-if-exists=.env src/app.ts",
     "typecheck": "tsc -p tfconfig.json",
     "premigrate": "node --env-file-if-exists=.env scripts/migrate-preflight.mjs",
     "migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up -j ts -m src/migrations",
