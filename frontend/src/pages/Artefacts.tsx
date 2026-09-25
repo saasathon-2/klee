@@ -49,7 +49,7 @@ import { UserAvatar } from "../components/UserAvatar";
 type Revision = { id: string; content: string; createdAt: string };
 type Artefact = {
 	id: string;
-	shareId?: string;
+	isShared?: boolean;
 	prompt: string;
 	title: string;
 	createdAt: string;
@@ -91,6 +91,7 @@ export function Artefacts() {
 	const [followUp, setFollowUp] = useState("");
 	const [error, setError] = useState("");
 	const [copied, setCopied] = useState(false);
+	const [notShared, setNotShared] = useState(false);
 	const [isFullscreen, setFullscreen] = useState(false);
 	const [isSidebarOpen, setSidebarOpen] = useState(true);
 	const artefactPath = shareId
@@ -112,14 +113,21 @@ export function Artefacts() {
 	}, [isShared, session?.user]);
 	useEffect(() => {
 		if (!artefactPath) return;
+		setNotShared(false);
 		api(artefactPath)
-			.then((response) =>
-				response.ok ? response.json() : Promise.reject(),
-			)
+			.then((response) => {
+				if (response.ok) return response.json();
+				if (response.status === 403) return Promise.reject("not_shared");
+				return Promise.reject("not_found");
+			})
 			.then((artefact: Artefact) =>
 				setLoaded({ path: artefactPath, artefact }),
 			)
-			.catch(() => setError("This artefact could not be found."));
+			.catch((reason) =>
+				reason === "not_shared"
+					? setNotShared(true)
+					: setError("This artefact could not be found."),
+			);
 	}, [artefactPath]);
 
 	async function create(event: FormEvent) {
@@ -154,9 +162,19 @@ export function Artefacts() {
 		setFollowUp("");
 	}
 	async function share() {
-		if (!current?.shareId) return;
+		if (!current) return;
+		if (!current.isShared) {
+			const response = await api(`/artefacts/${current.id}/share`, {
+				method: "POST",
+			});
+			if (!response.ok) return setError("Could not share artefact.");
+			setLoaded({
+				path: artefactPath!,
+				artefact: { ...current, isShared: true },
+			});
+		}
 		await navigator.clipboard.writeText(
-			`${window.location.origin}/artefacts/shared/${current.shareId}`,
+			`${window.location.origin}/artefacts/shared/${current.id}`,
 		);
 		setCopied(true);
 		window.setTimeout(() => setCopied(false), 1500);
@@ -181,6 +199,11 @@ export function Artefacts() {
 		return (
 			<main className="min-h-screen bg-background px-10 py-10">
 				{error && <p className="text-sm text-danger">{error}</p>}
+				{notShared && (
+					<p className="text-sm text-muted">
+						This artefact hasn't been shared.
+					</p>
+				)}
 				{current && <ArtefactBody artefact={current} />}
 			</main>
 		);
@@ -189,6 +212,11 @@ export function Artefacts() {
 			<main className="mx-auto min-h-screen max-w-3xl px-6 py-12">
 				<p className="text-sm font-semibold">Orcastrate</p>
 				{error && <p className="mt-8 text-sm text-danger">{error}</p>}
+				{notShared && (
+					<p className="mt-8 text-sm text-muted">
+						This artefact hasn't been shared.
+					</p>
+				)}
 				{current && <ArtefactBody artefact={current} />}
 			</main>
 		);
