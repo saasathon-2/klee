@@ -47,6 +47,7 @@ export type ArtefactNode = {
 		| "developer-page"
 		| "generic-page"
 		| "metric-row"
+		| "code-diff"
 		| "architecture-flow"
 		| "glue"
 		| "task-list"
