@@ -25,6 +25,7 @@ import {
     githubInstallation,
     removeGitHubInstallation,
     githubInstallationRequest,
+    githubPullRequestFingerprint,
     githubPullRequestContext,
     githubPullRequestPrompt,
     githubRepositoryInstallation,
@@ -32,6 +33,8 @@ import {
 } from "./github.ts";
 
 const app: Express = express();
+const githubRefreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const githubRefreshDelayMs = 30_000;
 
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
 
@@ -65,15 +68,15 @@ app.post(
                     [String(installation.id)],
                 );
         }
-        if (event === "check_run" && payload.repository?.full_name && payload.installation?.id) {
+        if (event === "check_run" && payload.action === "completed" && payload.repository?.full_name && payload.installation?.id) {
             res.sendStatus(204);
             for (const { number } of payload.check_run?.pull_requests ?? []) {
                 if (Number.isInteger(number) && number! > 0)
-                    void refreshGitHubPullRequestArtefact(
+                    queueGitHubPullRequestRefresh(
                         String(payload.installation.id),
                         payload.repository.full_name,
                         number!,
-                    ).catch((error) => console.error("GitHub check-run artefact refresh failed", error));
+                    );
             }
             return;
         }
@@ -173,7 +176,7 @@ async function reserveGitHubPullRequestArtefact(
             'select artefact_id as "artefactId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
             [repository, pullRequest],
         );
-        if (rows[0]) return rows[0].artefactId as string;
+        if (rows[0]) return { id: rows[0].artefactId as string, created: false };
         const artefactId = randomUUID();
         await client.query(
             "insert into artefact (id, owner_id, share_id, is_shared, prompt, title, github_installation_id) values ($1, $2, $1, true, $3, $4, $5)",
@@ -183,7 +186,7 @@ async function reserveGitHubPullRequestArtefact(
             "insert into github_pull_request_artefact (repository, pull_request, installation_id, owner_id, artefact_id, comment_id) values ($1, $2, $3, $4, $5, null)",
             [repository, pullRequest, installationId, ownerId, artefactId],
         );
-        return artefactId;
+        return { id: artefactId, created: true };
     });
 }
 
@@ -200,13 +203,20 @@ async function refreshGitHubPullRequestArtefact(
             `${repository}#${pullRequest}`,
         ]);
         const { rows } = await pool.query(
-            'select owner_id as "ownerId", artefact_id as "artefactId", comment_id as "commentId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
+            'select owner_id as "ownerId", artefact_id as "artefactId", comment_id as "commentId", context_hash as "contextHash" from github_pull_request_artefact where repository = $1 and pull_request = $2',
             [repository, pullRequest],
         );
         const current = rows[0];
         const owner = ownerId ?? current?.ownerId;
         if (!owner) return;
         const context = await githubPullRequestContext(installationId, repository, pullRequest);
+        const contextHash = githubPullRequestFingerprint(context);
+        if (current?.contextHash === contextHash) return;
+        // Initial generation is immediate; subsequent updates wait for CI to settle.
+        if (current?.contextHash && context.checks.some((check) => check.status !== "completed")) {
+            queueGitHubPullRequestRefresh(installationId, repository, pullRequest);
+            return;
+        }
         const artefact = await createGeneratedArtefact(
             owner,
             githubPullRequestPrompt(repository, pullRequest, context),
@@ -232,7 +242,7 @@ async function refreshGitHubPullRequestArtefact(
             commentId = String((await comment.json() as { id: number }).id);
         }
         await pool.query(
-            "insert into github_pull_request_artefact (repository, pull_request, installation_id, owner_id, artefact_id, comment_id) values ($1, $2, $3, $4, $5, $6) on conflict (repository, pull_request) do update set installation_id = excluded.installation_id, owner_id = excluded.owner_id, artefact_id = excluded.artefact_id, comment_id = excluded.comment_id, updated_at = current_timestamp",
+            "update github_pull_request_artefact set installation_id = $3, owner_id = $4, artefact_id = $5, comment_id = $6, context_hash = $7, updated_at = current_timestamp where repository = $1 and pull_request = $2",
             [
                 repository,
                 pullRequest,
@@ -240,6 +250,7 @@ async function refreshGitHubPullRequestArtefact(
                 owner,
                 artefact.id,
                 commentId,
+                contextHash,
             ],
         );
         return { artefact, url };
@@ -249,6 +260,18 @@ async function refreshGitHubPullRequestArtefact(
         ]);
         lock.release();
     }
+}
+
+/** Coalesces a burst of CI and Actions events before refreshing a PR artefact. */
+function queueGitHubPullRequestRefresh(installationId: string, repository: string, pullRequest: number) {
+    const key = `${repository}#${pullRequest}`;
+    const existing = githubRefreshTimers.get(key);
+    if (existing) clearTimeout(existing);
+    githubRefreshTimers.set(key, setTimeout(() => {
+        githubRefreshTimers.delete(key);
+        void refreshGitHubPullRequestArtefact(installationId, repository, pullRequest)
+            .catch((error) => console.error("GitHub PR artefact refresh failed", error));
+    }, githubRefreshDelayMs));
 }
 
 /** Which social sign-in providers have credentials, so the UI only offers working ones. */
@@ -366,21 +389,23 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
         );
         if (!installation.rows[0])
             return res.status(403).json({ error: "GitHub App is not installed for this repository." });
-        const artefactId = await reserveGitHubPullRequestArtefact(
+        const reservation = await reserveGitHubPullRequestArtefact(
             String(installationId),
             repository,
             pullRequest,
             installation.rows[0].owner_id,
         );
-        const url = `${env.corsOrigin}/artefacts/shared/${artefactId}`;
-        res.status(202).json({ id: artefactId, url, createdAt: new Date().toISOString() });
-        void refreshGitHubPullRequestArtefact(
-            String(installationId),
-            repository,
-            pullRequest,
-            installation.rows[0].owner_id,
-            artefactId,
-        ).catch((error) => console.error("GitHub Action artefact refresh failed", error));
+        const url = `${env.corsOrigin}/artefacts/shared/${reservation.id}`;
+        res.status(202).json({ id: reservation.id, url, createdAt: new Date().toISOString() });
+        if (reservation.created)
+            void refreshGitHubPullRequestArtefact(
+                String(installationId),
+                repository,
+                pullRequest,
+                installation.rows[0].owner_id,
+                reservation.id,
+            ).catch((error) => console.error("GitHub Action artefact refresh failed", error));
+        else queueGitHubPullRequestRefresh(String(installationId), repository, pullRequest);
     } catch (error) {
         console.error("Failed to create GitHub Actions artefact", error);
         if (error instanceof Error && error.message === "GitHub API request failed (404)")

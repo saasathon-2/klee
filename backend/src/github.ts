@@ -1,4 +1,5 @@
 import {
+	createHash,
 	createHmac,
 	createPrivateKey,
 	createPublicKey,
@@ -122,6 +123,7 @@ type GitHubCheck = {
 };
 
 export type GitHubPullRequestContext = {
+	headSha: string;
 	title: string;
 	body: string;
 	url: string;
@@ -165,6 +167,7 @@ const [pull, files, reviews, comments, reviewComments, commits] = await Promise.
 		path: text(item.path),
 	}));
 	return {
+		headSha: text(head.sha),
 		title: text(pull.title),
 		body: text(pull.body),
 		url: text(pull.html_url),
@@ -200,6 +203,20 @@ const [pull, files, reviews, comments, reviewComments, commits] = await Promise.
 			conclusion: text(check.conclusion),
 		})),
 	};
+}
+
+/** Stable input for deciding whether a PR refresh merits another AI generation. */
+export function githubPullRequestFingerprint(context: GitHubPullRequestContext) {
+	return createHash("sha256")
+		.update(JSON.stringify({
+			headSha: context.headSha,
+			files: context.files.map(({ filename, status, additions, deletions }) => ({ filename, status, additions, deletions })),
+			feedback: context.feedback,
+			checks: context.checks
+				.filter((check) => check.conclusion)
+				.map(({ name, conclusion }) => ({ name, result: conclusion === "success" ? "passed" : "failed" })),
+		}))
+		.digest("hex");
 }
 
 export function githubPullRequestPrompt(
