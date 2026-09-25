@@ -1,15 +1,21 @@
 import { Paragraph } from "@heroui/react";
 import { BlockSection } from "../page/BlockSection";
+import { EditableText } from "../page/EditableText";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
-export function Prose({ node }: TemplateProps) {
-	const paragraphs = String(node.data.body).split(/\n\s*\n/);
+export function Prose({ node, context }: TemplateProps) {
+	const body = String(node.data.body);
+	const paragraphs = body.split(/\n\s*\n/);
 	return (
-		<BlockSection title={String(node.data.title)}>
+		<BlockSection title={String(node.data.title)} edit={{ node, context }}>
 			<div className="-mt-3 space-y-3">
-				{paragraphs.map((paragraph, index) => (
-					<Paragraph key={index}>{paragraph}</Paragraph>
-				))}
+				{context.isEditing ? (
+					<EditableText node={node} context={context} path={["body"]} value={body} label="Body" multiline />
+				) : (
+					paragraphs.map((paragraph, index) => (
+						<Paragraph key={index}>{paragraph}</Paragraph>
+					))
+				)}
 			</div>
 		</BlockSection>
 	);

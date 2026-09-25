@@ -105,7 +105,7 @@ function SplitCell({ line }: { line?: NumberedLine }) {
 	);
 }
 
-export function CodeDiff({ node }: TemplateProps) {
+export function CodeDiff({ node, context }: TemplateProps) {
 	const { title, description, file, url, hunks } = node.data as {
 		title: string;
 		description: string;
@@ -122,6 +122,7 @@ export function CodeDiff({ node }: TemplateProps) {
 		<BlockSection
 			title={title}
 			description={description}
+			edit={{ node, context }}
 			action={
 				<ToggleButtonGroup
 					aria-label="Diff layout"

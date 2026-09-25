@@ -12,10 +12,24 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 	},
+	account: {
+		// Signing in with Google or GitHub joins an existing account with the same email.
+		accountLinking: {
+			enabled: true,
+			trustedProviders: ["google", "github"],
+		},
+	},
 	socialProviders: {
 		google: {
 			clientId: env.googleClientId ?? "",
 			clientSecret: env.googleClientSecret ?? "",
+		},
+		github: {
+			clientId: env.githubClientId ?? "",
+			clientSecret: env.githubClientSecret ?? "",
+			// Added to better-auth's default read:user and user:email scopes, so
+			// Klee can see private org membership for artefact access.
+			scope: ["read:org"],
 		},
 	},
 	plugins: [dash()],

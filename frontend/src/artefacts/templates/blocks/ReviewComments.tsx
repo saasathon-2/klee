@@ -1,6 +1,7 @@
 import { Alert, Avatar, Card, Chip } from "@heroui/react";
 import type { ReviewComment } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { editableFor } from "../page/editableFor";
 import { initials } from "../page/initials";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
@@ -10,14 +11,15 @@ const verdicts = {
 	commented: { color: "default", label: "Commented" },
 } as const;
 
-export function ReviewComments({ node }: TemplateProps) {
+export function ReviewComments({ node, context }: TemplateProps) {
 	const { title, summary, comments } = node.data as {
 		title: string;
 		summary: string;
 		comments: ReviewComment[];
 	};
+	const text = editableFor(node, context);
 	return (
-		<BlockSection title={title}>
+		<BlockSection title={title} edit={{ node, context }}>
 			<div className="grid gap-3 sm:grid-cols-2">
 				{comments.map((comment, index) => {
 					const verdict = verdicts[comment.verdict] ?? verdicts.commented;
@@ -37,7 +39,9 @@ export function ReviewComments({ node }: TemplateProps) {
 								</Chip>
 							</Card.Header>
 							<Card.Content>
-								<Card.Description>{comment.body}</Card.Description>
+								<Card.Description>
+									{text(["comments", index, "body"], comment.body, "Comment", true)}
+								</Card.Description>
 							</Card.Content>
 						</Card>
 					);
@@ -47,7 +51,9 @@ export function ReviewComments({ node }: TemplateProps) {
 				<Alert.Indicator />
 				<Alert.Content>
 					<Alert.Title>Consensus</Alert.Title>
-					<Alert.Description>{summary}</Alert.Description>
+					<Alert.Description>
+						{text(["summary"], summary, "Consensus", true)}
+					</Alert.Description>
 				</Alert.Content>
 			</Alert>
 		</BlockSection>

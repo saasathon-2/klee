@@ -2,24 +2,28 @@ import { Card, Chip } from "@heroui/react";
 import { ArrowRight } from "lucide-react";
 import type { FlowNode } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { editableFor } from "../page/editableFor";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
-export function ArchitectureFlow({ node }: TemplateProps) {
+export function ArchitectureFlow({ node, context }: TemplateProps) {
 	const { title, description, nodes } = node.data as {
 		title: string;
 		description: string;
 		nodes: FlowNode[];
 	};
+	const text = editableFor(node, context);
 	return (
-		<BlockSection title={title} description={description}>
+		<BlockSection title={title} description={description} edit={{ node, context }}>
 			<div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
 				{nodes.map((item, index) => (
-					<div key={item.label} className="contents">
+					<div key={index} className="contents">
 						<Card variant="secondary" className="min-w-0">
 							<Card.Header className="items-start gap-2">
 								<Chip size="sm">Step {index + 1}</Chip>
-								<Card.Title>{item.label}</Card.Title>
-								<Card.Description>{item.detail}</Card.Description>
+								<Card.Title>{text(["nodes", index, "label"], item.label, "Step name")}</Card.Title>
+								<Card.Description>
+									{text(["nodes", index, "detail"], item.detail, "Step detail")}
+								</Card.Description>
 							</Card.Header>
 						</Card>
 						{index < nodes.length - 1 && (

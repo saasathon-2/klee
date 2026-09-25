@@ -1,4 +1,6 @@
 import {
+	Alert,
+	AlertDialog,
 	Button,
 	Card,
 	Header,
@@ -6,6 +8,7 @@ import {
 	Label,
 	ListBox,
 	Modal,
+	Paragraph,
 	Popover,
 	Separator,
 	Surface,
@@ -22,6 +25,7 @@ import {
 	FileText,
 	GitCommitHorizontal,
 	GitPullRequest,
+	History,
 	ListChecks,
 	LogOut,
 	Maximize2,
@@ -29,6 +33,7 @@ import {
 	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
+	Pencil,
 	Plug,
 	Plus,
 	Share2,
@@ -47,13 +52,21 @@ import {
 import { signOut, useSession } from "../lib/auth-client";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
-import { fallbackDocument, type ArtefactDocument } from "../artefacts/model";
+import {
+	fallbackDocument,
+	withEditedText,
+	type ArtefactDocument,
+} from "../artefacts/model";
+import type { EditPath } from "../artefacts/templates/types";
 import {
 	developerExamplePrompts,
 	type ExamplePrompt,
 } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsPanel } from "./Integrations";
+import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
+import { ProjectSelect } from "./artefact/ProjectSelect";
+import { VersionHistory } from "./artefact/VersionHistory";
 
 type Revision = {
 	id: string;
@@ -69,7 +82,15 @@ type Artefact = {
 	createdAt: string;
 	content?: ArtefactDocument;
 	revisions?: Revision[];
+	/** Latest version number; manual saves must be based on it. */
+	version?: number;
+	isOwner?: boolean;
+	/** GitHub org (project) whose members can view and edit this artefact. */
+	project?: string | null;
+	installationId?: string | null;
 };
+
+type SaveResult = "saved" | "conflict" | "failed";
 
 function artefactHeading(artefact: Artefact) {
 	if (artefact.title !== "New artefact") return artefact.title;
@@ -281,6 +302,37 @@ export function Artefacts() {
 		setCopied(true);
 		window.setTimeout(() => setCopied(false), 1500);
 	}
+	function updateCurrent(update: Partial<Artefact>) {
+		if (!current) return;
+		setLoaded({ path: artefactPath!, artefact: { ...current, ...update } });
+		setArtefacts((currentArtefacts) =>
+			currentArtefacts.map((artefact) =>
+				artefact.id === current.id ? { ...artefact, ...update, content: undefined } : artefact,
+			),
+		);
+	}
+	async function saveEdits(content: ArtefactDocument): Promise<SaveResult> {
+		if (!current) return "failed";
+		setError("");
+		const response = await api(`/artefacts/${current.id}/content`, {
+			method: "PUT",
+			body: JSON.stringify({ content, baseVersion: current.version ?? 0 }),
+		});
+		if (response.status === 409) return "conflict";
+		if (!response.ok) {
+			setError("Could not save your changes.");
+			return "failed";
+		}
+		const result = (await response.json()) as {
+			artefact: Pick<Artefact, "title" | "content" | "version">;
+		};
+		updateCurrent(result.artefact);
+		return "saved";
+	}
+	function reload() {
+		// Clearing the loaded artefact makes the loading effect fetch it again.
+		setLoaded(undefined);
+	}
 	function close() {
 		setFullscreen(false);
 		navigate("/");
@@ -416,6 +468,7 @@ export function Artefacts() {
 											GitHub connected.
 										</p>
 									)}
+									<GitHubAccountLink />
 								</div>
 							</Card.Content>
 						</Card>
@@ -540,6 +593,7 @@ export function Artefacts() {
 			</section>
 			{(current || isCreating) && (
 				<ArtefactModal
+					key={current?.id ?? "creating"}
 					artefact={current}
 					isCreating={isCreating}
 					generationStatus={generationStatus}
@@ -552,6 +606,10 @@ export function Artefacts() {
 					setFollowUp={setFollowUp}
 					isRevising={isRevising}
 					onSubmit={revise}
+					onSave={saveEdits}
+					onReload={reload}
+					onProjectChange={updateCurrent}
+					onError={setError}
 				/>
 			)}
 		</Surface>
@@ -584,6 +642,16 @@ function PromptStarter({
 			</span>
 		</Button>
 	);
+}
+
+/** Artefacts without a project first, then one group per GitHub org. */
+function groupByProject(artefacts: Artefact[]) {
+	const groups = new Map<string | null, Artefact[]>([[null, []]]);
+	for (const artefact of artefacts) {
+		const project = artefact.project ?? null;
+		groups.set(project, [...(groups.get(project) ?? []), artefact]);
+	}
+	return [...groups].filter(([project, group]) => project === null || group.length);
 }
 
 function WorkspaceSidebar({
@@ -633,19 +701,21 @@ function WorkspaceSidebar({
 				selectedKeys={selectedId ? [selectedId] : []}
 				onAction={(key) => onOpenArtefact(String(key))}
 			>
-				<ListBox.Section>
-					<Header>Artefacts</Header>
-					{artefacts.map((artefact) => (
-						<ListBox.Item
-							key={artefact.id}
-							id={artefact.id}
-							textValue={artefact.title}
-						>
-							<FileText size={16} />
-							<Label>{artefact.title}</Label>
-						</ListBox.Item>
-					))}
-				</ListBox.Section>
+				{groupByProject(artefacts).map(([project, group]) => (
+					<ListBox.Section key={project ?? "own"}>
+						<Header>{project ?? "Artefacts"}</Header>
+						{group.map((artefact) => (
+							<ListBox.Item
+								key={artefact.id}
+								id={artefact.id}
+								textValue={artefact.title}
+							>
+								<FileText size={16} />
+								<Label>{artefact.title}</Label>
+							</ListBox.Item>
+						))}
+					</ListBox.Section>
+				))}
 			</ListBox>
 			<Separator className="my-4" />
 			<Popover>
@@ -720,6 +790,10 @@ function ArtefactModal({
 	setFollowUp,
 	isRevising,
 	onSubmit,
+	onSave,
+	onReload,
+	onProjectChange,
+	onError,
 }: {
 	artefact?: Artefact;
 	isCreating: boolean;
@@ -733,7 +807,44 @@ function ArtefactModal({
 	setFollowUp: (value: string) => void;
 	isRevising: boolean;
 	onSubmit: (event: FormEvent) => void;
+	onSave: (content: ArtefactDocument) => Promise<SaveResult>;
+	onReload: () => void;
+	onProjectChange: (update: Pick<Artefact, "installationId" | "project">) => void;
+	onError: (message: string) => void;
 }) {
+	// Edit mode keeps a draft copy; `undefined` means not editing.
+	const [draft, setDraft] = useState<ArtefactDocument>();
+	const [isSaving, setIsSaving] = useState(false);
+	const [hasConflict, setHasConflict] = useState(false);
+	const [isDiscarding, setIsDiscarding] = useState(false);
+	const [showHistory, setShowHistory] = useState(false);
+	// A past version picked on the history slider; `undefined` shows the latest.
+	const [pastVersion, setPastVersion] = useState<ArtefactDocument>();
+	const isEditing = draft !== undefined;
+	const isDirty =
+		isEditing && JSON.stringify(draft) !== JSON.stringify(artefact?.content);
+	const historyOpen = isFullscreen && showHistory && !isEditing;
+
+	function startEditing() {
+		if (!artefact?.content) return;
+		setDraft(structuredClone(artefact.content));
+		setShowHistory(false);
+		setPastVersion(undefined);
+	}
+	function stopEditing() {
+		setDraft(undefined);
+		setHasConflict(false);
+		setIsDiscarding(false);
+	}
+	async function save() {
+		if (!draft) return;
+		setIsSaving(true);
+		const result = await onSave(draft);
+		setIsSaving(false);
+		if (result === "saved") stopEditing();
+		if (result === "conflict") setHasConflict(true);
+	}
+
 	return (
 		<Modal>
 			<Modal.Backdrop
@@ -785,7 +896,41 @@ function ArtefactModal({
 								aria-label="Artefact actions"
 								className="ml-auto flex items-center gap-1"
 							>
-								{artefact && (
+								{artefact && !isEditing && (
+									<ProjectSelect
+										artefactId={artefact.id}
+										installationId={artefact.installationId ?? null}
+										project={artefact.project ?? null}
+										isOwner={artefact.isOwner ?? true}
+										onChange={onProjectChange}
+										onError={onError}
+									/>
+								)}
+								{artefact && !isEditing && isFullscreen && (
+									<Button
+										variant={showHistory ? "secondary" : "ghost"}
+										size="sm"
+										onPress={() => {
+											setShowHistory(!showHistory);
+											setPastVersion(undefined);
+										}}
+									>
+										<History size={15} />
+										History
+									</Button>
+								)}
+								{artefact && !isEditing && (
+									<Button
+										variant="ghost"
+										size="sm"
+										isDisabled={!artefact.content || pastVersion !== undefined}
+										onPress={startEditing}
+									>
+										<Pencil size={15} />
+										Edit
+									</Button>
+								)}
+								{artefact && !isEditing && (
 									<Button
 										variant="secondary"
 										size="sm"
@@ -831,13 +976,32 @@ function ArtefactModal({
 								</Button>
 							</Toolbar>
 						</Modal.Header>
+						{artefact && historyOpen && (
+							<Surface
+								variant="secondary"
+								className="shrink-0 border-b border-divider px-5 py-4 sm:px-6"
+							>
+								<VersionHistory
+									artefactId={artefact.id}
+									latestVersion={artefact.version ?? 1}
+									onView={setPastVersion}
+								/>
+							</Surface>
+						)}
 						<Modal.Body className="m-0 bg-surface p-0">
 							{artefact ? (
 								<ArtefactBody
 									artefact={artefact}
+									document={draft ?? (historyOpen ? pastVersion : undefined)}
 									canInteract
 									edgeToEdge
 									onAction={setFollowUp}
+									isEditing={isEditing}
+									onEdit={(nodeId, path, value) =>
+										setDraft((current) =>
+											current && withEditedText(current, nodeId, path, value),
+										)
+									}
 								/>
 							) : (
 								<div
@@ -857,7 +1021,52 @@ function ArtefactModal({
 								</div>
 							)}
 						</Modal.Body>
-						{artefact && !isCreating && (
+						{artefact && !isCreating && isEditing && (
+							<Modal.Footer className="z-10 m-0 shrink-0 flex-col gap-3 border-t border-divider bg-surface px-4 py-3 sm:px-6">
+								{hasConflict && (
+									<Alert status="warning" className="w-full">
+										<Alert.Indicator />
+										<Alert.Content>
+											<Alert.Title>
+												This artefact changed since you started editing
+											</Alert.Title>
+											<Alert.Description>
+												Reload to get the latest version. Your unsaved
+												changes will be lost.
+											</Alert.Description>
+										</Alert.Content>
+										<Button size="sm" variant="secondary" onPress={onReload}>
+											Reload
+										</Button>
+									</Alert>
+								)}
+								<Toolbar
+									aria-label="Edit actions"
+									className="flex w-full items-center justify-end gap-2"
+								>
+									<Paragraph size="sm" color="muted" className="mr-auto">
+										{isDirty
+											? "You have unsaved changes"
+											: "Click any text to edit it"}
+									</Paragraph>
+									<Button
+										variant="ghost"
+										onPress={() =>
+											isDirty ? setIsDiscarding(true) : stopEditing()
+										}
+									>
+										Cancel
+									</Button>
+									<Button
+										isDisabled={!isDirty || isSaving || hasConflict}
+										onPress={() => void save()}
+									>
+										{isSaving ? "Saving…" : "Save"}
+									</Button>
+								</Toolbar>
+							</Modal.Footer>
+						)}
+						{artefact && !isCreating && !isEditing && (
 							<Modal.Footer className="z-10 m-0 shrink-0 border-t border-divider bg-surface px-4 py-3 sm:px-6">
 								<form
 									onSubmit={onSubmit}
@@ -868,10 +1077,15 @@ function ArtefactModal({
 										variant="secondary"
 										className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
 										value={followUp}
+										disabled={pastVersion !== undefined}
 										onChange={(event) =>
 											setFollowUp(event.target.value)
 										}
-										placeholder="Describe what to change"
+										placeholder={
+											pastVersion
+												? "Return to the latest version to make changes"
+												: "Describe what to change"
+										}
 									/>
 									<Button
 										aria-label={
@@ -882,7 +1096,9 @@ function ArtefactModal({
 										type="submit"
 										className="size-10 min-w-10 rounded-full p-0"
 										isDisabled={
-											!followUp.trim() || isRevising
+											!followUp.trim() ||
+											isRevising ||
+											pastVersion !== undefined
 										}
 									>
 										{isRevising ? (
@@ -897,49 +1113,69 @@ function ArtefactModal({
 					</Modal.Dialog>
 				</Modal.Container>
 			</Modal.Backdrop>
+			<AlertDialog>
+				<AlertDialog.Backdrop
+					isOpen={isDiscarding}
+					onOpenChange={setIsDiscarding}
+				>
+					<AlertDialog.Container>
+						<AlertDialog.Dialog>
+							<AlertDialog.Header>
+								<AlertDialog.Icon status="warning" />
+								<AlertDialog.Heading>Discard your changes?</AlertDialog.Heading>
+							</AlertDialog.Header>
+							<AlertDialog.Body>
+								<Paragraph size="sm" color="muted">
+									Your edits to this artefact haven't been saved.
+								</Paragraph>
+							</AlertDialog.Body>
+							<AlertDialog.Footer>
+								<Button variant="ghost" onPress={() => setIsDiscarding(false)}>
+									Keep editing
+								</Button>
+								<Button variant="danger" onPress={stopEditing}>
+									Discard
+								</Button>
+							</AlertDialog.Footer>
+						</AlertDialog.Dialog>
+					</AlertDialog.Container>
+				</AlertDialog.Backdrop>
+			</AlertDialog>
 		</Modal>
 	);
 }
 
 function ArtefactBody({
 	artefact,
+	document: override,
 	canInteract,
 	edgeToEdge = false,
+	isEditing = false,
 	onAction,
+	onEdit,
 }: {
 	artefact: Artefact;
+	/** Shown instead of the saved content, e.g. an edit draft or a past version. */
+	document?: ArtefactDocument;
 	canInteract: boolean;
 	edgeToEdge?: boolean;
+	isEditing?: boolean;
 	onAction?: (label: string) => void;
+	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
 }) {
 	const document =
+		override ??
 		artefact.content ??
 		fallbackDocument(artefact.prompt, artefactHeading(artefact));
 	return (
-		<>
-			<ArtefactRenderer
-				document={document}
-				createdAt={artefact.createdAt}
-				canInteract={canInteract}
-				edgeToEdge={edgeToEdge}
-				onAction={onAction}
-			/>
-			{artefact.revisions?.length ? (
-				<section className="mx-auto mt-4 max-w-4xl rounded-2xl border border-divider bg-surface p-6 sm:p-8">
-					<p className="text-xs font-medium tracking-wide text-muted uppercase">
-						Iteration history
-					</p>
-					<div className="mt-3 space-y-3">
-						{artefact.revisions.map((revision) => (
-							<Card key={revision.id} variant="secondary">
-								<Card.Content className="p-4 text-sm">
-									{revision.content}
-								</Card.Content>
-							</Card>
-						))}
-					</div>
-				</section>
-			) : null}
-		</>
+		<ArtefactRenderer
+			document={document}
+			createdAt={artefact.createdAt}
+			canInteract={canInteract && !isEditing}
+			edgeToEdge={edgeToEdge}
+			isEditing={isEditing}
+			onAction={onAction}
+			onEdit={onEdit}
+		/>
 	);
 }
