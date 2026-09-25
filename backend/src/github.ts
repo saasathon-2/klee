@@ -238,7 +238,7 @@ export function githubPullRequestPrompt(
 
 export function githubArtefactComment(url: string) {
 	const cacheBustedUrl = `${url}${url.includes("?") ? "&" : "?"}_cb=${Date.now()}`;
-	const screenshot = `https://image.thum.io/get/width/1200/crop/900/wait/5/noanimate/${cacheBustedUrl}`;
+	const screenshot = `https://image.thum.io/get/width/1200/crop/900/noanimate/${cacheBustedUrl}`;
 	return `<a href="${url}" target="_blank"><img src="${screenshot}" alt="klee artefact"></a>`;
 }
 
