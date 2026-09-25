@@ -7,7 +7,6 @@ import { env } from "./env.ts";
 import { auth } from "./auth.ts";
 import { pool } from "./db.ts";
 import { ArtefactAgentError, generateArtefact } from "./artefact-agent.ts";
-import { createArtefactDocument } from "./artefact-model.ts";
 import {
     githubActionsClaims,
     githubAppSlug,
@@ -150,13 +149,9 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
     const id = randomUUID();
     const createdAt = new Date().toISOString();
     const prompt = `CI placeholder artefact\nCreation ID: ${id}\nCreated at: ${createdAt}`;
-    const content = createArtefactDocument(prompt);
-    content.root.data.title = "CI artefact";
-    if (content.root.children?.[0])
-        content.root.children[0].data.title = "CI artefact";
     await pool.query(
-        "insert into artefact (id, owner_id, share_id, is_shared, prompt, title, content) values ($1, $2, $1, true, $3, $4, $5)",
-        [id, installation.rows[0].owner_id, prompt, "CI artefact", content],
+        "insert into artefact (id, owner_id, share_id, is_shared, prompt, title) values ($1, $2, $1, true, $3, $4)",
+        [id, installation.rows[0].owner_id, prompt, "CI artefact"],
     );
     const url = `${env.corsOrigin}/artefacts/shared/${id}`;
     await githubInstallationRequest(
