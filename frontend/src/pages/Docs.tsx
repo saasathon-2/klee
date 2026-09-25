@@ -20,6 +20,10 @@ export function Docs() {
 		if (!scroller) return;
 		const targets = sections.map(({ id }) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
 		const onScroll = () => {
+			if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1) {
+				setActiveSection(sections.at(-1)!.id);
+				return;
+			}
 			const marker = scroller.scrollTop + 64;
 			const active = targets.filter((target) => target.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop <= marker).at(-1);
 			setActiveSection(active?.id ?? sections[0].id);
