@@ -15,17 +15,14 @@ import {
 import {
 	ArrowUp,
 	CalendarDays,
-	Check,
 	Compass,
 	FileText,
 	GitPullRequest,
 	Home,
 	Inbox,
-	Layers3,
 	LogOut,
 	Maximize2,
 	Minimize2,
-	Network,
 	PanelLeftClose,
 	PanelLeftOpen,
 	Plus,
@@ -45,6 +42,8 @@ import {
 } from "react-router-dom";
 import { signOut, useSession } from "../lib/auth-client";
 import { UserAvatar } from "../components/UserAvatar";
+import { ArtefactRenderer } from "../artefacts/templates/renderer";
+import { fallbackDocument, type ArtefactDocument } from "../artefacts/model";
 
 type Revision = { id: string; content: string; createdAt: string };
 type Artefact = {
@@ -53,6 +52,7 @@ type Artefact = {
 	prompt: string;
 	title: string;
 	createdAt: string;
+	content?: ArtefactDocument;
 	revisions?: Revision[];
 };
 
@@ -181,7 +181,7 @@ export function Artefacts() {
 			<main className="mx-auto min-h-screen max-w-3xl px-6 py-12">
 				<p className="text-sm font-semibold">Orcastrate</p>
 				{error && <p className="mt-8 text-sm text-danger">{error}</p>}
-				{current && <ArtefactBody artefact={current} />}
+				{current && <ArtefactBody artefact={current} canInteract={false} />}
 			</main>
 		);
 
@@ -493,15 +493,15 @@ function ArtefactModal({
 				<Modal.Container
 					placement="center"
 					scroll="inside"
-					size={isFullscreen ? "full" : "lg"}
+					size={isFullscreen ? "full" : "cover"}
 				>
 					<Modal.Dialog
 						aria-label={artefactHeading(artefact)}
-						className={
-							isFullscreen ? "rounded-none" : "rounded-2xl"
-						}
+						className={isFullscreen
+							? "h-dvh min-h-dvh w-screen max-w-none rounded-none p-0"
+							: "overflow-hidden rounded-2xl p-0"}
 					>
-						<Modal.Header className="border-b border-divider">
+						<Modal.Header className="z-10 shrink-0 flex-row items-center gap-4 border-b border-divider bg-surface px-5 py-4 sm:px-6">
 							<Modal.Heading className="truncate">
 								{artefactHeading(artefact)}
 							</Modal.Heading>
@@ -547,17 +547,18 @@ function ArtefactModal({
 								</Button>
 							</Toolbar>
 						</Modal.Header>
-						<Modal.Body className="px-8 py-7">
-							<ArtefactBody artefact={artefact} />
+						<Modal.Body className="m-0 bg-surface p-0">
+							<ArtefactBody artefact={artefact} canInteract edgeToEdge onAction={setFollowUp} />
 						</Modal.Body>
-						<Modal.Footer className="border-t border-divider p-3">
+						<Modal.Footer className="z-10 m-0 shrink-0 border-t border-divider bg-surface px-4 py-3 sm:px-6">
 							<form
 								onSubmit={onSubmit}
-								className="flex w-full items-center gap-2"
+								className="flex w-full items-center gap-2 rounded-full border border-divider bg-field p-1.5 pl-4"
 							>
 								<Input
 									aria-label="Ask about artefact"
-									className="flex-1"
+									variant="secondary"
+									className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
 									value={followUp}
 									onChange={(event) =>
 										setFollowUp(event.target.value)
@@ -567,7 +568,7 @@ function ArtefactModal({
 								<Button
 									aria-label="Send update"
 									type="submit"
-									className="size-9 min-w-9 rounded-full p-0"
+									className="size-10 min-w-10 rounded-full p-0"
 									isDisabled={!followUp.trim()}
 								>
 									<ArrowUp size={17} />
@@ -581,33 +582,18 @@ function ArtefactModal({
 	);
 }
 
-function ArtefactBody({ artefact }: { artefact: Artefact }) {
-	const isChangeBrief = artefactHeading(artefact) === "Change brief";
-	const heading = artefactHeading(artefact);
+function ArtefactBody({ artefact, canInteract, edgeToEdge = false, onAction }: {
+	artefact: Artefact;
+	canInteract: boolean;
+	edgeToEdge?: boolean;
+	onAction?: (label: string) => void;
+}) {
+	const document = artefact.content ?? fallbackDocument(artefact.prompt, artefactHeading(artefact));
 	return (
-		<article className="mx-auto max-w-3xl pb-8">
-			<header className="border-b border-divider pb-7">
-				<div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted uppercase">
-					<Layers3 size={14} />
-					Artefact
-				</div>
-				<h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-					{heading}
-				</h2>
-				<div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
-					<span>{new Date(artefact.createdAt).toLocaleString()}</span>
-					<span>Ready to share</span>
-				</div>
-			</header>
-			<section className="py-7">
-				<p className="text-xs font-medium tracking-wide text-muted uppercase">Request</p>
-				<p className="mt-3 whitespace-pre-wrap text-lg leading-8 text-foreground">
-					{artefact.prompt}
-				</p>
-			</section>
-			{isChangeBrief && <ChangeBrief />}
+		<>
+			<ArtefactRenderer document={document} createdAt={artefact.createdAt} canInteract={canInteract} edgeToEdge={edgeToEdge} onAction={onAction} />
 			{artefact.revisions?.length ? (
-				<section className="border-t border-divider pt-7">
+				<section className="mx-auto mt-4 max-w-4xl rounded-2xl border border-divider bg-surface p-6 sm:p-8">
 					<p className="text-xs font-medium tracking-wide text-muted uppercase">Iteration history</p>
 					<div className="mt-3 space-y-3">
 						{artefact.revisions.map((revision) => (
@@ -620,61 +606,6 @@ function ArtefactBody({ artefact }: { artefact: Artefact }) {
 					</div>
 				</section>
 			) : null}
-		</article>
-	);
-}
-
-function ChangeBrief() {
-	return (
-		<section className="border-t border-divider py-7">
-			<div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted uppercase">
-				<Network size={14} />
-				Architecture view
-			</div>
-			<div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
-				<ArchitectureNode label="Source" detail="Pull request context" />
-				<div className="hidden h-px w-5 bg-divider sm:block" />
-				<ArchitectureNode label="Change" detail="Generated artefact" isFocused />
-				<div className="hidden h-px w-5 bg-divider sm:block" />
-				<ArchitectureNode label="Outcome" detail="Shareable team brief" />
-			</div>
-			<div className="mt-6 grid gap-3 sm:grid-cols-2">
-				<Card variant="secondary">
-					<Card.Header>
-						<Card.Title className="text-sm">What to review</Card.Title>
-						<Card.Description>
-							Connect a source to generate precise file, service, and dependency changes.
-						</Card.Description>
-					</Card.Header>
-				</Card>
-				<Card variant="secondary">
-					<Card.Header>
-						<Card.Title className="flex items-center gap-2 text-sm"><Check size={15} className="text-success" /> Next step</Card.Title>
-						<Card.Description>
-							Use the composer below to ask for an explanation, a diagram, or a shorter update.
-						</Card.Description>
-					</Card.Header>
-				</Card>
-			</div>
-		</section>
-	);
-}
-
-function ArchitectureNode({
-	label,
-	detail,
-	isFocused = false,
-}: {
-	label: string;
-	detail: string;
-	isFocused?: boolean;
-}) {
-	return (
-		<Card variant={isFocused ? "tertiary" : "secondary"} className="min-h-24">
-			<Card.Header className="gap-1 p-4">
-				<Card.Title className="text-sm">{label}</Card.Title>
-				<Card.Description className="text-xs">{detail}</Card.Description>
-			</Card.Header>
-		</Card>
+		</>
 	);
 }
