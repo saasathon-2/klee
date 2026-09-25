@@ -6,7 +6,7 @@ import {
 	ToggleButtonGroup,
 } from "@heroui/react";
 import { FileCode2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DiffHunk, DiffLine } from "../../model";
 import { BlockSection } from "../page/BlockSection";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
@@ -114,6 +114,22 @@ export function CodeDiff({ node, context }: TemplateProps) {
 		hunks: DiffHunk[];
 	};
 	const [mode, setMode] = useState<Mode>("split");
+	const storyRef = useRef<HTMLDivElement>(null);
+	const [storyStage, setStoryStage] = useState(0);
+	const scrollStory = title === "Session creation change";
+	useEffect(() => {
+		if (!scrollStory) return;
+		const update = () => {
+			const element = storyRef.current;
+			if (!element) return;
+			const progress = Math.max(0, Math.min(1, -element.getBoundingClientRect().top / Math.max(1, element.offsetHeight - window.innerHeight)));
+			setStoryStage(progress < 0.5 ? 0 : 1);
+		};
+		window.addEventListener("scroll", update, true);
+		update();
+		return () => window.removeEventListener("scroll", update, true);
+	}, [scrollStory]);
+	const shownMode = scrollStory ? (storyStage === 0 ? "split" : "unified") : mode;
 	const lines = hunks.flatMap((hunk) => hunk.lines);
 	const additions = lines.filter((line) => line.kind === "add").length;
 	const removals = lines.filter((line) => line.kind === "remove").length;
@@ -123,22 +139,25 @@ export function CodeDiff({ node, context }: TemplateProps) {
 			title={title}
 			description={description}
 			edit={{ node, context }}
-			action={
-				<ToggleButtonGroup
+				action={scrollStory ? <Chip size="sm">Scroll to compare</Chip> : (
+					<ToggleButtonGroup
 					aria-label="Diff layout"
 					size="sm"
 					selectionMode="single"
 					disallowEmptySelection
-					selectedKeys={[mode]}
+						selectedKeys={[shownMode]}
 					onSelectionChange={(keys) => setMode([...keys][0] as Mode)}
 					className="hidden shrink-0 sm:flex"
 				>
 					<ToggleButton id="split">Split</ToggleButton>
 					<ToggleButton id="unified">Unified</ToggleButton>
-				</ToggleButtonGroup>
-			}
-		>
-			<Card className="gap-0 overflow-hidden p-0">
+					</ToggleButtonGroup>
+				)}
+			>
+				<div ref={storyRef} className={scrollStory ? "h-[180vh]" : undefined}>
+					<div className={scrollStory ? "sticky top-6 grid min-h-[min(42rem,calc(100vh-3rem))] items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]" : undefined}>
+						{scrollStory && <StoryNote side="left" visible={storyStage === 0} title="Split view: compare state" body="The old session key and in-memory assignment sit beside the replacement, making the storage boundary easy to inspect." />}
+				<Card className={`gap-0 overflow-hidden p-0 ${scrollStory && storyStage === 1 ? "lg:order-first" : ""}`}>
 				<Card.Header className="flex-row items-center gap-2 border-b border-divider bg-surface-secondary px-4 py-2">
 					<FileCode2 size={15} className="shrink-0 text-muted" />
 					<Card.Title className="min-w-0 flex-1 truncate font-mono text-xs">
@@ -157,7 +176,7 @@ export function CodeDiff({ node, context }: TemplateProps) {
 							>
 								{hunk.header}
 							</Paragraph>
-							{mode === "split" && (
+							{shownMode === "split" && (
 								<div className="hidden sm:block">
 									{splitRows(hunk).map((row, index) => (
 										<div
@@ -171,7 +190,7 @@ export function CodeDiff({ node, context }: TemplateProps) {
 								</div>
 							)}
 							{/* Split view is too cramped on phones, so they always get unified. */}
-							<div className={mode === "split" ? "sm:hidden" : undefined}>
+							<div className={shownMode === "split" ? "sm:hidden" : undefined}>
 								{unifiedRows(hunk).map((line, index) => (
 									<div
 										key={index}
@@ -186,9 +205,16 @@ export function CodeDiff({ node, context }: TemplateProps) {
 						</div>
 					))}
 				</Card.Content>
-			</Card>
-		</BlockSection>
+					</Card>
+						{scrollStory && <StoryNote side="right" visible={storyStage === 1} title="Unified view: follow the new path" body="A single timeline shows the stronger key and durable keyStore record together, including the session expiry." />}
+					</div>
+				</div>
+			</BlockSection>
 	);
+}
+
+function StoryNote({ side, visible, title, body }: { side: "left" | "right"; visible: boolean; title: string; body: string }) {
+	return <aside className={`hidden transition-all duration-500 lg:block ${visible ? "translate-x-0 opacity-100" : `${side === "left" ? "-translate-x-6" : "translate-x-6"} opacity-0`}`}><p className="text-sm font-semibold">{title}</p><p className="mt-2 text-sm leading-6 text-muted">{body}</p><div className="mt-5 h-px w-12 bg-brand" /></aside>;
 }
 
 CodeDiff.template = "code-diff" as const;
