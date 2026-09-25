@@ -116,7 +116,7 @@ export function Docs() {
 					level={1}
 					className="mt-5 text-4xl tracking-tight sm:text-5xl"
 				>
-					Map out your project, ideas, and changes.
+					Map out your ideas, projects, and changes.
 				</Heading>
 				<Paragraph className="mt-5 max-w-2xl text-lg text-muted">
 					Klee turns context into clear, shareable artefacts:
