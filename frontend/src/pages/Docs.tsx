@@ -1,5 +1,6 @@
 import { Button, Chip, Heading, Link, Paragraph, Separator } from "@heroui/react";
 import { BookOpen, ChevronRight, ExternalLink, GitPullRequest, Plug, Share2, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 const sections = [
@@ -11,22 +12,34 @@ const sections = [
 
 export function Docs() {
 	const navigate = useNavigate();
+	const content = useRef<HTMLElement>(null);
+	const [activeSection, setActiveSection] = useState(sections[0].id);
+	const scrollTo = (id: string) => content.current?.querySelector(`#${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+	useEffect(() => {
+		const observer = new IntersectionObserver(
+			(entries) => entries.forEach((entry) => entry.isIntersecting && setActiveSection(entry.target.id)),
+			{ root: content.current, rootMargin: "-12% 0px -72%" },
+		);
+		const targets = sections.map(({ id }) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+		targets.forEach((target) => observer.observe(target));
+		return () => observer.disconnect();
+	}, []);
 	return (
-		<main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)]">
-			<aside className="border-b border-divider px-6 py-8 lg:border-r lg:border-b-0">
+		<main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl grid-cols-1 lg:h-[calc(100vh-4rem)] lg:grid-cols-[15rem_minmax(0,1fr)] lg:overflow-hidden">
+			<aside className="border-b border-divider px-6 py-8 lg:overflow-hidden lg:border-r lg:border-b-0">
 				<div className="flex items-center gap-2 text-sm font-semibold"><BookOpen size={16} />Documentation</div>
 				<nav aria-label="Documentation" className="mt-6 grid gap-6">
 					{sections.map((section) => <div key={section.id}>
-						<p className="text-xs font-semibold uppercase tracking-wider text-muted">{section.label}</p>
-						<div className="mt-2 grid gap-1">{section.items.map((item) => <a key={item} href={`#${section.id}`} className="rounded px-2 py-1 text-sm text-muted hover:bg-default hover:text-foreground">{item}</a>)}</div>
+						<button type="button" onClick={() => scrollTo(section.id)} className={`-ml-3 flex w-[calc(100%+0.75rem)] items-center border-l-2 px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider transition-colors ${activeSection === section.id ? "border-brand text-foreground" : "border-transparent text-muted hover:text-foreground"}`}>{section.label}</button>
+						<div className="mt-2 grid gap-1">{section.items.map((item) => <button type="button" key={item} onClick={() => scrollTo(section.id)} className={`rounded px-2 py-1 text-left text-sm transition-colors ${activeSection === section.id ? "text-foreground" : "text-muted hover:bg-default hover:text-foreground"}`}>{item}</button>)}</div>
 					</div>)}
 				</nav>
 			</aside>
-			<article className="max-w-3xl px-6 py-10 sm:px-12 sm:py-16">
+			<article ref={content} className="max-w-3xl px-6 py-10 sm:px-12 sm:py-16 lg:max-w-none lg:overflow-y-auto">
 				<div className="flex items-center gap-2"><Chip size="sm">Docs</Chip><span className="text-sm text-muted">Klee documentation</span></div>
 				<Heading level={1} className="mt-5 text-4xl tracking-tight sm:text-5xl">Build a shared understanding of your work.</Heading>
 				<Paragraph className="mt-5 max-w-2xl text-lg text-muted">Klee turns engineering context into clear, shareable artefacts: decisions, pull-request briefs, architecture views, and implementation plans.</Paragraph>
-				<div className="mt-8 flex flex-wrap gap-3"><Button onPress={() => navigate("/")}>Open Klee <ChevronRight size={16} /></Button><Button variant="secondary" onPress={() => document.getElementById("github")?.scrollIntoView({ behavior: "smooth" })}>GitHub setup</Button></div>
+				<div className="mt-8 flex flex-wrap gap-3"><Button onPress={() => navigate("/")}>Open Klee <ChevronRight size={16} /></Button><Button variant="secondary" onPress={() => scrollTo("github")}>GitHub setup</Button></div>
 
 				<DocsSection id="overview" icon={<Sparkles size={19} />} title="What is Klee?">
 					<Paragraph>Klee turns a prompt or connected pull request into a structured artefact. Artefacts are private by default and can include code diffs, review feedback, commits, CI status, and architecture flow.</Paragraph>
@@ -54,7 +67,7 @@ export function Docs() {
 	);
 }
 
-function DocsSection({ id, icon, title, children }: { id: string; icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function DocsSection({ id, icon, title, children }: { id: string; icon: ReactNode; title: string; children: ReactNode }) {
 	return <section id={id} className="scroll-mt-24 border-t border-divider pt-10 mt-12"><Heading level={2} className="flex items-center gap-2 text-2xl">{icon}{title}</Heading><div className="mt-5 space-y-4 leading-7 text-muted">{children}</div></section>;
 }
 
