@@ -1,5 +1,6 @@
 import { Button, Description, Dropdown, Label, Link } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "../lib/auth-client";
 import { navMenus, pricingSection } from "../pages/landing/links";
@@ -8,10 +9,19 @@ import { ThemeToggle } from "./ThemeToggle";
 export function Navbar() {
 	const { data: session, isPending } = useSession();
 	const navigate = useNavigate();
+	const [scrolled, setScrolled] = useState(false);
 	const goToSection = (section: string) => navigate(`/welcome#${section}`);
+	useEffect(() => {
+		const onScroll = (event: Event) => {
+			const target = event.target;
+			setScrolled(window.scrollY > 0 || (target instanceof HTMLElement && target.scrollTop > 0));
+		};
+		window.addEventListener("scroll", onScroll, true);
+		return () => window.removeEventListener("scroll", onScroll, true);
+	}, []);
 
 	return (
-		<header className="sticky top-0 z-40 border-b border-divider bg-background">
+		<header className={`sticky top-0 z-40 border-b bg-background transition-colors ${scrolled ? "border-divider" : "border-transparent"}`}>
 			<nav className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-6">
 				<Link
 					href="/welcome"
