@@ -64,7 +64,10 @@ export async function githubActionsClaims(token: string) {
 	const claims = JSON.parse(Buffer.from(encodedClaims, "base64url").toString()) as Record<string, unknown>;
 	if (header.alg !== "RS256" || !header.kid || !validActionsClaims(claims)) throw new Error("Invalid GitHub Actions token");
 	if (!oidcKeys || oidcKeys.expiresAt < Date.now()) {
-		const response = await fetch(`${oidcIssuer}/.well-known/jwks`);
+		const response = await fetch(`${oidcIssuer}/.well-known/jwks`).catch((error) => {
+			console.error("GitHub Actions signing-key fetch failed", error);
+			throw error;
+		});
 		if (!response.ok) throw new Error("Could not load GitHub Actions signing keys");
 		oidcKeys = { expiresAt: Date.now() + 60 * 60 * 1000, keys: ((await response.json()) as { keys: JsonWebKey[] }).keys };
 	}
