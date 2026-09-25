@@ -45,7 +45,7 @@ export function SlackChannelStory() {
 					progress < 0.14
 						? 0
 						: progress < 0.3
-							? 1
+							? 2
 							: progress < 0.46
 								? 2
 								: progress < 0.62

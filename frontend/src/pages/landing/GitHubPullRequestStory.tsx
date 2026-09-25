@@ -152,7 +152,7 @@ export function GitHubPullRequestStory() {
 										winkingleek
 									</strong>{" "}
 									added {commits.length} commits{" "}
-									<time>5 hours ago</time>
+									<time>2 minutes ago</time>
 								</p>
 							</div>
 							<div className="space-y-1 pb-2">
@@ -302,13 +302,13 @@ export function GitHubPullRequestStory() {
 												</div>
 												<div className="rounded-md bg-[#ebe7e8] p-3">
 													<p className="text-xs text-[#6e6870]">
-														Review
+														Testing Line Percentage
 													</p>
 													<strong className="text-lg">
-														LGTM
+														62% of committed lines
 													</strong>
 													<p className="mt-1 text-xs text-[#6e6870]">
-														Reviewed by Jane
+														were in test commits
 													</p>
 												</div>
 											</div>
