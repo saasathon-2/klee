@@ -10,7 +10,11 @@ import { Footer } from "./landing/Footer";
 import { HeroArtefact } from "./landing/HeroArtefact";
 
 const paintings = {
-	light: { src: houseOnTheWater, title: "House on the Water", year: undefined },
+	light: {
+		src: houseOnTheWater,
+		title: "House on the Water",
+		year: undefined,
+	},
 	dark: { src: polyphony, title: "Polyphony", year: 1932 },
 };
 
@@ -26,19 +30,25 @@ export function Landing() {
 			<section className="mx-auto max-w-[108rem] px-6 pt-6">
 				<div className="relative">
 					{/* The painting stops short so the demo hangs off its bottom edge. */}
-					<br /><br />
+					<br />
+					<br />
 
-					<div className="absolute inset-x-0 top-0 h-[40rem] overflow-hidden rounded-3xl sm:h-[46rem]">
+					<div className="absolute inset-x-0 top-0 h-[54rem] overflow-hidden rounded-3xl sm:h-[54rem]">
 						<img
 							src={painting.src}
 							alt=""
-							className={`absolute inset-0 size-full object-cover ${theme === "light" ? "opacity-80" : ""}`}
+							className={`absolute inset-0 size-full object-cover ${theme === "light" ? "opacity-60" : "opacity-80"}`}
 						/>
 					</div>
 					<div className="relative flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
 						<div className="max-w-3xl text-center">
-							<Heading level={1} align="center" className="text-4xl text-balance sm:text-6xl">
-								Create beautiful, shareable diagrams effortlessly
+							<Heading
+								level={1}
+								align="center"
+								className="text-4xl text-balance sm:text-6xl"
+							>
+								Create beautiful, shareable diagrams
+								effortlessly
 							</Heading>
 							<div className="mt-8 flex flex-wrap justify-center gap-3">
 								<Button size="lg" onPress={start}>
@@ -55,7 +65,7 @@ export function Landing() {
 			</section>
 
 			{/* Pulled up over the demo's bottom edge so the scallops cut across it and the page. */}
-			<div aria-hidden className="relative z-10 -mt-10 mb-16">
+			<div aria-hidden className="relative z-10 -mt-10">
 				<Scallop edge="top" />
 				<div className="h-16 bg-brand" />
 			</div>
