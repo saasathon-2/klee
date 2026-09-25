@@ -17,7 +17,7 @@ assert.equal(validActionsClaims({ iss: "wrong", aud: "klee-github-actions", repo
 const artefactUrl = "https://klee.work/artefacts/shared/example";
 assert.match(
 	githubArtefactComment(artefactUrl),
-	new RegExp(`^<a href="${artefactUrl}" target="_blank"><img src="https://image\\.thum\\.io/get/width/1200/crop/900/noanimate/${artefactUrl}\\?_cb=\\d+" alt="klee artefact"></a>$`),
+	new RegExp(`^<a href="${artefactUrl}" target="_blank"><img src="https://image\\.thum\\.io/get/width/1200/crop/900/wait/5/noanimate/${artefactUrl}\\?_cb=\\d+" alt="klee artefact"></a>$`),
 );
 const prompt = githubPullRequestPrompt("acme/repo", 12, {
 	title: "Add context",
