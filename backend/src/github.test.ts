@@ -5,7 +5,7 @@ process.env.DATABASE_URL ??= "postgres://localhost/test";
 process.env.BETTER_AUTH_SECRET ??= "test";
 process.env.GITHUB_WEBHOOK_SECRET = "test-secret";
 
-const { githubArtefactComment, validActionsClaims, validGitHubWebhook } = await import("./github.ts");
+const { githubArtefactComment, githubPullRequestPrompt, validActionsClaims, validGitHubWebhook } = await import("./github.ts");
 const body = Buffer.from('{"action":"created"}');
 const signature = `sha256=${createHmac("sha256", "test-secret").update(body).digest("hex")}`;
 assert.equal(validGitHubWebhook(body, signature), true);
@@ -17,3 +17,16 @@ assert.match(
 	githubArtefactComment(artefactUrl),
 	new RegExp(`^<a href="${artefactUrl}" target="_blank"><img src="https://image\\.thum\\.io/get/width/1200/crop/900/noanimate/${artefactUrl}\\?_cb=\\d+" alt="klee artefact"></a>$`),
 );
+const prompt = githubPullRequestPrompt("acme/repo", 12, {
+	title: "Add context",
+	body: "Generate a focused review.",
+	url: "https://github.com/acme/repo/pull/12",
+	author: "octo",
+	base: "main",
+	head: "feature/context",
+	additions: 4,
+	deletions: 1,
+	files: [{ filename: "src/context.ts", status: "added", additions: 4, deletions: 0, patch: "+export const context = true;" }],
+});
+assert.match(prompt, /Title: Add context/);
+assert.match(prompt, /added: src\/context\.ts/);
