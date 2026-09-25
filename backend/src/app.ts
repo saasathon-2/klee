@@ -81,8 +81,6 @@ app.get("/api/integrations/github/install", async (req, res) => {
 });
 
 async function completeGitHubInstallation(req: Request, res: Response) {
-    const user = await sessionUser(req, res);
-    if (!user) return;
     const state = typeof req.query.state === "string" ? req.query.state : "";
     const installationId =
         typeof req.query.installation_id === "string" &&
@@ -90,8 +88,8 @@ async function completeGitHubInstallation(req: Request, res: Response) {
             ? req.query.installation_id
             : "";
     const { rows } = await pool.query(
-        "delete from github_installation_state where state = $1 and owner_id = $2 and expires_at > current_timestamp returning state",
-        [state, user.id],
+        "delete from github_installation_state where state = $1 and expires_at > current_timestamp returning owner_id",
+        [state],
     );
     if (!rows[0] || !installationId)
         return res
@@ -102,7 +100,7 @@ async function completeGitHubInstallation(req: Request, res: Response) {
         "insert into github_installation (installation_id, owner_id, account_login, account_type) values ($1, $2, $3, $4) on conflict (installation_id) do update set account_login = excluded.account_login, account_type = excluded.account_type, updated_at = current_timestamp where github_installation.owner_id = excluded.owner_id returning installation_id",
         [
             installationId,
-            user.id,
+            rows[0].owner_id,
             installation.account.login,
             installation.account.type,
         ],

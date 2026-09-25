@@ -37,7 +37,7 @@ This repository deploys as three Railway services:
 
 ## GitHub App
 
-Set the GitHub App's setup URL to `https://<web-domain>/api/integrations/github/setup` so the user's Orcastrate session cookie returns with the installation. Set its webhook URL to `https://<api-domain>/api/integrations/github/webhook`. The API service needs `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET` as Railway variables. A signed-in user connects GitHub from their profile; the API stores the resulting installation and verifies every webhook before processing it.
+Set the GitHub App's setup URL and webhook URL to `https://<api-domain>/api/integrations/github/setup` and `https://<api-domain>/api/integrations/github/webhook`. The API service needs `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET` as Railway variables. A signed-in user connects GitHub from their profile; the API stores the resulting installation and verifies every webhook before processing it.
 
 To create an artefact and comment its link on every pull request, add this to a repository where the App is installed:
 
