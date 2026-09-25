@@ -48,7 +48,7 @@ jobs:
   orcastrate:
     runs-on: ubuntu-latest
     steps:
-      - uses: saasathon-2/app/.github/actions/generate-artefact@main
+      - uses: saasathon-2/integrations/github@main
         with:
           api-url: https://<api-domain>
           pull-request: ${{ github.event.pull_request.number }}
