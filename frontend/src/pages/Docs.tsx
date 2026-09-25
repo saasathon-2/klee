@@ -18,20 +18,15 @@ export function Docs() {
 	useEffect(() => {
 		const scroller = content.current;
 		if (!scroller) return;
-		const observer = new IntersectionObserver(
-			(entries) => entries.forEach((entry) => entry.isIntersecting && setActiveSection(entry.target.id)),
-			{ root: content.current, rootMargin: "-12% 0px -72%" },
-		);
 		const targets = sections.map(({ id }) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
-		targets.forEach((target) => observer.observe(target));
 		const onScroll = () => {
-			if (scroller.scrollTop <= 1) setActiveSection(sections[0].id);
-			if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1)
-				setActiveSection(sections.at(-1)!.id);
+			const marker = scroller.scrollTop + 64;
+			const active = targets.filter((target) => target.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop <= marker).at(-1);
+			setActiveSection(active?.id ?? sections[0].id);
 		};
 		scroller.addEventListener("scroll", onScroll, { passive: true });
+		onScroll();
 		return () => {
-			observer.disconnect();
 			scroller.removeEventListener("scroll", onScroll);
 		};
 	}, []);
