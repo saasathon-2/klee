@@ -7,6 +7,7 @@ export type RenderContext = {
 	createdAt: string;
 	canInteract: boolean;
 	edgeToEdge: boolean;
+	showFooter: boolean;
 	onAction?: (label: string) => void;
 };
 

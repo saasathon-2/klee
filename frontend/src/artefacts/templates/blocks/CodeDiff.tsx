@@ -1,4 +1,10 @@
-import { Card, Chip, ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import {
+	Card,
+	Chip,
+	Paragraph,
+	ToggleButton,
+	ToggleButtonGroup,
+} from "@heroui/react";
 import { FileCode2 } from "lucide-react";
 import { useState } from "react";
 import type { DiffHunk, DiffLine } from "../../model";
@@ -146,9 +152,13 @@ export function CodeDiff({ node }: TemplateProps) {
 				<Card.Content className="gap-0 font-mono text-xs leading-5">
 					{hunks.map((hunk) => (
 						<div key={`${hunk.oldStart}-${hunk.newStart}`}>
-							<p className="border-b border-divider bg-surface-secondary/60 px-4 py-1 text-muted">
+							<Paragraph
+								size="xs"
+								color="muted"
+								className="border-b border-divider bg-surface-secondary/60 px-4 py-1 font-mono"
+							>
 								{hunk.header}
-							</p>
+							</Paragraph>
 							{mode === "split" && (
 								<div className="hidden sm:block">
 									{splitRows(hunk).map((row, index) => (

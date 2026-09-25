@@ -11,10 +11,12 @@ export function ArtefactPage({ children, context }: TemplateProps) {
 			}
 		>
 			{children}
-			<footer aria-hidden className="mt-8">
-				<Scallop edge="top" />
-				<div className="h-16 bg-lavender" />
-			</footer>
+			{context.showFooter && (
+				<footer aria-hidden className="mt-8">
+					<Scallop edge="top" />
+					<div className="h-16 bg-brand" />
+				</footer>
+			)}
 		</article>
 	);
 }

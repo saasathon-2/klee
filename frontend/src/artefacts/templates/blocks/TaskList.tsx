@@ -1,4 +1,12 @@
-import { Card, Checkbox, Chip, Description, Label, Separator } from "@heroui/react";
+import {
+	Card,
+	Checkbox,
+	Chip,
+	Description,
+	Label,
+	Paragraph,
+	Separator,
+} from "@heroui/react";
 import { Fragment } from "react";
 import type { ArtefactTask } from "../../model";
 import { BlockSection } from "../page/BlockSection";
@@ -29,9 +37,9 @@ export function TaskList({ node }: TemplateProps) {
 								</Checkbox.Content>
 							</Checkbox>
 							<div className="flex shrink-0 items-center gap-2">
-								<span className="hidden text-xs text-muted sm:inline">
+								<Paragraph size="xs" color="muted" className="hidden sm:block">
 									{task.meta}
-								</span>
+								</Paragraph>
 								<Chip size="sm">{task.status}</Chip>
 							</div>
 						</div>

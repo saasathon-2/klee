@@ -1,4 +1,13 @@
-import { Button, Card, Chip, Heading, Paragraph, Separator } from "@heroui/react";
+import {
+	Button,
+	Card,
+	Chip,
+	Code,
+	Heading,
+	Paragraph,
+	Separator,
+	Surface,
+} from "@heroui/react";
 import { GitPullRequest, MessageSquare, SquareKanban } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
@@ -62,7 +71,9 @@ function IntegrationCard({
 				<Separator />
 				<div className="grid gap-6 sm:grid-cols-2">
 					<div>
-						<p className="text-xs font-medium text-muted">What it does</p>
+						<Paragraph size="xs" color="muted" weight="medium">
+							What it does
+						</Paragraph>
 						<ul className="mt-2 list-disc space-y-1.5 pl-4 text-sm leading-6">
 							{features.map((feature) => (
 								<li key={feature}>{feature}</li>
@@ -70,7 +81,9 @@ function IntegrationCard({
 						</ul>
 					</div>
 					<div>
-						<p className="text-xs font-medium text-muted">Set up</p>
+						<Paragraph size="xs" color="muted" weight="medium">
+							Set up
+						</Paragraph>
 						<ol className="mt-2 list-decimal space-y-1.5 pl-4 text-sm leading-6">
 							{steps.map((step, index) => (
 								<li key={index}>{step}</li>
@@ -81,14 +94,6 @@ function IntegrationCard({
 				{children}
 			</Card.Content>
 		</Card>
-	);
-}
-
-function InlineCode({ children }: { children: ReactNode }) {
-	return (
-		<code className="rounded bg-surface-secondary px-1 py-0.5 font-mono text-xs">
-			{children}
-		</code>
 	);
 }
 
@@ -143,15 +148,17 @@ export function IntegrationsPanel() {
 						</>,
 						<>
 							Add the workflow below to{" "}
-							<InlineCode>.github/workflows/orcastrate.yml</InlineCode> in each
+							<Code className="text-xs">.github/workflows/orcastrate.yml</Code> in each
 							repository.
 						</>,
 						<>Open or update a pull request to generate its artefact.</>,
 					]}
 				>
-					<pre className="overflow-x-auto rounded-xl bg-surface-secondary p-4 font-mono text-xs leading-5">
-						{workflow}
-					</pre>
+					<Surface variant="secondary" className="overflow-x-auto rounded-xl p-4">
+						<Code className="block bg-transparent p-0 text-xs leading-5 whitespace-pre">
+							{workflow}
+						</Code>
+					</Surface>
 				</IntegrationCard>
 
 				<IntegrationCard
@@ -167,12 +174,12 @@ export function IntegrationsPanel() {
 					steps={[
 						<>
 							A workspace admin installs the Klee app from the{" "}
-							<InlineCode>slack</InlineCode> folder of the integrations
+							<Code className="text-xs">slack</Code> folder of the integrations
 							repository.
 						</>,
 						<>Share an artefact from Orcastrate to get its link.</>,
 						<>
-							Paste the link, or run <InlineCode>/artefact &lt;link or ID&gt;</InlineCode>{" "}
+							Paste the link, or run <Code className="text-xs">/artefact &lt;link or ID&gt;</Code>{" "}
 							in any channel.
 						</>,
 					]}
@@ -191,9 +198,9 @@ export function IntegrationsPanel() {
 					steps={[
 						<>
 							A Jira admin deploys and installs the Forge app from the{" "}
-							<InlineCode>jira/klee</InlineCode> folder with{" "}
-							<InlineCode>forge deploy</InlineCode> and{" "}
-							<InlineCode>forge install</InlineCode>.
+							<Code className="text-xs">jira/klee</Code> folder with{" "}
+							<Code className="text-xs">forge deploy</Code> and{" "}
+							<Code className="text-xs">forge install</Code>.
 						</>,
 						<>Paste a shared artefact link into an issue's description or a comment.</>,
 						<>Open the Orcastrate artefacts panel on the issue.</>,
