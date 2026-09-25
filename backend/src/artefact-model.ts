@@ -1,4 +1,4 @@
-type ArtefactNode = {
+export type ArtefactNode = {
 	id: string;
 	template: string;
 	data: Record<string, unknown>;
