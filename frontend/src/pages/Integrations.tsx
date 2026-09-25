@@ -147,12 +147,12 @@ export function IntegrationsPanel() {
 					steps={[
 						<>
 							Connect GitHub and choose which repositories the
-							Orcastrate App can access.
+							Klee App can access.
 						</>,
 						<>
 							Add the workflow below to{" "}
 							<Code className="text-xs">
-								.github/workflows/orcastrate.yml
+								.github/workflows/klee.yml
 							</Code>{" "}
 							in each repository.
 						</>,
@@ -179,7 +179,7 @@ export function IntegrationsPanel() {
 					status={<Chip size="sm">Workspace app</Chip>}
 					features={[
 						"Posts a rendered artefact preview to the channel with the /artefact command.",
-						"Unfurls any Orcastrate artefact link pasted into a message into a preview.",
+						"Unfurls any Klee artefact link pasted into a message into a preview.",
 						"Accepts either an artefact ID or its full share link.",
 					]}
 					steps={[
@@ -188,7 +188,7 @@ export function IntegrationsPanel() {
 							<Code className="text-xs">slack</Code> folder of the
 							integrations repository.
 						</>,
-						<>Share an artefact from Orcastrate to get its link.</>,
+						<>Share an artefact from Klee to get its link.</>,
 						<>
 							Paste the link, or run{" "}
 							<Code className="text-xs">
