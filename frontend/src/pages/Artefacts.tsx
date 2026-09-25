@@ -14,6 +14,7 @@ import {
 } from "@heroui/react";
 import {
 	ArrowUp,
+	BrainCog,
 	CalendarDays,
 	Check,
 	Compass,
@@ -55,7 +56,12 @@ import {
 } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 
-type Revision = { id: string; content: string; generatedContent?: ArtefactDocument; createdAt: string };
+type Revision = {
+	id: string;
+	content: string;
+	generatedContent?: ArtefactDocument;
+	createdAt: string;
+};
 type Artefact = {
 	id: string;
 	isShared?: boolean;
@@ -80,6 +86,7 @@ const developerTemplateIcons: Record<ExamplePrompt["id"], ReactNode> = {
 	"review-comments": <MessagesSquare size={15} />,
 	"commit-list": <GitCommitHorizontal size={15} />,
 	"check-list": <ListChecks size={15} />,
+	"god-prompt": <BrainCog size={15} />,
 };
 
 const api = (path: string, options?: RequestInit) =>
@@ -136,7 +143,8 @@ export function Artefacts() {
 		api(artefactPath)
 			.then((response) => {
 				if (response.ok) return response.json();
-				if (response.status === 403) return Promise.reject("not_shared");
+				if (response.status === 403)
+					return Promise.reject("not_shared");
 				return Promise.reject("not_found");
 			})
 			.then((artefact: Artefact) => {
@@ -164,7 +172,8 @@ export function Artefacts() {
 				body: JSON.stringify({ prompt }),
 				signal: controller.signal,
 			});
-			if (!response.ok || !response.body) throw new Error("create failed");
+			if (!response.ok || !response.body)
+				throw new Error("create failed");
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
 			let buffer = "";
@@ -179,10 +188,16 @@ export function Artefacts() {
 					const eventName = frame.match(/^event: (.+)$/m)?.[1];
 					const data = frame.match(/^data: (.+)$/m)?.[1];
 					if (!eventName || !data) continue;
-					const payload = JSON.parse(data) as { message?: string; artefact?: Artefact; error?: string };
-					if (eventName === "progress" && payload.message) setGenerationStatus(payload.message);
+					const payload = JSON.parse(data) as {
+						message?: string;
+						artefact?: Artefact;
+						error?: string;
+					};
+					if (eventName === "progress" && payload.message)
+						setGenerationStatus(payload.message);
 					if (eventName === "error") throw new Error(payload.error);
-					if (eventName === "complete" && payload.artefact) artefact = payload.artefact;
+					if (eventName === "complete" && payload.artefact)
+						artefact = payload.artefact;
 				}
 			}
 			if (!artefact) throw new Error("create incomplete");
@@ -192,7 +207,12 @@ export function Artefacts() {
 			setPrompt("");
 			navigate(`/?artefact=${artefact.id}`);
 		} catch (error) {
-			if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Could not create artefact.");
+			if (!controller.signal.aborted)
+				setError(
+					error instanceof Error
+						? error.message
+						: "Could not create artefact.",
+				);
 		} finally {
 			generationAbort.current = undefined;
 			setIsCreating(false);
@@ -225,12 +245,20 @@ export function Artefacts() {
 					revisions: [...(current.revisions ?? []), result.revision],
 				},
 			});
-			setArtefacts((currentArtefacts) => currentArtefacts.map((artefact) =>
-				artefact.id === current.id ? { ...artefact, title: result.artefact.title } : artefact,
-			));
+			setArtefacts((currentArtefacts) =>
+				currentArtefacts.map((artefact) =>
+					artefact.id === current.id
+						? { ...artefact, title: result.artefact.title }
+						: artefact,
+				),
+			);
 			setFollowUp("");
 		} catch (error) {
-			setError(error instanceof Error ? error.message : "Could not revise artefact.");
+			setError(
+				error instanceof Error
+					? error.message
+					: "Could not revise artefact.",
+			);
 		} finally {
 			setIsRevising(false);
 		}
@@ -278,7 +306,13 @@ export function Artefacts() {
 						This artefact hasn't been shared.
 					</p>
 				)}
-				{current && <ArtefactBody artefact={current} canInteract={false} edgeToEdge />}
+				{current && (
+					<ArtefactBody
+						artefact={current}
+						canInteract={false}
+						edgeToEdge
+					/>
+				)}
 			</main>
 		);
 
@@ -315,90 +349,182 @@ export function Artefacts() {
 							<PanelLeftOpen size={19} />
 						)}
 					</Button>
-					<h1 className="text-2xl font-semibold tracking-tight">{isProfile ? "Profile" : `Good morning, ${user.name?.split(" ")[0] || "there"}`}</h1>
+					<h1 className="text-2xl font-semibold tracking-tight">
+						{isProfile
+							? "Profile"
+							: `Good morning, ${user.name?.split(" ")[0] || "there"}`}
+					</h1>
 					<ThemeToggle className="ml-auto" />
 				</header>
-				{isProfile ? <div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20"><Card className="w-full"><Card.Header className="flex items-center gap-4"><UserAvatar image={user.image} name={user.name || user.email} size="lg" /><div><Card.Title>{user.name || "Unnamed"}</Card.Title><Card.Description>{user.email}</Card.Description></div></Card.Header><Card.Content><dl className="divide-y divide-divider text-sm"><div className="flex items-center justify-between py-3"><dt className="text-muted">Email verified</dt><dd>{user.emailVerified ? "Yes" : "No"}</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted">Member since</dt><dd>{new Date(user.createdAt).toLocaleDateString()}</dd></div></dl><div className="mt-5"><Button onPress={() => window.location.assign("/api/integrations/github/install")}>Connect GitHub</Button>{searchParams.get("github") === "connected" && <p className="mt-2 text-sm text-success">GitHub connected.</p>}</div></Card.Content></Card></div> : <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
-					<div className="mx-auto w-full max-w-2xl">
-						<div className="mb-8 text-center">
-							<div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-								<Sparkles size={20} />
+				{isProfile ? (
+					<div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20">
+						<Card className="w-full">
+							<Card.Header className="flex items-center gap-4">
+								<UserAvatar
+									image={user.image}
+									name={user.name || user.email}
+									size="lg"
+								/>
+								<div>
+									<Card.Title>
+										{user.name || "Unnamed"}
+									</Card.Title>
+									<Card.Description>
+										{user.email}
+									</Card.Description>
+								</div>
+							</Card.Header>
+							<Card.Content>
+								<dl className="divide-y divide-divider text-sm">
+									<div className="flex items-center justify-between py-3">
+										<dt className="text-muted">
+											Email verified
+										</dt>
+										<dd>
+											{user.emailVerified ? "Yes" : "No"}
+										</dd>
+									</div>
+									<div className="flex items-center justify-between py-3">
+										<dt className="text-muted">
+											Member since
+										</dt>
+										<dd>
+											{new Date(
+												user.createdAt,
+											).toLocaleDateString()}
+										</dd>
+									</div>
+								</dl>
+								<div className="mt-5">
+									<Button
+										onPress={() =>
+											window.location.assign(
+												"/api/integrations/github/install",
+											)
+										}
+									>
+										Connect GitHub
+									</Button>
+									{searchParams.get("github") ===
+										"connected" && (
+										<p className="mt-2 text-sm text-success">
+											GitHub connected.
+										</p>
+									)}
+								</div>
+							</Card.Content>
+						</Card>
+					</div>
+				) : (
+					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
+						<div className="mx-auto w-full max-w-2xl">
+							<div className="mb-8 text-center">
+								<div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+									<Sparkles size={20} />
+								</div>
+								<h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+									Turn context into something useful.
+								</h2>
+								<p className="mx-auto mt-3 max-w-xl text-base leading-6 text-muted">
+									Ask for a shareable brief, technical
+									diagram, or decision-ready plan.
+								</p>
 							</div>
-							<h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-								Turn context into something useful.
-							</h2>
-							<p className="mx-auto mt-3 max-w-xl text-base leading-6 text-muted">
-								Ask for a shareable brief, technical diagram, or decision-ready plan.
+							<form onSubmit={create} className="w-full">
+								<Surface className="rounded-2xl border border-divider bg-surface p-3 transition-colors focus-within:border-muted">
+									<TextArea
+										aria-label="Artefact prompt"
+										variant="secondary"
+										rows={3}
+										value={prompt}
+										onChange={(event) =>
+											setPrompt(event.target.value)
+										}
+										placeholder="What would you like to make? Paste a PR, issue, or a question…"
+										className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
+									/>
+									<Toolbar
+										aria-label="Create artefact controls"
+										className="flex w-full justify-end px-1 pt-1"
+									>
+										<Button
+											aria-label={
+												isCreating
+													? "Generating artefact"
+													: "Create artefact"
+											}
+											type="submit"
+											className="size-9 min-w-9 rounded-full p-0"
+											isDisabled={
+												!prompt.trim() || isCreating
+											}
+										>
+											{isCreating ? (
+												"…"
+											) : (
+												<ArrowUp size={17} />
+											)}
+										</Button>
+									</Toolbar>
+								</Surface>
+							</form>
+							<div className="mt-4 grid gap-2 lg:grid-cols-3">
+								<PromptStarter
+									icon={<GitPullRequest size={17} />}
+									title="Explain a PR"
+									description="Changes, impact, and architecture"
+									onPress={() =>
+										setPrompt(
+											"Explain the changes and architecture impact in this pull request: ",
+										)
+									}
+								/>
+								<PromptStarter
+									icon={<CalendarDays size={17} />}
+									title="Plan my week"
+									description="A focused roadmap from my assigned work"
+									onPress={() =>
+										setPrompt(
+											"Create a simple roadmap for my assigned tickets this week.",
+										)
+									}
+								/>
+								<PromptStarter
+									icon={<Compass size={17} />}
+									title="Make a brief"
+									description="Turn scattered context into a shareable update"
+									onPress={() =>
+										setPrompt(
+											"Create a concise project update that I can share with my team.",
+										)
+									}
+								/>
+							</div>
+							<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+								<span className="text-xs text-muted">
+									Developer templates
+								</span>
+								{developerExamplePrompts.map((template) => (
+									<Button
+										key={template.id}
+										size="sm"
+										variant="outline"
+										className="rounded-full"
+										onPress={() =>
+											setPrompt(template.prompt)
+										}
+									>
+										{developerTemplateIcons[template.id]}
+										{template.label}
+									</Button>
+								))}
+							</div>
+							<p className="mt-5 text-center text-xs text-muted">
+								Artefacts are private until you share a link.
 							</p>
 						</div>
-					<form onSubmit={create} className="w-full">
-						<Surface className="rounded-2xl border border-divider bg-surface p-3 transition-colors focus-within:border-muted">
-							<TextArea
-								aria-label="Artefact prompt"
-								variant="secondary"
-								rows={3}
-								value={prompt}
-								onChange={(event) =>
-									setPrompt(event.target.value)
-								}
-								placeholder="What would you like to make? Paste a PR, issue, or a question…"
-								className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
-							/>
-							<Toolbar
-								aria-label="Create artefact controls"
-								className="flex w-full justify-end px-1 pt-1"
-							>
-									<Button
-									aria-label={isCreating ? "Generating artefact" : "Create artefact"}
-									type="submit"
-									className="size-9 min-w-9 rounded-full p-0"
-									isDisabled={!prompt.trim() || isCreating}
-								>
-									{isCreating ? "…" : <ArrowUp size={17} />}
-									</Button>
-							</Toolbar>
-						</Surface>
-						</form>
-					<div className="mt-4 grid gap-2 lg:grid-cols-3">
-						<PromptStarter
-							icon={<GitPullRequest size={17} />}
-							title="Explain a PR"
-							description="Changes, impact, and architecture"
-							onPress={() => setPrompt("Explain the changes and architecture impact in this pull request: ")}
-						/>
-						<PromptStarter
-							icon={<CalendarDays size={17} />}
-							title="Plan my week"
-							description="A focused roadmap from my assigned work"
-							onPress={() => setPrompt("Create a simple roadmap for my assigned tickets this week.")}
-						/>
-						<PromptStarter
-							icon={<Compass size={17} />}
-							title="Make a brief"
-							description="Turn scattered context into a shareable update"
-							onPress={() => setPrompt("Create a concise project update that I can share with my team.")}
-						/>
 					</div>
-					<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-						<span className="text-xs text-muted">Developer templates</span>
-						{developerExamplePrompts.map((template) => (
-							<Button
-								key={template.id}
-								size="sm"
-								variant="outline"
-								className="rounded-full"
-								onPress={() => setPrompt(template.prompt)}
-							>
-								{developerTemplateIcons[template.id]}
-								{template.label}
-							</Button>
-						))}
-					</div>
-					<p className="mt-5 text-center text-xs text-muted">
-						Artefacts are private until you share a link.
-					</p>
-					</div>
-				</div>}
+				)}
 				{error && (
 					<p className="absolute bottom-8 left-8 text-sm text-danger">
 						{error}
@@ -481,7 +607,11 @@ function WorkspaceSidebar({
 						variant="ghost"
 						className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-2 text-left"
 					>
-						<UserAvatar image={user.image} name={displayName} size="lg" />
+						<UserAvatar
+							image={user.image}
+							name={displayName}
+							size="lg"
+						/>
 						<span className="min-w-0">
 							<span className="block truncate text-base font-semibold">
 								{displayName}
@@ -498,8 +628,12 @@ function WorkspaceSidebar({
 						<div className="flex items-center gap-3 px-2 py-2">
 							<UserAvatar image={user.image} name={displayName} />
 							<span className="min-w-0">
-								<span className="block truncate font-medium">{displayName}</span>
-								<span className="block truncate text-xs text-muted">{user.email}</span>
+								<span className="block truncate font-medium">
+									{displayName}
+								</span>
+								<span className="block truncate text-xs text-muted">
+									{user.email}
+								</span>
 							</span>
 						</div>
 						<Separator className="my-1" />
@@ -539,10 +673,7 @@ function WorkspaceSidebar({
 					<Plus size={18} />
 					<Label>New artefact</Label>
 				</ListBox.Item>
-				<ListBox.Item
-					id="home"
-					textValue="Home"
-				>
+				<ListBox.Item id="home" textValue="Home">
 					<Home size={18} />
 					<Label>Home</Label>
 				</ListBox.Item>
@@ -618,45 +749,80 @@ function ArtefactModal({
 					size={isFullscreen ? "full" : "cover"}
 				>
 					<Modal.Dialog
-						aria-label={artefact ? artefactHeading(artefact) : "Creating artefact"}
-						className={isFullscreen
-							? "h-dvh min-h-dvh w-screen max-w-none rounded-none p-0"
-							: "overflow-hidden rounded-2xl p-0"}
+						aria-label={
+							artefact
+								? artefactHeading(artefact)
+								: "Creating artefact"
+						}
+						className={
+							isFullscreen
+								? "h-dvh min-h-dvh w-screen max-w-none rounded-none p-0"
+								: "overflow-hidden rounded-2xl p-0"
+						}
 					>
 						<Modal.Header className="z-10 shrink-0 flex-row items-center gap-4 border-b border-divider bg-surface px-5 py-3 sm:px-6">
 							<Modal.Heading className="flex min-w-0 items-center gap-2">
-								{artefact ? <><span className="shrink-0 text-muted">Artefacts</span><span aria-hidden className="text-muted">/</span><span className="truncate">{artefactHeading(artefact)}</span></> : <span>Creating artefact</span>}
+								{artefact ? (
+									<>
+										<span className="shrink-0 text-muted">
+											Artefacts
+										</span>
+										<span
+											aria-hidden
+											className="text-muted"
+										>
+											/
+										</span>
+										<span className="truncate">
+											{artefactHeading(artefact)}
+										</span>
+									</>
+								) : (
+									<span>Creating artefact</span>
+								)}
 							</Modal.Heading>
 							<Toolbar
 								aria-label="Artefact actions"
 								className="ml-auto flex items-center gap-1"
 							>
-								{artefact && <Button
-									variant="secondary"
-									size="sm"
-									onPress={onShare}
-								>
-									{copied ? <Check size={15} /> : <Share2 size={15} />}
-									{copied ? "Link copied" : "Share"}
-									</Button>}
-									{artefact && <Button
-									aria-label={
-										isFullscreen
-											? "Exit fullscreen"
-											: "Fullscreen"
-									}
-									variant="ghost"
-									className="size-8 min-w-8 p-0"
-									onPress={onFullscreen}
-								>
-									{isFullscreen ? (
-										<Minimize2 size={17} />
-									) : (
-										<Maximize2 size={17} />
-									)}
-								</Button>}
+								{artefact && (
+									<Button
+										variant="secondary"
+										size="sm"
+										onPress={onShare}
+									>
+										{copied ? (
+											<Check size={15} />
+										) : (
+											<Share2 size={15} />
+										)}
+										{copied ? "Link copied" : "Share"}
+									</Button>
+								)}
+								{artefact && (
+									<Button
+										aria-label={
+											isFullscreen
+												? "Exit fullscreen"
+												: "Fullscreen"
+										}
+										variant="ghost"
+										className="size-8 min-w-8 p-0"
+										onPress={onFullscreen}
+									>
+										{isFullscreen ? (
+											<Minimize2 size={17} />
+										) : (
+											<Maximize2 size={17} />
+										)}
+									</Button>
+								)}
 								<Button
-									aria-label={artefact ? "Close artefact" : "Cancel generation"}
+									aria-label={
+										artefact
+											? "Close artefact"
+											: "Cancel generation"
+									}
 									variant="ghost"
 									className="size-8 min-w-8 p-0"
 									onPress={onClose}
@@ -666,45 +832,68 @@ function ArtefactModal({
 							</Toolbar>
 						</Modal.Header>
 						<Modal.Body className="m-0 bg-surface p-0">
-								{artefact ? (
-									<ArtefactBody artefact={artefact} canInteract edgeToEdge onAction={setFollowUp} />
-								) : (
-									<div className="grid min-h-96 place-items-center p-8" role="status">
-										<div className="w-full max-w-xl space-y-5 animate-pulse">
-											<p className="text-center text-sm text-muted">{generationStatus || "Starting your artefact…"}</p>
-											<div className="h-8 w-2/3 rounded bg-divider" />
-											<div className="h-4 w-full rounded bg-divider" />
-											<div className="h-4 w-5/6 rounded bg-divider" />
-											<div className="h-32 rounded-xl bg-divider" />
-										</div>
-									</div>
-								)}
-							</Modal.Body>
-							{artefact && !isCreating && <Modal.Footer className="z-10 m-0 shrink-0 border-t border-divider bg-surface px-4 py-3 sm:px-6">
-							<form
-								onSubmit={onSubmit}
-								className="flex w-full items-center gap-2 rounded-full border border-divider bg-field p-1.5 pl-4"
-							>
-								<Input
-									aria-label="Refine artefact"
-									variant="secondary"
-									className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
-									value={followUp}
-									onChange={(event) =>
-										setFollowUp(event.target.value)
-									}
-									placeholder="Describe what to change"
+							{artefact ? (
+								<ArtefactBody
+									artefact={artefact}
+									canInteract
+									edgeToEdge
+									onAction={setFollowUp}
 								/>
-								<Button
-									aria-label={isRevising ? "Refining artefact" : "Refine artefact"}
-									type="submit"
-									className="size-10 min-w-10 rounded-full p-0"
-									isDisabled={!followUp.trim() || isRevising}
+							) : (
+								<div
+									className="grid min-h-96 place-items-center p-8"
+									role="status"
 								>
-									{isRevising ? "…" : <ArrowUp size={17} />}
-								</Button>
-							</form>
-							</Modal.Footer>}
+									<div className="w-full max-w-xl space-y-5 animate-pulse">
+										<p className="text-center text-sm text-muted">
+											{generationStatus ||
+												"Starting your artefact…"}
+										</p>
+										<div className="h-8 w-2/3 rounded bg-divider" />
+										<div className="h-4 w-full rounded bg-divider" />
+										<div className="h-4 w-5/6 rounded bg-divider" />
+										<div className="h-32 rounded-xl bg-divider" />
+									</div>
+								</div>
+							)}
+						</Modal.Body>
+						{artefact && !isCreating && (
+							<Modal.Footer className="z-10 m-0 shrink-0 border-t border-divider bg-surface px-4 py-3 sm:px-6">
+								<form
+									onSubmit={onSubmit}
+									className="flex w-full items-center gap-2 rounded-full border border-divider bg-field p-1.5 pl-4"
+								>
+									<Input
+										aria-label="Refine artefact"
+										variant="secondary"
+										className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
+										value={followUp}
+										onChange={(event) =>
+											setFollowUp(event.target.value)
+										}
+										placeholder="Describe what to change"
+									/>
+									<Button
+										aria-label={
+											isRevising
+												? "Refining artefact"
+												: "Refine artefact"
+										}
+										type="submit"
+										className="size-10 min-w-10 rounded-full p-0"
+										isDisabled={
+											!followUp.trim() || isRevising
+										}
+									>
+										{isRevising ? (
+											"…"
+										) : (
+											<ArrowUp size={17} />
+										)}
+									</Button>
+								</form>
+							</Modal.Footer>
+						)}
 					</Modal.Dialog>
 				</Modal.Container>
 			</Modal.Backdrop>
@@ -712,19 +901,34 @@ function ArtefactModal({
 	);
 }
 
-function ArtefactBody({ artefact, canInteract, edgeToEdge = false, onAction }: {
+function ArtefactBody({
+	artefact,
+	canInteract,
+	edgeToEdge = false,
+	onAction,
+}: {
 	artefact: Artefact;
 	canInteract: boolean;
 	edgeToEdge?: boolean;
 	onAction?: (label: string) => void;
 }) {
-	const document = artefact.content ?? fallbackDocument(artefact.prompt, artefactHeading(artefact));
+	const document =
+		artefact.content ??
+		fallbackDocument(artefact.prompt, artefactHeading(artefact));
 	return (
 		<>
-			<ArtefactRenderer document={document} createdAt={artefact.createdAt} canInteract={canInteract} edgeToEdge={edgeToEdge} onAction={onAction} />
+			<ArtefactRenderer
+				document={document}
+				createdAt={artefact.createdAt}
+				canInteract={canInteract}
+				edgeToEdge={edgeToEdge}
+				onAction={onAction}
+			/>
 			{artefact.revisions?.length ? (
 				<section className="mx-auto mt-4 max-w-4xl rounded-2xl border border-divider bg-surface p-6 sm:p-8">
-					<p className="text-xs font-medium tracking-wide text-muted uppercase">Iteration history</p>
+					<p className="text-xs font-medium tracking-wide text-muted uppercase">
+						Iteration history
+					</p>
 					<div className="mt-3 space-y-3">
 						{artefact.revisions.map((revision) => (
 							<Card key={revision.id} variant="secondary">

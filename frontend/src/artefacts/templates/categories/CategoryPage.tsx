@@ -14,10 +14,17 @@ const CategoryPage: Template = ({ node, children, context }) => {
 		<>
 			<header className="text-lavender-foreground">
 				<div className="flex flex-col items-center gap-3 bg-lavender px-6 pt-8 pb-5 text-center sm:px-10">
-					<Heading level={2} align="center" className="text-balance text-inherit">
+					<Heading
+						level={2}
+						align="center"
+						className="text-balance text-inherit"
+					>
 						{data.title}
 					</Heading>
-					<Paragraph align="center" className="max-w-2xl text-inherit opacity-80">
+					<Paragraph
+						align="center"
+						className="max-w-2xl text-inherit opacity-80"
+					>
 						{data.summary}
 					</Paragraph>
 					<div className="flex flex-wrap items-center justify-center gap-2">
@@ -40,7 +47,9 @@ const CategoryPage: Template = ({ node, children, context }) => {
 				</div>
 				<Scallop edge="bottom" />
 			</header>
-			<div className="pt-4">{children}</div>
+			<div className="pt-4 [&>section]:mx-auto [&>section]:w-full [&>section]:max-w-[1000px]">
+				{children}
+			</div>
 		</>
 	);
 };

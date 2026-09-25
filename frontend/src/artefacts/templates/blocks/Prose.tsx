@@ -6,7 +6,7 @@ export function Prose({ node }: TemplateProps) {
 	const paragraphs = String(node.data.body).split(/\n\s*\n/);
 	return (
 		<BlockSection title={String(node.data.title)}>
-			<div className="-mt-3 max-w-3xl space-y-3">
+			<div className="-mt-3 space-y-3">
 				{paragraphs.map((paragraph, index) => (
 					<Paragraph key={index}>{paragraph}</Paragraph>
 				))}
