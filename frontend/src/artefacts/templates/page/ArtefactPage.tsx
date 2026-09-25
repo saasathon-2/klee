@@ -1,4 +1,5 @@
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
+import { Scallop } from "./Scallop";
 
 export function ArtefactPage({ children, context }: TemplateProps) {
 	return (
@@ -10,6 +11,10 @@ export function ArtefactPage({ children, context }: TemplateProps) {
 			}
 		>
 			{children}
+			<footer aria-hidden className="mt-8">
+				<Scallop edge="top" />
+				<div className="h-16 bg-lavender" />
+			</footer>
 		</article>
 	);
 }

@@ -15,13 +15,18 @@ import {
 import {
 	ArrowUp,
 	CalendarDays,
+	Check,
 	Compass,
+	FileDiff,
 	FileText,
+	GitCommitHorizontal,
 	GitPullRequest,
 	Home,
 	Inbox,
+	ListChecks,
 	LogOut,
 	Maximize2,
+	MessagesSquare,
 	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
@@ -44,6 +49,10 @@ import { signOut, useSession } from "../lib/auth-client";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import { fallbackDocument, type ArtefactDocument } from "../artefacts/model";
+import {
+	developerExamplePrompts,
+	type ExamplePrompt,
+} from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 
 type Revision = { id: string; content: string; createdAt: string };
@@ -65,6 +74,13 @@ function artefactHeading(artefact: Artefact) {
 		? "Change brief"
 		: "Working brief";
 }
+
+const developerTemplateIcons: Record<ExamplePrompt["id"], ReactNode> = {
+	"code-diff": <FileDiff size={15} />,
+	"review-comments": <MessagesSquare size={15} />,
+	"commit-list": <GitCommitHorizontal size={15} />,
+	"check-list": <ListChecks size={15} />,
+};
 
 const api = (path: string, options?: RequestInit) =>
 	fetch(`/api${path}`, {
@@ -314,6 +330,21 @@ export function Artefacts() {
 							onPress={() => setPrompt("Create a concise project update that I can share with my team.")}
 						/>
 					</div>
+					<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+						<span className="text-xs text-muted">Developer templates</span>
+						{developerExamplePrompts.map((template) => (
+							<Button
+								key={template.id}
+								size="sm"
+								variant="outline"
+								className="rounded-full"
+								onPress={() => setPrompt(template.prompt)}
+							>
+								{developerTemplateIcons[template.id]}
+								{template.label}
+							</Button>
+						))}
+					</div>
 					<p className="mt-5 text-center text-xs text-muted">
 						Artefacts are private until you share a link.
 					</p>
@@ -534,14 +565,24 @@ function ArtefactModal({
 							? "h-dvh min-h-dvh w-screen max-w-none rounded-none p-0"
 							: "overflow-hidden rounded-2xl p-0"}
 					>
-						<Modal.Header className="z-10 shrink-0 flex-row items-center gap-4 border-b border-divider bg-surface px-5 py-4 sm:px-6">
-							<Modal.Heading className="truncate">
-								{artefactHeading(artefact)}
+						<Modal.Header className="z-10 shrink-0 flex-row items-center gap-4 border-b border-divider bg-surface px-5 py-3 sm:px-6">
+							<Modal.Heading className="flex min-w-0 items-center gap-2">
+								<span className="shrink-0 text-muted">Artefacts</span>
+								<span aria-hidden className="text-muted">/</span>
+								<span className="truncate">{artefactHeading(artefact)}</span>
 							</Modal.Heading>
 							<Toolbar
 								aria-label="Artefact actions"
-								className="ml-auto flex gap-1"
+								className="ml-auto flex items-center gap-1"
 							>
+								<Button
+									variant="secondary"
+									size="sm"
+									onPress={onShare}
+								>
+									{copied ? <Check size={15} /> : <Share2 size={15} />}
+									{copied ? "Link copied" : "Share"}
+								</Button>
 								<Button
 									aria-label={
 										isFullscreen
@@ -557,18 +598,6 @@ function ArtefactModal({
 									) : (
 										<Maximize2 size={17} />
 									)}
-								</Button>
-								<Button
-									aria-label={
-										copied
-											? "Share link copied"
-											: "Share artefact"
-									}
-									variant="ghost"
-									className="size-8 min-w-8 p-0"
-									onPress={onShare}
-								>
-									<Share2 size={17} />
 								</Button>
 								<Button
 									aria-label="Close artefact"

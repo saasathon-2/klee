@@ -1,6 +1,5 @@
 export type Metric = { label: string; value: string; detail: string };
 export type FlowNode = { label: string; detail: string };
-export type CodeDiff = { filename: string; summary: string; patch: string };
 export type ArtefactTask = {
 	id: string;
 	key: string;
@@ -14,6 +13,32 @@ export type SuggestedAction = {
 	description: string;
 	action: string;
 };
+export type DiffLine = {
+	kind: "context" | "add" | "remove";
+	content: string;
+};
+export type DiffHunk = {
+	header: string;
+	oldStart: number;
+	newStart: number;
+	lines: DiffLine[];
+};
+export type ReviewComment = {
+	author: string;
+	verdict: "approved" | "changes-requested" | "commented";
+	body: string;
+};
+export type Commit = {
+	sha: string;
+	message: string;
+	author: string;
+	detail: string;
+};
+export type Check = {
+	name: string;
+	status: "passed" | "failed" | "pending";
+	detail: string;
+};
 
 export type ArtefactNode = {
 	id: string;
@@ -22,12 +47,14 @@ export type ArtefactNode = {
 		| "developer-page"
 		| "generic-page"
 		| "metric-row"
-		| "code-diff"
 		| "architecture-flow"
 		| "glue"
 		| "task-list"
 		| "next-steps"
-		| "prose";
+		| "prose"
+		| "review-comments"
+		| "commit-list"
+		| "check-list";
 	data: Record<string, unknown>;
 	children?: ArtefactNode[];
 };

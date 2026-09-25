@@ -1,10 +1,13 @@
 import type { ArtefactNode } from "../model";
 import { ArchitectureFlow } from "./blocks/ArchitectureFlow";
+import { CheckList } from "./blocks/CheckList";
 import { CodeDiff } from "./blocks/CodeDiff";
+import { CommitList } from "./blocks/CommitList";
 import { Glue } from "./blocks/Glue";
 import { MetricRow } from "./blocks/MetricRow";
 import { NextSteps } from "./blocks/NextSteps";
 import { Prose } from "./blocks/Prose";
+import { ReviewComments } from "./blocks/ReviewComments";
 import { TaskList } from "./blocks/TaskList";
 import { DeveloperPage, GenericPage } from "./categories/CategoryPage";
 import { ArtefactPage } from "./page/ArtefactPage";
@@ -35,11 +38,14 @@ export const templateDefinitions: Record<
 	"generic-page": definition(GenericPage),
 	"metric-row": definition(MetricRow),
 	"architecture-flow": definition(ArchitectureFlow),
-	"code-diff": definition(CodeDiff),
 	glue: definition(Glue),
 	"task-list": definition(TaskList),
 	"next-steps": definition(NextSteps),
 	prose: definition(Prose),
+	"code-diff": definition(CodeDiff),
+	"review-comments": definition(ReviewComments),
+	"commit-list": definition(CommitList),
+	"check-list": definition(CheckList),
 };
 
 function selectionInfo(definition: TemplateDefinition): TemplateSelectionInfo {

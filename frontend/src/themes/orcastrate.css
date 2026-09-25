@@ -44,6 +44,10 @@
 	--warning: oklch(78.19% 0.1595 55.98);
 	--warning-foreground: oklch(21.03% 0.0059 55.98);
 
+	/* Artefact Palette */
+	--lavender: oklch(84% 0.075 305);
+	--lavender-foreground: oklch(21% 0.006 0);
+
 	/* Border Radius */
 	--radius: 0.125rem;
 	--field-radius: 0.25rem;
@@ -89,4 +93,8 @@
 	--surface-tertiary-foreground: oklch(99.11% 0.0033 117.55);
 	--warning: oklch(82.03% 0.1397 59.99);
 	--warning-foreground: oklch(21.03% 0.0059 59.99);
+
+	/* Artefact Palette */
+	--lavender: oklch(42% 0.09 305);
+	--lavender-foreground: oklch(99.11% 0.0033 117.55);
 }
