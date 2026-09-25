@@ -25,9 +25,7 @@ export function Footer() {
 		<footer>
 			<div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[2fr_repeat(4,1fr)]">
 				<div>
-					<Paragraph weight="semibold" className="text-lg tracking-tight">
-						Klee
-					</Paragraph>
+					<img src="/klee.svg" alt="Klee" className="h-6 w-auto" />
 					<Paragraph size="sm" color="muted" className="mt-2 max-w-xs">
 						Turn engineering context into clear, shareable artefacts.
 					</Paragraph>
