@@ -5,7 +5,8 @@ const legacyName = "1790163000000_artefact-unify-id";
 const canonicalName = "1790163500000_artefact-unify-id";
 const interimName = "1790166000000_artefact-unify-id";
 const contentName = "1790163000000_artefact_content";
-const githubName = "1790164000000_github-installations";
+const legacyGithubName = "1790164000000_github-installations";
+const githubName = "1790165000000_github-installations";
 const files = await readdir(new URL("../src/migrations/", import.meta.url));
 const names = files
 	.filter((file) => file.endsWith(".ts"))
@@ -28,6 +29,11 @@ try {
 	if (table.rows[0].name) {
 		const applied = await client.query("select name from pgmigrations");
 		const appliedNames = new Set(applied.rows.map((row) => row.name));
+		if (appliedNames.has(legacyGithubName)) {
+			await client.query("update pgmigrations set name = $1 where name = $2", [githubName, legacyGithubName]);
+			appliedNames.delete(legacyGithubName);
+			appliedNames.add(githubName);
+		}
 		const recordedName = appliedNames.has(legacyName)
 			? legacyName
 			: appliedNames.has(interimName)
