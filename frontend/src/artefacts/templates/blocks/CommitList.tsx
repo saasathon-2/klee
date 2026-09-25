@@ -2,17 +2,19 @@ import { Avatar, Card, Code, Paragraph, Separator } from "@heroui/react";
 import { Fragment } from "react";
 import type { Commit } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { editableFor } from "../page/editableFor";
 import { initials } from "../page/initials";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
-export function CommitList({ node }: TemplateProps) {
+export function CommitList({ node, context }: TemplateProps) {
 	const { title, description, commits } = node.data as {
 		title: string;
 		description: string;
 		commits: Commit[];
 	};
+	const text = editableFor(node, context);
 	return (
-		<BlockSection title={title} description={description}>
+		<BlockSection title={title} description={description} edit={{ node, context }}>
 			<Card className="gap-0 p-0">
 				{commits.map((commit, index) => (
 					<Fragment key={`${commit.sha}-${index}`}>
@@ -23,13 +25,13 @@ export function CommitList({ node }: TemplateProps) {
 							</Avatar>
 							<div className="min-w-0 flex-1">
 								<Paragraph size="sm" weight="medium">
-									{commit.message}
+									{text(["commits", index, "message"], commit.message, "Commit message")}
 								</Paragraph>
 								<Paragraph size="xs" color="muted">
 									{commit.author}
 								</Paragraph>
 								<Paragraph size="sm" color="muted" className="mt-1">
-									{commit.detail}
+									{text(["commits", index, "detail"], commit.detail, "Commit detail", true)}
 								</Paragraph>
 							</div>
 							{commit.sha && (

@@ -98,3 +98,29 @@ export function fallbackDocument(prompt: string, title: string): ArtefactDocumen
 		},
 	};
 }
+
+/** Returns a copy of `document` with one text field of one node's data replaced. */
+export function withEditedText(
+	document: ArtefactDocument,
+	nodeId: string,
+	path: (string | number)[],
+	value: string,
+): ArtefactDocument {
+	const update = (node: ArtefactNode): ArtefactNode => {
+		if (node.id === nodeId) {
+			const data = structuredClone(node.data);
+			const parent = path
+				.slice(0, -1)
+				.reduce<Record<string | number, unknown>>(
+					(current, key) => current[key] as Record<string | number, unknown>,
+					data,
+				);
+			parent[path[path.length - 1]] = value;
+			return { ...node, data };
+		}
+		return node.children
+			? { ...node, children: node.children.map(update) }
+			: node;
+	};
+	return { ...document, root: update(document.root) };
+}

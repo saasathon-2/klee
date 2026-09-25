@@ -1,4 +1,5 @@
 import { Chip, Heading, Paragraph } from "@heroui/react";
+import { EditableText } from "../page/EditableText";
 import { Scallop } from "../page/Scallop";
 import type { Template, TemplateProps, TemplateSelectionInfo } from "../types";
 
@@ -16,13 +17,27 @@ const CategoryPage: Template = ({ node, children, context }) => {
 				<div className="relative flex flex-col items-center gap-3 bg-brand px-6 pt-10 pb-5 text-center sm:px-10">
 					<img src="/kleelogo.svg" alt="Klee" className="absolute top-5 left-6 size-7 sm:left-10" />
 					<Heading level={2} align="center" className="text-balance text-inherit">
-						{data.title}
+						<EditableText
+							node={node}
+							context={context}
+							path={["title"]}
+							value={data.title}
+							label="Artefact title"
+							className="text-center"
+						/>
 					</Heading>
 					<Paragraph
 						align="center"
 						className="max-w-2xl text-inherit opacity-80"
 					>
-						{data.summary}
+						<EditableText
+							node={node}
+							context={context}
+							path={["summary"]}
+							value={data.summary}
+							label="Summary"
+							multiline
+						/>
 					</Paragraph>
 					<div className="flex flex-wrap items-center justify-center gap-2">
 						{data.tags.map((tag) => (

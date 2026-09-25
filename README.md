@@ -44,6 +44,17 @@ Create migrations with `pnpm --dir backend migrate:create -- <name>`. Migration 
 
 Set the GitHub App's setup URL and webhook URL to `https://<api-domain>/api/integrations/github/setup` and `https://<api-domain>/api/integrations/github/webhook`. The API service needs `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET` as Railway variables. A signed-in user connects GitHub from their profile; the API stores the resulting installation and verifies every webhook before processing it.
 
+### GitHub login and project access
+
+Artefacts that belong to a GitHub org (a "project") can be viewed and edited by every member of that org. Pull request artefacts join their installation's org automatically, and an owner can move any artefact into one of their orgs from the artefact header. Membership comes from each user's GitHub login, so the API also needs a GitHub OAuth app (separate from the GitHub App):
+
+```text
+GITHUB_CLIENT_ID=<oauth-app-client-id>
+GITHUB_CLIENT_SECRET=<oauth-app-client-secret>
+```
+
+Set the OAuth app's callback URL to `https://<api-domain>/api/auth/callback/github`. Users can sign in with GitHub or link it from their profile; Klee asks for `read:org` so private org membership counts. Without these variables the app still runs, and artefacts stay owner-only.
+
 To create an artefact and comment its link on every pull request, add this to a repository where the App is installed:
 
 ```yaml

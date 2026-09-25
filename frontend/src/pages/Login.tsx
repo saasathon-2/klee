@@ -28,10 +28,10 @@ export function Login() {
 		navigate("/");
 	}
 
-	async function handleGoogleSignIn() {
+	async function handleSocialSignIn(provider: "google" | "github") {
 		setError(null);
 		const { error: signInError } = await signIn.social({
-			provider: "google",
+			provider,
 			callbackURL: "/",
 		});
 		if (signInError) {
@@ -78,9 +78,17 @@ export function Login() {
 				variant="ghost"
 				fullWidth
 				className="mt-3"
-				onPress={handleGoogleSignIn}
+				onPress={() => handleSocialSignIn("google")}
 			>
 				Continue with Google
+			</Button>
+			<Button
+				variant="ghost"
+				fullWidth
+				className="mt-2"
+				onPress={() => handleSocialSignIn("github")}
+			>
+				Continue with GitHub
 			</Button>
 
 			<p className="mt-4 text-sm text-muted">

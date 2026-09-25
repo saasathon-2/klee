@@ -1,6 +1,6 @@
 import type { ArtefactDocument, ArtefactNode } from "../model";
 import { templateDefinitions } from "./catalogue";
-import type { RenderContext } from "./types";
+import type { EditPath, RenderContext } from "./types";
 
 function RenderNode({
 	node,
@@ -25,7 +25,9 @@ export function ArtefactRenderer({
 	canInteract,
 	edgeToEdge = false,
 	showFooter = true,
+	isEditing = false,
 	onAction,
+	onEdit,
 }: {
 	document: ArtefactDocument;
 	createdAt: string;
@@ -33,12 +35,22 @@ export function ArtefactRenderer({
 	edgeToEdge?: boolean;
 	/** Draws the scalloped band at the bottom of the artefact. */
 	showFooter?: boolean;
+	isEditing?: boolean;
 	onAction?: (label: string) => void;
+	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
 }) {
 	return (
 		<RenderNode
 			node={document.root}
-			context={{ createdAt, canInteract, edgeToEdge, showFooter, onAction }}
+			context={{
+				createdAt,
+				canInteract,
+				edgeToEdge,
+				showFooter,
+				isEditing,
+				onAction,
+				onEdit,
+			}}
 		/>
 	);
 }

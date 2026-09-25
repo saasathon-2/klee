@@ -1,23 +1,29 @@
 import { Card } from "@heroui/react";
 import type { Metric } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { editableFor } from "../page/editableFor";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
-export function MetricRow({ node }: TemplateProps) {
+export function MetricRow({ node, context }: TemplateProps) {
 	const { items } = node.data as { items: Metric[] };
+	const text = editableFor(node, context);
 	return (
 		<BlockSection>
 			<div className="grid gap-3 sm:grid-cols-3">
-				{items.map((item) => (
-					<Card key={item.label} variant="secondary">
+				{items.map((item, index) => (
+					<Card key={index} variant="secondary">
 						<Card.Header>
-							<Card.Description>{item.label}</Card.Description>
+							<Card.Description>
+								{text(["items", index, "label"], item.label, "Metric label")}
+							</Card.Description>
 							<Card.Title className="text-2xl font-semibold tracking-tight">
-								{item.value}
+								{text(["items", index, "value"], item.value, "Metric value")}
 							</Card.Title>
 						</Card.Header>
 						<Card.Content>
-							<Card.Description>{item.detail}</Card.Description>
+							<Card.Description>
+								{text(["items", index, "detail"], item.detail, "Metric detail")}
+							</Card.Description>
 						</Card.Content>
 					</Card>
 				))}

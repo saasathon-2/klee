@@ -1,14 +1,22 @@
 import { Paragraph } from "@heroui/react";
+import { EditableText } from "../page/EditableText";
 import { Scallop } from "../page/Scallop";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
-export function Glue({ node }: TemplateProps) {
+export function Glue({ node, context }: TemplateProps) {
 	return (
 		<div className="my-4 text-brand-foreground">
 			<Scallop edge="top" />
 			<div className="bg-brand px-6 py-3">
 				<Paragraph align="center" weight="medium" className="text-inherit">
-					{String(node.data.label)}
+					<EditableText
+						node={node}
+						context={context}
+						path={["label"]}
+						value={String(node.data.label)}
+						label="Transition text"
+						className="text-center"
+					/>
 				</Paragraph>
 			</div>
 			<Scallop edge="bottom" />
