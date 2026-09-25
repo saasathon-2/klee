@@ -13,6 +13,8 @@ import {
     githubAppSlug,
     githubInstallation,
     githubInstallationRequest,
+    githubPullRequestContext,
+    githubPullRequestPrompt,
     githubRepositoryInstallation,
     validGitHubWebhook,
 } from "./github.ts";
@@ -188,9 +190,14 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
         [String(installationId)],
     );
     if (!installation.rows[0]) return res.sendStatus(403);
+    const context = await githubPullRequestContext(
+        String(installationId),
+        repository,
+        pullRequest,
+    );
     const artefact = await createGeneratedArtefact(
         installation.rows[0].owner_id,
-        `Create a useful artefact for pull request #${pullRequest} in ${repository}.`,
+        githubPullRequestPrompt(repository, pullRequest, context),
         true,
     );
     const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;

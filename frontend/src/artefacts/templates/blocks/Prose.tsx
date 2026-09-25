@@ -1,19 +1,17 @@
-import { Check } from "lucide-react";
+import { Paragraph } from "@heroui/react";
+import { BlockSection } from "../page/BlockSection";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 export function Prose({ node }: TemplateProps) {
+	const paragraphs = String(node.data.body).split(/\n\s*\n/);
 	return (
-		<section className="border-b border-divider px-6 py-9 sm:px-10 sm:py-12">
-			<div className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-				<Check size={17} />
+		<BlockSection title={String(node.data.title)}>
+			<div className="-mt-3 max-w-3xl space-y-3">
+				{paragraphs.map((paragraph, index) => (
+					<Paragraph key={index}>{paragraph}</Paragraph>
+				))}
 			</div>
-			<h3 className="mt-5 text-2xl font-semibold tracking-tight">
-				{String(node.data.title)}
-			</h3>
-			<p className="mt-3 max-w-2xl text-base leading-7 text-muted">
-				{String(node.data.body)}
-			</p>
-		</section>
+		</BlockSection>
 	);
 }
 
