@@ -18,7 +18,10 @@ This repository deploys as three Railway services:
     DATABASE_URL=${{Postgres.DATABASE_URL}}
     JWT_SECRET=<a-long-random-secret>
     CORS_ORIGIN=https://${{web.RAILWAY_PUBLIC_DOMAIN}}
+    OPENAI_API_KEY=<OpenAI-Platform-application-key>
     ```
+
+   `OPENAI_MODEL` is optional; it defaults to `gpt-6-astra`.
 
 4. For `web`, set a public domain and add:
 

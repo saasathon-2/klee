@@ -88,6 +88,7 @@ export function Artefacts() {
 		artefact: Artefact;
 	}>();
 	const [prompt, setPrompt] = useState("");
+	const [isCreating, setIsCreating] = useState(false);
 	const [followUp, setFollowUp] = useState("");
 	const [error, setError] = useState("");
 	const [copied, setCopied] = useState(false);
@@ -132,16 +133,24 @@ export function Artefacts() {
 
 	async function create(event: FormEvent) {
 		event.preventDefault();
-		if (!prompt.trim()) return;
-		const response = await api("/artefacts", {
-			method: "POST",
-			body: JSON.stringify({ prompt }),
-		});
-		if (!response.ok) return setError("Could not create artefact.");
-		const artefact = (await response.json()) as Artefact;
-		setArtefacts([artefact, ...artefacts]);
-		setPrompt("");
-		navigate(`/?artefact=${artefact.id}`);
+		if (!prompt.trim() || isCreating) return;
+		setIsCreating(true);
+		setError("");
+		try {
+			const response = await api("/artefacts", {
+				method: "POST",
+				body: JSON.stringify({ prompt }),
+			});
+			if (!response.ok) throw new Error("create failed");
+			const artefact = (await response.json()) as Artefact;
+			setArtefacts([artefact, ...artefacts]);
+			setPrompt("");
+			navigate(`/?artefact=${artefact.id}`);
+		} catch {
+			setError("Could not create artefact.");
+		} finally {
+			setIsCreating(false);
+		}
 	}
 	async function revise(event: FormEvent) {
 		event.preventDefault();
@@ -275,12 +284,12 @@ export function Artefacts() {
 								className="flex w-full justify-end px-1 pt-1"
 							>
 								<Button
-									aria-label="Create artefact"
+									aria-label={isCreating ? "Generating artefact" : "Create artefact"}
 									type="submit"
 									className="size-9 min-w-9 rounded-full p-0"
-									isDisabled={!prompt.trim()}
+									isDisabled={!prompt.trim() || isCreating}
 								>
-									<ArrowUp size={17} />
+									{isCreating ? "…" : <ArrowUp size={17} />}
 								</Button>
 							</Toolbar>
 						</Surface>
