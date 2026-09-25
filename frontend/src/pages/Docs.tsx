@@ -16,13 +16,24 @@ export function Docs() {
 	const [activeSection, setActiveSection] = useState(sections[0].id);
 	const scrollTo = (id: string) => content.current?.querySelector(`#${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 	useEffect(() => {
+		const scroller = content.current;
+		if (!scroller) return;
 		const observer = new IntersectionObserver(
 			(entries) => entries.forEach((entry) => entry.isIntersecting && setActiveSection(entry.target.id)),
 			{ root: content.current, rootMargin: "-12% 0px -72%" },
 		);
 		const targets = sections.map(({ id }) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
 		targets.forEach((target) => observer.observe(target));
-		return () => observer.disconnect();
+		const onScroll = () => {
+			if (scroller.scrollTop <= 1) setActiveSection(sections[0].id);
+			if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1)
+				setActiveSection(sections.at(-1)!.id);
+		};
+		scroller.addEventListener("scroll", onScroll, { passive: true });
+		return () => {
+			observer.disconnect();
+			scroller.removeEventListener("scroll", onScroll);
+		};
 	}, []);
 	return (
 		<main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl grid-cols-1 lg:h-[calc(100vh-4rem)] lg:grid-cols-[15rem_minmax(0,1fr)] lg:overflow-hidden">
