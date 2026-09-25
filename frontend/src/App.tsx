@@ -47,6 +47,7 @@ function App() {
 				<Route path="/artefacts" element={<Navigate to="/" replace />} />
 				<Route path="/artefacts/:id" element={<Navigate to="/" replace />} />
 				<Route path="/artefacts/shared/:shareId" element={<Artefacts />} />
+				<Route path="/artefacts/shared/:shareId/full" element={<Artefacts />} />
 				<Route path="/examples/forms" element={<FormsExample />} />
 				<Route path="/examples/social" element={<SocialExample />} />
 				<Route path="/examples/settings" element={<SettingsExample />} />

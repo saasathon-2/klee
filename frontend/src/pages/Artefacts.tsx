@@ -44,11 +44,12 @@ import { signOut, useSession } from "../lib/auth-client";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import { fallbackDocument, type ArtefactDocument } from "../artefacts/model";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 type Revision = { id: string; content: string; createdAt: string };
 type Artefact = {
 	id: string;
-	shareId?: string;
+	isShared?: boolean;
 	prompt: string;
 	title: string;
 	createdAt: string;
@@ -80,6 +81,7 @@ export function Artefacts() {
 	const id = routeId ?? searchParams.get("artefact") ?? undefined;
 	const { data: session, isPending } = useSession();
 	const isShared = Boolean(shareId);
+	const isFullScreenShared = isShared && location.pathname.endsWith("/full");
 	const isProfile = location.pathname === "/profile";
 	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
 	const [loaded, setLoaded] = useState<{
@@ -90,6 +92,7 @@ export function Artefacts() {
 	const [followUp, setFollowUp] = useState("");
 	const [error, setError] = useState("");
 	const [copied, setCopied] = useState(false);
+	const [notShared, setNotShared] = useState(false);
 	const [isFullscreen, setFullscreen] = useState(false);
 	const [isSidebarOpen, setSidebarOpen] = useState(true);
 	const artefactPath = shareId
@@ -112,13 +115,20 @@ export function Artefacts() {
 	useEffect(() => {
 		if (!artefactPath) return;
 		api(artefactPath)
-			.then((response) =>
-				response.ok ? response.json() : Promise.reject(),
-			)
-			.then((artefact: Artefact) =>
-				setLoaded({ path: artefactPath, artefact }),
-			)
-			.catch(() => setError("This artefact could not be found."));
+			.then((response) => {
+				if (response.ok) return response.json();
+				if (response.status === 403) return Promise.reject("not_shared");
+				return Promise.reject("not_found");
+			})
+			.then((artefact: Artefact) => {
+				setNotShared(false);
+				setLoaded({ path: artefactPath, artefact });
+			})
+			.catch((reason) => {
+				if (reason === "not_shared") return setNotShared(true);
+				setNotShared(false);
+				setError("This artefact could not be found.");
+			});
 	}, [artefactPath]);
 
 	async function create(event: FormEvent) {
@@ -153,9 +163,19 @@ export function Artefacts() {
 		setFollowUp("");
 	}
 	async function share() {
-		if (!current?.shareId) return;
+		if (!current) return;
+		if (!current.isShared) {
+			const response = await api(`/artefacts/${current.id}/share`, {
+				method: "POST",
+			});
+			if (!response.ok) return setError("Could not share artefact.");
+			setLoaded({
+				path: artefactPath!,
+				artefact: { ...current, isShared: true },
+			});
+		}
 		await navigator.clipboard.writeText(
-			`${window.location.origin}/artefacts/shared/${current.shareId}`,
+			`${window.location.origin}/artefacts/shared/${current.id}`,
 		);
 		setCopied(true);
 		window.setTimeout(() => setCopied(false), 1500);
@@ -176,11 +196,28 @@ export function Artefacts() {
 			</main>
 		);
 	if (!isShared && !session?.user) return <Navigate to="/login" replace />;
+	if (isFullScreenShared)
+		return (
+			<main className="min-h-screen bg-background px-10 py-10">
+				{error && <p className="text-sm text-danger">{error}</p>}
+				{notShared && (
+					<p className="text-sm text-muted">
+						This artefact hasn't been shared.
+					</p>
+				)}
+				{current && <ArtefactBody artefact={current} canInteract={false} />}
+			</main>
+		);
 	if (isShared)
 		return (
 			<main className="mx-auto min-h-screen max-w-3xl px-6 py-12">
 				<p className="text-sm font-semibold">Orcastrate</p>
 				{error && <p className="mt-8 text-sm text-danger">{error}</p>}
+				{notShared && (
+					<p className="mt-8 text-sm text-muted">
+						This artefact hasn't been shared.
+					</p>
+				)}
 				{current && <ArtefactBody artefact={current} canInteract={false} />}
 			</main>
 		);
@@ -219,6 +256,7 @@ export function Artefacts() {
 						)}
 					</Button>
 					<h1 className="text-2xl font-semibold tracking-tight">{isProfile ? "Profile" : `Good morning, ${user.name?.split(" ")[0] || "there"}`}</h1>
+					<ThemeToggle className="ml-auto" />
 				</header>
 				{isProfile ? <div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20"><Card className="w-full"><Card.Header className="flex items-center gap-4"><UserAvatar image={user.image} name={user.name || user.email} size="lg" /><div><Card.Title>{user.name || "Unnamed"}</Card.Title><Card.Description>{user.email}</Card.Description></div></Card.Header><Card.Content><dl className="divide-y divide-divider text-sm"><div className="flex items-center justify-between py-3"><dt className="text-muted">Email verified</dt><dd>{user.emailVerified ? "Yes" : "No"}</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted">Member since</dt><dd>{new Date(user.createdAt).toLocaleDateString()}</dd></div></dl></Card.Content></Card></div> : <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 					<div className="mx-auto w-full max-w-2xl">

@@ -28,7 +28,7 @@ async function sessionUser(req: Request, res: Response) {
 
 app.get("/api/artefacts", async (req, res) => {
 	const user = await sessionUser(req, res); if (!user) return;
-	const { rows } = await pool.query("select id, share_id as \"shareId\", prompt, title, content, created_at as \"createdAt\", updated_at as \"updatedAt\" from artefact where owner_id = $1 order by updated_at desc", [user.id]);
+	const { rows } = await pool.query("select id, is_shared as \"isShared\", prompt, title, content, created_at as \"createdAt\", updated_at as \"updatedAt\" from artefact where owner_id = $1 order by updated_at desc", [user.id]);
 	res.json(rows);
 });
 
@@ -38,22 +38,30 @@ app.post("/api/artefacts", async (req, res) => {
 	if (!prompt) return res.status(400).json({ error: "prompt is required" });
 	const content = createArtefactDocument(prompt);
 	const title = String(content.root.data.title);
-	const artefact = { id: randomUUID(), shareId: randomUUID(), prompt, title, content };
-	await pool.query("insert into artefact (id, owner_id, share_id, prompt, title, content) values ($1, $2, $3, $4, $5, $6)", [artefact.id, user.id, artefact.shareId, artefact.prompt, artefact.title, artefact.content]);
+	const artefact = { id: randomUUID(), isShared: false, prompt, title, content };
+	await pool.query("insert into artefact (id, owner_id, prompt, title, content) values ($1, $2, $3, $4, $5)", [artefact.id, user.id, artefact.prompt, artefact.title, artefact.content]);
 	res.status(201).json(artefact);
 });
 
 app.get("/api/artefacts/:id", async (req, res) => {
 	const user = await sessionUser(req, res); if (!user) return;
-	const { rows } = await pool.query("select id, share_id as \"shareId\", prompt, title, content, created_at as \"createdAt\", updated_at as \"updatedAt\" from artefact where id = $1 and owner_id = $2", [req.params.id, user.id]);
+	const { rows } = await pool.query("select id, is_shared as \"isShared\", prompt, title, content, created_at as \"createdAt\", updated_at as \"updatedAt\" from artefact where id = $1 and owner_id = $2", [req.params.id, user.id]);
 	if (!rows[0]) return res.sendStatus(404);
 	const revisions = await pool.query("select id, content, created_at as \"createdAt\" from artefact_revision where artefact_id = $1 order by created_at", [req.params.id]);
 	res.json({ ...rows[0], revisions: revisions.rows });
 });
 
-app.get("/api/shared/artefacts/:shareId", async (req, res) => {
-	const { rows } = await pool.query("select id, prompt, title, content, created_at as \"createdAt\", updated_at as \"updatedAt\" from artefact where share_id = $1", [req.params.shareId]);
+app.post("/api/artefacts/:id/share", async (req, res) => {
+	const user = await sessionUser(req, res); if (!user) return;
+	const { rows } = await pool.query("update artefact set is_shared = true where id = $1 and owner_id = $2 returning id, is_shared as \"isShared\"", [req.params.id, user.id]);
 	if (!rows[0]) return res.sendStatus(404);
+	res.json(rows[0]);
+});
+
+app.get("/api/shared/artefacts/:id", async (req, res) => {
+	const { rows } = await pool.query("select id, is_shared as \"isShared\", prompt, title, content, created_at as \"createdAt\", updated_at as \"updatedAt\" from artefact where id = $1", [req.params.id]);
+	if (!rows[0]) return res.sendStatus(404);
+	if (!rows[0].isShared) return res.status(403).json({ error: "not_shared" });
 	const revisions = await pool.query("select id, content, created_at as \"createdAt\" from artefact_revision where artefact_id = $1 order by created_at", [rows[0].id]);
 	res.json({ ...rows[0], revisions: revisions.rows });
 });
