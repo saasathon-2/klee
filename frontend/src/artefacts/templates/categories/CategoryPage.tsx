@@ -1,4 +1,5 @@
-import { Layers3 } from "lucide-react";
+import { Chip, Heading, Paragraph } from "@heroui/react";
+import { Scallop } from "../page/Scallop";
 import type { Template, TemplateProps, TemplateSelectionInfo } from "../types";
 
 const CategoryPage: Template = ({ node, children, context }) => {
@@ -11,28 +12,21 @@ const CategoryPage: Template = ({ node, children, context }) => {
 
 	return (
 		<>
-			<header className="relative overflow-hidden border-b border-divider bg-accent px-6 py-8 text-accent-foreground sm:px-10 sm:py-12">
-				<div className="absolute -right-10 -top-16 size-48 rounded-full border-[28px] border-accent-foreground/10" />
-				<div className="relative max-w-2xl">
-					<p className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
-						<Layers3 size={14} /> {data.eyebrow}
-					</p>
-					<h2 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-6xl">
+			<header className="text-lavender-foreground">
+				<div className="flex flex-col items-center gap-3 bg-lavender px-6 pt-8 pb-5 text-center sm:px-10">
+					<Heading level={2} align="center" className="text-balance text-inherit">
 						{data.title}
-					</h2>
-					<p className="mt-5 max-w-xl text-base leading-7 text-accent-foreground/75 sm:text-lg">
+					</Heading>
+					<Paragraph align="center" className="max-w-2xl text-inherit opacity-80">
 						{data.summary}
-					</p>
-					<div className="mt-7 flex flex-wrap items-center gap-2">
+					</Paragraph>
+					<div className="flex flex-wrap items-center justify-center gap-2">
 						{data.tags.map((tag) => (
-							<span
-								key={tag}
-								className="rounded-full border border-accent-foreground/20 px-3 py-1 text-xs font-medium"
-							>
+							<Chip key={tag} size="sm">
 								{tag}
-							</span>
+							</Chip>
 						))}
-						<span className="ml-auto text-xs text-accent-foreground/60">
+						<span className="text-xs opacity-70">
 							{new Date(context.createdAt).toLocaleDateString(
 								undefined,
 								{
@@ -44,8 +38,9 @@ const CategoryPage: Template = ({ node, children, context }) => {
 						</span>
 					</div>
 				</div>
+				<Scallop edge="bottom" />
 			</header>
-			<div className="space-y-0">{children}</div>
+			<div className="pt-4">{children}</div>
 		</>
 	);
 };
@@ -67,6 +62,10 @@ DeveloperPage.children = {
 		"task-list",
 		"next-steps",
 		"prose",
+		"code-diff",
+		"review-comments",
+		"commit-list",
+		"check-list",
 	],
 } satisfies TemplateSelectionInfo["children"];
 

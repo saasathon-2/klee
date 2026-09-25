@@ -13,6 +13,32 @@ export type SuggestedAction = {
 	description: string;
 	action: string;
 };
+export type DiffLine = {
+	kind: "context" | "add" | "remove";
+	content: string;
+};
+export type DiffHunk = {
+	header: string;
+	oldStart: number;
+	newStart: number;
+	lines: DiffLine[];
+};
+export type ReviewComment = {
+	author: string;
+	verdict: "approved" | "changes-requested" | "commented";
+	body: string;
+};
+export type Commit = {
+	sha: string;
+	message: string;
+	author: string;
+	detail: string;
+};
+export type Check = {
+	name: string;
+	status: "passed" | "failed" | "pending";
+	detail: string;
+};
 
 export type ArtefactNode = {
 	id: string;
@@ -25,7 +51,11 @@ export type ArtefactNode = {
 		| "glue"
 		| "task-list"
 		| "next-steps"
-		| "prose";
+		| "prose"
+		| "code-diff"
+		| "review-comments"
+		| "commit-list"
+		| "check-list";
 	data: Record<string, unknown>;
 	children?: ArtefactNode[];
 };

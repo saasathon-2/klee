@@ -21,6 +21,32 @@ const actionSchema = z.object({
 	action: z.string(),
 }).strict();
 
+const diffHunkSchema = z.object({
+	header: z.string(),
+	oldStart: z.number().int(),
+	newStart: z.number().int(),
+	lines: z.array(z.object({
+		kind: z.enum(["context", "add", "remove"]),
+		content: z.string(),
+	}).strict()),
+}).strict();
+const reviewCommentSchema = z.object({
+	author: z.string(),
+	verdict: z.enum(["approved", "changes-requested", "commented"]),
+	body: z.string(),
+}).strict();
+const commitSchema = z.object({
+	sha: z.string(),
+	message: z.string(),
+	author: z.string(),
+	detail: z.string(),
+}).strict();
+const checkSchema = z.object({
+	name: z.string(),
+	status: z.enum(["passed", "failed", "pending"]),
+	detail: z.string(),
+}).strict();
+
 const blockSchemas = [
 	z.object({ template: z.literal("prose"), data: z.object({ title: z.string(), body: z.string() }).strict() }).strict(),
 	z.object({ template: z.literal("metric-row"), data: z.object({ items: z.array(metricSchema) }).strict() }).strict(),
@@ -28,6 +54,10 @@ const blockSchemas = [
 	z.object({ template: z.literal("glue"), data: z.object({ label: z.string() }).strict() }).strict(),
 	z.object({ template: z.literal("task-list"), data: z.object({ title: z.string(), description: z.string(), tasks: z.array(taskSchema) }).strict() }).strict(),
 	z.object({ template: z.literal("next-steps"), data: z.object({ title: z.string(), actions: z.array(actionSchema) }).strict() }).strict(),
+	z.object({ template: z.literal("code-diff"), data: z.object({ title: z.string(), description: z.string(), file: z.string(), hunks: z.array(diffHunkSchema) }).strict() }).strict(),
+	z.object({ template: z.literal("review-comments"), data: z.object({ title: z.string(), summary: z.string(), comments: z.array(reviewCommentSchema) }).strict() }).strict(),
+	z.object({ template: z.literal("commit-list"), data: z.object({ title: z.string(), description: z.string(), commits: z.array(commitSchema) }).strict() }).strict(),
+	z.object({ template: z.literal("check-list"), data: z.object({ title: z.string(), checks: z.array(checkSchema) }).strict() }).strict(),
 ] as const;
 
 const generationSchema = z.object({
@@ -42,7 +72,7 @@ const generationSchema = z.object({
 const jsonSchema = generationSchema.toJSONSchema({ target: "draft-7" });
 delete jsonSchema.$schema;
 
-const instructions = `Create a useful artefact by selecting and filling only these supported blocks. Return the requested structured output, with no markdown. Choose developer-page for engineering work and generic-page otherwise. Use prose for unsupported artefact types. Blocks are prose (title/body), metric-row (2-3 comparable items), architecture-flow (2-3 ordered nodes), glue (short transition), task-list (ordered tasks with id/key/title/detail/meta/status), and next-steps (concrete follow-up suggestions). Only choose blocks that fit the category: developer-page supports all blocks; generic-page supports prose, metric-row, glue, and next-steps. Never invent fetched or connected data; work only from the user's prompt. Do not claim that an integration or action has been performed.`;
+const instructions = `Create a useful artefact by selecting and filling only these supported blocks. Return the requested structured output. Every string is plain text: never use markdown syntax such as **, #, bullet lists, or code fences. Choose developer-page for engineering work and generic-page otherwise. Blocks are prose (title/body), metric-row (2-3 comparable items), architecture-flow (2-3 ordered nodes), glue (short transition), task-list (ordered tasks with id/key/title/detail/meta/status), next-steps (concrete follow-up suggestions), code-diff (one file's changes as hunks of context/add/remove lines, one source line per entry, without the leading +/- marker but keeping the line's original indentation exactly; use the @@ hunk line as the header when one is given), review-comments (each reviewer's handle without their verdict, their verdict as approved/changes-requested/commented, and their feedback, plus the consensus), commit-list (commits with sha/message/author/detail; use an empty sha when none is given), and check-list (CI checks, tests, or merge requirements marked passed/failed/pending). Always prefer the specialised block that matches the content over prose: code or a diff becomes code-diff, reviewer feedback becomes review-comments, commits or history become commit-list, and build or test results become check-list. Use prose only for narrative that no other block represents. When the user asks for an example or demo of a block, fill it with realistic illustrative data and say it is an example in the summary. Only choose blocks that fit the category: developer-page supports all blocks; generic-page supports prose, metric-row, glue, and next-steps. Do not claim that an integration or action has been performed, and do not present illustrative data as fetched from a connected service.`;
 
 export class ArtefactAgentError extends Error {
 	readonly kind: string;
@@ -61,7 +91,7 @@ function toDocument(generation: Generation): ArtefactDocument {
 		throw new Error("The generated artefact is incomplete");
 	}
 	const allowed = generation.category === "developer-page"
-		? new Set(["prose", "metric-row", "architecture-flow", "glue", "task-list", "next-steps"])
+		? new Set(["prose", "metric-row", "architecture-flow", "glue", "task-list", "next-steps", "code-diff", "review-comments", "commit-list", "check-list"])
 		: new Set(["prose", "metric-row", "glue", "next-steps"]);
 	if (generation.blocks.some((block) => !allowed.has(block.template))) {
 		throw new Error("The generated artefact contains an unsupported block");
@@ -71,6 +101,10 @@ function toDocument(generation: Generation): ArtefactDocument {
 		if (block.template === "architecture-flow" && block.data.nodes.length < 2) throw new Error("Architecture flows need at least two nodes");
 		if (block.template === "task-list" && block.data.tasks.length === 0) throw new Error("Task lists cannot be empty");
 		if (block.template === "next-steps" && block.data.actions.length === 0) throw new Error("Next steps cannot be empty");
+		if (block.template === "code-diff" && !block.data.hunks.some((hunk) => hunk.lines.length > 0)) throw new Error("Code diffs cannot be empty");
+		if (block.template === "review-comments" && block.data.comments.length === 0) throw new Error("Review comments cannot be empty");
+		if (block.template === "commit-list" && block.data.commits.length === 0) throw new Error("Commit lists cannot be empty");
+		if (block.template === "check-list" && block.data.checks.length === 0) throw new Error("Check lists cannot be empty");
 	}
 	const nodes: ArtefactNode[] = generation.blocks.map((block, index) => ({
 		id: `block-${index + 1}`,

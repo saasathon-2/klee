@@ -1,25 +1,28 @@
+import { Card } from "@heroui/react";
 import type { Metric } from "../../model";
+import { BlockSection } from "../page/BlockSection";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 export function MetricRow({ node }: TemplateProps) {
 	const { items } = node.data as { items: Metric[] };
 	return (
-		<section className="grid border-b border-divider sm:grid-cols-3">
-			{items.map((item) => (
-				<div
-					key={item.label}
-					className="border-b border-divider px-6 py-6 last:border-b-0 sm:border-b-0 sm:border-r sm:px-8 sm:last:border-r-0"
-				>
-					<p className="text-xs font-medium text-muted">
-						{item.label}
-					</p>
-					<p className="mt-2 text-2xl font-semibold tracking-tight">
-						{item.value}
-					</p>
-					<p className="mt-1 text-sm text-muted">{item.detail}</p>
-				</div>
-			))}
-		</section>
+		<BlockSection>
+			<div className="grid gap-3 sm:grid-cols-3">
+				{items.map((item) => (
+					<Card key={item.label} variant="secondary">
+						<Card.Header>
+							<Card.Description>{item.label}</Card.Description>
+							<Card.Title className="text-2xl font-semibold tracking-tight">
+								{item.value}
+							</Card.Title>
+						</Card.Header>
+						<Card.Content>
+							<Card.Description>{item.detail}</Card.Description>
+						</Card.Content>
+					</Card>
+				))}
+			</div>
+		</BlockSection>
 	);
 }
 

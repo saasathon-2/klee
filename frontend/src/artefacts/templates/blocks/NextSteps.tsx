@@ -1,6 +1,7 @@
 import { Button } from "@heroui/react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import type { SuggestedAction } from "../../model";
+import { BlockSection } from "../page/BlockSection";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 export function NextSteps({ node, context }: TemplateProps) {
@@ -10,34 +11,28 @@ export function NextSteps({ node, context }: TemplateProps) {
 		actions: SuggestedAction[];
 	};
 	return (
-		<section className="bg-surface-secondary px-6 py-9 sm:px-10 sm:py-12">
-			<div className="flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-muted uppercase">
-				<Sparkles size={14} /> Suggested next steps
-			</div>
-			<h3 className="mt-2 text-2xl font-semibold tracking-tight">
-				{title}
-			</h3>
-			<div className="mt-6 grid gap-3 sm:grid-cols-2">
+		<BlockSection title={title}>
+			<div className="grid gap-3 sm:grid-cols-3">
 				{actions.map((action) => (
 					<Button
 						key={action.action}
 						variant="secondary"
-						className="h-auto min-h-20 min-w-0 justify-between gap-4 rounded-xl border border-divider bg-surface px-4 py-4 text-left whitespace-normal"
+						className="h-auto w-full min-w-0 items-start justify-between gap-3 rounded-xl px-4 py-3 text-left whitespace-normal"
 						onPress={() => context.onAction?.(action.label)}
 					>
 						<span className="min-w-0">
-							<span className="block text-sm font-semibold">
+							<span className="block text-sm font-medium text-foreground">
 								{action.label}
 							</span>
-							<span className="mt-1 block text-xs leading-5 text-muted">
+							<span className="mt-0.5 block text-xs leading-5 font-normal text-muted">
 								{action.description}
 							</span>
 						</span>
-						<ArrowRight size={16} className="shrink-0" />
+						<ArrowUpRight size={16} className="mt-0.5 shrink-0 text-muted" />
 					</Button>
 				))}
 			</div>
-		</section>
+		</BlockSection>
 	);
 }
 
