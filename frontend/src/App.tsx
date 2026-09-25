@@ -30,19 +30,21 @@ function Home() {
 function App() {
 	const location = useLocation();
 	const { data: session } = useSession();
-	const isWorkspace = location.pathname.startsWith("/artefacts") || (["/", "/profile"].includes(location.pathname) && Boolean(session?.user));
+	const isWorkspace = location.pathname.startsWith("/artefacts") || (["/", "/profile", "/integrations"].includes(location.pathname) && Boolean(session?.user));
 
 	return (
 		<div className="min-h-screen">
 			{!isWorkspace && <Navbar />}
 			<Routes>
 				<Route path="/" element={<Home />} />
+				<Route path="/welcome" element={<Landing />} />
 				<Route element={<GuestOnly />}>
 					<Route path="/login" element={<Login />} />
 					<Route path="/register" element={<Register />} />
 				</Route>
 				<Route element={<RequireUser />}>
 					<Route path="/profile" element={<Artefacts />} />
+					<Route path="/integrations" element={<Artefacts />} />
 				</Route>
 				<Route path="/artefacts" element={<Navigate to="/" replace />} />
 				<Route path="/artefacts/:id" element={<Navigate to="/" replace />} />

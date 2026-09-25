@@ -17,12 +17,11 @@ export function Navbar() {
 	return (
 		<header className="border-b border-divider bg-background">
 			<nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-				<RouterLink to="/" className="font-semibold">
+				<RouterLink to="/welcome" className="font-semibold">
 					Orcastrate
 				</RouterLink>
 
 				<div className="flex items-center gap-2">
-					{user && <RouterLink to="/" className="text-sm text-black/60 dark:text-white/60">Artefacts</RouterLink>}
 					{isPending ? (
 						<div
 							className="h-8 w-36 animate-pulse rounded bg-black/5 dark:bg-white/10"
