@@ -1,4 +1,4 @@
-import { Avatar, Card, Code, Separator } from "@heroui/react";
+import { Avatar, Card, Code, Paragraph, Separator } from "@heroui/react";
 import { Fragment } from "react";
 import type { Commit } from "../../model";
 import { BlockSection } from "../page/BlockSection";
@@ -22,11 +22,15 @@ export function CommitList({ node }: TemplateProps) {
 								<Avatar.Fallback>{initials(commit.author)}</Avatar.Fallback>
 							</Avatar>
 							<div className="min-w-0 flex-1">
-								<p className="text-sm font-medium">{commit.message}</p>
-								<p className="text-xs text-muted">{commit.author}</p>
-								<p className="mt-1 text-sm leading-6 text-muted">
+								<Paragraph size="sm" weight="medium">
+									{commit.message}
+								</Paragraph>
+								<Paragraph size="xs" color="muted">
+									{commit.author}
+								</Paragraph>
+								<Paragraph size="sm" color="muted" className="mt-1">
 									{commit.detail}
-								</p>
+								</Paragraph>
 							</div>
 							{commit.sha && (
 								<Code className="shrink-0 text-xs">

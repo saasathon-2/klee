@@ -12,14 +12,10 @@ const CategoryPage: Template = ({ node, children, context }) => {
 
 	return (
 		<>
-			<header className="text-lavender-foreground">
-				<div className="relative flex flex-col items-center gap-3 bg-lavender px-6 pt-10 pb-5 text-center sm:px-10">
+			<header className="text-brand-foreground">
+				<div className="relative flex flex-col items-center gap-3 bg-brand px-6 pt-10 pb-5 text-center sm:px-10">
 					<img src="/kleelogo.svg" alt="Klee" className="absolute top-5 left-6 size-7 sm:left-10" />
-					<Heading
-						level={2}
-						align="center"
-						className="text-balance text-inherit"
-					>
+					<Heading level={2} align="center" className="text-balance text-inherit">
 						{data.title}
 					</Heading>
 					<Paragraph
@@ -34,7 +30,7 @@ const CategoryPage: Template = ({ node, children, context }) => {
 								{tag}
 							</Chip>
 						))}
-						<span className="text-xs opacity-70">
+						<Paragraph size="xs" className="text-inherit opacity-70">
 							{new Date(context.createdAt).toLocaleDateString(
 								undefined,
 								{
@@ -43,12 +39,15 @@ const CategoryPage: Template = ({ node, children, context }) => {
 									year: "numeric",
 								},
 							)}
-						</span>
+						</Paragraph>
 					</div>
 				</div>
 				<Scallop edge="bottom" />
 			</header>
-			<div className="pt-4 [&>section]:mx-auto [&>section]:w-full [&>section]:max-w-[1000px]">
+			<div
+				data-slot="artefact-blocks"
+				className="pt-4 [&>section]:mx-auto [&>section]:w-full [&>section]:max-w-[1000px]"
+			>
 				{children}
 			</div>
 		</>

@@ -1,80 +1,71 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Heading, Paragraph } from "@heroui/react";
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import houseOnTheWater from "../assets/klee-house-on-the-water.jpg";
+import polyphony from "../assets/klee-polyphony.jpg";
+import { useSession } from "../lib/auth-client";
+import { useTheme } from "../lib/use-theme";
+import { Scallop } from "../artefacts/templates/page/Scallop";
+import { Footer } from "./landing/Footer";
+import { HeroArtefact } from "./landing/HeroArtefact";
+
+const paintings = {
+	light: { src: houseOnTheWater, title: "House on the Water", year: undefined },
+	dark: { src: polyphony, title: "Polyphony", year: 1932 },
+};
 
 export function Landing() {
 	const navigate = useNavigate();
+	const { data: session } = useSession();
+	const { theme } = useTheme();
+	const painting = paintings[theme];
+	const start = () => navigate(session?.user ? "/" : "/register");
 
 	return (
-		<main className="mx-auto max-w-6xl px-6 py-20">
-			<section className="mx-auto max-w-3xl text-center">
-				<Chip className="mb-6">Built with HeroUI</Chip>
-				<h1 className="text-5xl font-semibold tracking-tight sm:text-6xl">
-					Create beautiful, shareable diagrams effortlessly
-				</h1>
-				<p className="mx-auto mt-6 max-w-2xl text-lg text-muted">
-					A focused home for the work, people, and decisions that
-					matter most.
-				</p>
-				<div className="mt-8 flex justify-center gap-3">
-					<Button onPress={() => navigate("/register")}>
-						Get started
-					</Button>
-					<Button variant="ghost" onPress={() => navigate("/login")}>
-						Sign in
-					</Button>
+		<main>
+			<section className="mx-auto max-w-[108rem] px-6 pt-6">
+				<div className="relative">
+					{/* The painting stops short so the demo hangs off its bottom edge. */}
+					<div className="absolute inset-x-0 top-0 h-[40rem] overflow-hidden rounded-3xl sm:h-[46rem]">
+						<img
+							src={painting.src}
+							alt=""
+							className={`absolute inset-0 size-full object-cover ${theme === "light" ? "opacity-80" : ""}`}
+						/>
+						<Paragraph size="xs" className="absolute top-4 right-5 lg:hidden">
+							Paul Klee, <i>{painting.title}</i>
+							{painting.year && `, ${painting.year}`}
+						</Paragraph>
+					</div>
+					<div className="relative flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
+						<div className="max-w-3xl text-center">
+							<Heading level={1} align="center" className="text-4xl text-balance sm:text-6xl">
+								Create beautiful, shareable diagrams effortlessly
+							</Heading>
+							<Paragraph align="center" className="mx-auto mt-5 max-w-xl text-base sm:text-lg">
+								The workspace that turns pull requests, tickets, and notes into
+								clear, shareable artefacts.
+							</Paragraph>
+							<div className="mt-8 flex flex-wrap justify-center gap-3">
+								<Button size="lg" onPress={start}>
+									Start creating
+									<ArrowRight size={18} />
+								</Button>
+							</div>
+						</div>
+						<div className="w-full lg:w-3/5">
+							<HeroArtefact />
+						</div>
+					</div>
 				</div>
 			</section>
-			<section className="mt-20 grid gap-5 md:grid-cols-3">
-				{[
-					[
-						"One clear place",
-						"Keep the context around your work together.",
-					],
-					[
-						"Progress, visible",
-						"See what needs attention without hunting for it.",
-					],
-					[
-						"Ready to share",
-						"Invite the right people when the moment is right.",
-					],
-				].map(([title, description]) => (
-					<Card key={title} className="min-h-44">
-						<Card.Header>
-							<Card.Title>{title}</Card.Title>
-							<Card.Description>{description}</Card.Description>
-						</Card.Header>
-						<Card.Content>
-							<div className="h-2 w-2/3 rounded-full bg-accent" />
-						</Card.Content>
-					</Card>
-				))}
-			</section>
-			<section className="mt-20">
-				<h2 className="text-2xl font-semibold">
-					Explore the component samples
-				</h2>
-				<div className="mt-5 flex flex-wrap gap-3">
-					<Button
-						variant="ghost"
-						onPress={() => navigate("/examples/forms")}
-					>
-						Forms
-					</Button>
-					<Button
-						variant="ghost"
-						onPress={() => navigate("/examples/social")}
-					>
-						Social cards
-					</Button>
-					<Button
-						variant="ghost"
-						onPress={() => navigate("/examples/settings")}
-					>
-						Settings
-					</Button>
-				</div>
-			</section>
+
+			{/* Pulled up over the demo's bottom edge so the scallops cut across it and the page. */}
+			<div aria-hidden className="relative z-10 -mt-10 mb-16">
+				<Scallop edge="top" />
+				<div className="h-16 bg-brand" />
+			</div>
+			<Footer />
 		</main>
 	);
 }

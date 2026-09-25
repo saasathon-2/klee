@@ -22,8 +22,6 @@ import {
 	FileText,
 	GitCommitHorizontal,
 	GitPullRequest,
-	Home,
-	Inbox,
 	ListChecks,
 	LogOut,
 	Maximize2,
@@ -31,6 +29,7 @@ import {
 	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
+	Plug,
 	Plus,
 	Share2,
 	Sparkles,
@@ -55,6 +54,7 @@ import {
 	type ExamplePrompt,
 } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { IntegrationsPanel } from "./Integrations";
 
 type Revision = {
 	id: string;
@@ -105,6 +105,7 @@ export function Artefacts() {
 	const { data: session, isPending } = useSession();
 	const isShared = Boolean(shareId);
 	const isProfile = location.pathname === "/profile";
+	const isIntegrations = location.pathname === "/integrations";
 	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
 	const [loaded, setLoaded] = useState<{
 		path: string;
@@ -323,8 +324,9 @@ export function Artefacts() {
 				<WorkspaceSidebar
 					artefacts={artefacts}
 					selectedId={id}
-					isHome={!isProfile && !id}
 					user={user}
+					isIntegrations={isIntegrations}
+					onIntegrations={() => navigate("/integrations")}
 					onCreate={() => navigate("/")}
 					onOpenArtefact={(artefactId) =>
 						navigate(`/?artefact=${artefactId}`)
@@ -352,11 +354,15 @@ export function Artefacts() {
 					<h1 className="text-2xl font-semibold tracking-tight">
 						{isProfile
 							? "Profile"
-							: `Good morning, ${user.name?.split(" ")[0] || "there"}`}
+							: isIntegrations
+								? "Integrations"
+								: `Good morning, ${user.name?.split(" ")[0] || "there"}`}
 					</h1>
 					<ThemeToggle className="ml-auto" />
 				</header>
-				{isProfile ? (
+				{isIntegrations ? (
+					<IntegrationsPanel />
+				) : isProfile ? (
 					<div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20">
 						<Card className="w-full">
 							<Card.Header className="flex items-center gap-4">
@@ -582,8 +588,9 @@ function PromptStarter({
 function WorkspaceSidebar({
 	artefacts,
 	selectedId,
-	isHome,
 	user,
+	isIntegrations,
+	onIntegrations,
 	onCreate,
 	onOpenArtefact,
 	onProfile,
@@ -591,8 +598,9 @@ function WorkspaceSidebar({
 }: {
 	artefacts: Artefact[];
 	selectedId?: string;
-	isHome: boolean;
 	user: { name?: string | null; email: string; image?: string | null };
+	isIntegrations: boolean;
+	onIntegrations: () => void;
 	onCreate: () => void;
 	onOpenArtefact: (id: string) => void;
 	onProfile: () => void;
@@ -600,7 +608,45 @@ function WorkspaceSidebar({
 }) {
 	const displayName = user.name || user.email;
 	return (
-		<aside className="flex min-h-screen w-[288px] shrink-0 flex-col border-r border-divider bg-default-50 px-4 py-5">
+		<aside className="sticky top-0 flex h-screen w-[288px] shrink-0 flex-col border-r border-divider bg-default-50 px-4 py-5">
+			<ListBox
+				aria-label="Workspace navigation"
+				selectedKeys={isIntegrations ? ["integrations"] : []}
+				onAction={(key) =>
+					key === "integrations" ? onIntegrations() : onCreate()
+				}
+			>
+				<ListBox.Item id="new" textValue="New artefact">
+					<Plus size={18} />
+					<Label>New artefact</Label>
+				</ListBox.Item>
+				<ListBox.Item id="integrations" textValue="Integrations">
+					<Plug size={18} />
+					<Label>Integrations</Label>
+				</ListBox.Item>
+			</ListBox>
+			<Separator className="my-5" />
+			<ListBox
+				aria-label="Artefacts"
+				className="min-h-0 flex-1 overflow-y-auto"
+				selectedKeys={selectedId ? [selectedId] : []}
+				onAction={(key) => onOpenArtefact(String(key))}
+			>
+				<ListBox.Section>
+					<Header>Artefacts</Header>
+					{artefacts.map((artefact) => (
+						<ListBox.Item
+							key={artefact.id}
+							id={artefact.id}
+							textValue={artefact.title}
+						>
+							<FileText size={16} />
+							<Label>{artefact.title}</Label>
+						</ListBox.Item>
+					))}
+				</ListBox.Section>
+			</ListBox>
+			<Separator className="my-4" />
 			<Popover>
 				<Popover.Trigger>
 					<Button
@@ -622,7 +668,7 @@ function WorkspaceSidebar({
 						</span>
 					</Button>
 				</Popover.Trigger>
-				<Popover.Content placement="bottom" offset={8} className="w-64">
+				<Popover.Content placement="top" offset={8} className="w-64">
 					<Popover.Arrow />
 					<Popover.Dialog className="p-2">
 						<div className="flex items-center gap-3 px-2 py-2">
@@ -656,53 +702,6 @@ function WorkspaceSidebar({
 					</Popover.Dialog>
 				</Popover.Content>
 			</Popover>
-			<ListBox
-				aria-label="Workspace navigation"
-				className="mt-5"
-				selectedKeys={isHome ? ["home"] : []}
-				onAction={(key) => {
-					if (key !== "inbox") onCreate();
-				}}
-				disabledKeys={["inbox"]}
-			>
-				<ListBox.Item
-					id="new"
-					className="mb-1"
-					textValue="New artefact"
-				>
-					<Plus size={18} />
-					<Label>New artefact</Label>
-				</ListBox.Item>
-				<ListBox.Item id="home" textValue="Home">
-					<Home size={18} />
-					<Label>Home</Label>
-				</ListBox.Item>
-				<ListBox.Item id="inbox" textValue="Inbox">
-					<Inbox size={18} />
-					<Label>Inbox</Label>
-				</ListBox.Item>
-			</ListBox>
-			<Separator className="my-5" />
-			<ListBox
-				aria-label="Artefacts"
-				className="min-h-0 flex-1 overflow-y-auto"
-				selectedKeys={selectedId ? [selectedId] : []}
-				onAction={(key) => onOpenArtefact(String(key))}
-			>
-				<ListBox.Section>
-					<Header>Artefacts</Header>
-					{artefacts.map((artefact) => (
-						<ListBox.Item
-							key={artefact.id}
-							id={artefact.id}
-							textValue={artefact.title}
-						>
-							<FileText size={16} />
-							<Label>{artefact.title}</Label>
-						</ListBox.Item>
-					))}
-				</ListBox.Section>
-			</ListBox>
 		</aside>
 	);
 }

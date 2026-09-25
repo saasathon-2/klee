@@ -4,9 +4,9 @@ import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 export function Glue({ node }: TemplateProps) {
 	return (
-		<div className="my-4 text-lavender-foreground">
+		<div className="my-4 text-brand-foreground">
 			<Scallop edge="top" />
-			<div className="bg-lavender px-6 py-3">
+			<div className="bg-brand px-6 py-3">
 				<Paragraph align="center" weight="medium" className="text-inherit">
 					{String(node.data.label)}
 				</Paragraph>
