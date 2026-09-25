@@ -13,7 +13,8 @@ const CategoryPage: Template = ({ node, children, context }) => {
 	return (
 		<>
 			<header className="text-brand-foreground">
-				<div className="flex flex-col items-center gap-3 bg-brand px-6 pt-8 pb-5 text-center sm:px-10">
+				<div className="relative flex flex-col items-center gap-3 bg-brand px-6 pt-10 pb-5 text-center sm:px-10">
+					<img src="/kleelogo.svg" alt="Klee" className="absolute top-5 left-6 size-7 sm:left-10" />
 					<Heading level={2} align="center" className="text-balance text-inherit">
 						{data.title}
 					</Heading>

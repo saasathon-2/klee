@@ -14,9 +14,7 @@ export function ArtefactPage({ children, context }: TemplateProps) {
 			{context.showFooter && (
 				<footer aria-hidden className="mt-8">
 					<Scallop edge="top" />
-					<div className="flex h-16 items-center justify-center bg-brand">
-						<img src="/kleelogo.svg" alt="Klee" className="size-7" />
-					</div>
+					<div className="h-16 bg-brand" />
 				</footer>
 			)}
 		</article>
