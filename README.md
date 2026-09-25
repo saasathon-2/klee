@@ -53,7 +53,7 @@ permissions:
   id-token: write
 
 jobs:
-  orcastrate:
+  klee:
     runs-on: ubuntu-latest
     steps:
       - uses: saasathon-2/integrations/github@main

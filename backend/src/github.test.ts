@@ -13,7 +13,7 @@ assert.equal(validGitHubWebhook(body, "sha256=wrong"), false);
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "http://localhost:3000", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), true);
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "http://localhost:3000", repository: "acme/repo", event_name: "workflow_run", exp: Math.floor(Date.now() / 1000) + 60 }), true);
 assert.equal(validActionsClaims({ iss: "wrong", aud: "http://localhost:3000", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), false);
-const artefactUrl = "https://www.orcastrate.net/artefacts/shared/example";
+const artefactUrl = "https://klee.example/artefacts/shared/example";
 assert.match(
 	githubArtefactComment(artefactUrl),
 	new RegExp(`^<a href="${artefactUrl}" target="_blank"><img src="https://image\\.thum\\.io/get/width/1200/crop/900/noanimate/${artefactUrl}\\?_cb=\\d+" alt="klee artefact"></a>$`),

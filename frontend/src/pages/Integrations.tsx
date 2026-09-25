@@ -20,7 +20,7 @@ type GitHubInstallation = {
 
 const apiUrl = import.meta.env.VITE_API_URL || "https://<api-domain>";
 
-const workflow = `name: Orcastrate
+const workflow = `name: Klee
 
 on:
   pull_request:
@@ -118,7 +118,7 @@ export function IntegrationsPanel() {
 			<Paragraph color="muted" className="max-w-2xl">
 				Bring artefacts to where your team already works. Each integration
 				uses shared artefact links, so only artefacts you have shared are
-				visible outside Orcastrate.
+				visible outside Klee.
 			</Paragraph>
 			<div className="mt-6 space-y-4">
 				<IntegrationCard
@@ -143,12 +143,12 @@ export function IntegrationsPanel() {
 					]}
 					steps={[
 						<>
-							Connect GitHub and choose which repositories the Orcastrate App can
+							Connect GitHub and choose which repositories the Klee App can
 							access.
 						</>,
 						<>
 							Add the workflow below to{" "}
-							<Code className="text-xs">.github/workflows/orcastrate.yml</Code> in each
+							<Code className="text-xs">.github/workflows/klee.yml</Code> in each
 							repository.
 						</>,
 						<>Open or update a pull request to generate its artefact.</>,
@@ -168,7 +168,7 @@ export function IntegrationsPanel() {
 					status={<Chip size="sm">Workspace app</Chip>}
 					features={[
 						"Posts a rendered artefact preview to the channel with the /artefact command.",
-						"Unfurls any Orcastrate artefact link pasted into a message into a preview.",
+						"Unfurls any Klee artefact link pasted into a message into a preview.",
 						"Accepts either an artefact ID or its full share link.",
 					]}
 					steps={[
@@ -177,7 +177,7 @@ export function IntegrationsPanel() {
 							<Code className="text-xs">slack</Code> folder of the integrations
 							repository.
 						</>,
-						<>Share an artefact from Orcastrate to get its link.</>,
+						<>Share an artefact from Klee to get its link.</>,
 						<>
 							Paste the link, or run <Code className="text-xs">/artefact &lt;link or ID&gt;</Code>{" "}
 							in any channel.
@@ -191,7 +191,7 @@ export function IntegrationsPanel() {
 					summary="Show linked artefacts on Jira issues."
 					status={<Chip size="sm">Site app</Chip>}
 					features={[
-						"Adds an Orcastrate artefacts panel to every Jira issue.",
+						"Adds a Klee artefacts panel to every Jira issue.",
 						"Embeds each artefact linked in the issue's description or comments.",
 						"Reads issues with the viewer's own Jira permissions.",
 					]}
@@ -203,7 +203,7 @@ export function IntegrationsPanel() {
 							<Code className="text-xs">forge install</Code>.
 						</>,
 						<>Paste a shared artefact link into an issue's description or a comment.</>,
-						<>Open the Orcastrate artefacts panel on the issue.</>,
+						<>Open the Klee artefacts panel on the issue.</>,
 					]}
 				/>
 			</div>
