@@ -42,6 +42,58 @@ nests: glue { glue_name, glue_context } nests: task_list_view { data: [...] }
 }
 }
 
+### Concrete data-model example
+
+For a pull-request review, the AI returns data such as this. It does not return HTML; the renderer selects the component named by each `template` and gives it that node's `data` and `children`.
+
+```json
+{
+  "version": 1,
+  "root": {
+    "id": "root",
+    "template": "artefact-page",
+    "data": { "title": "PR #42 review" },
+    "children": [
+      {
+        "id": "category",
+        "template": "developer-page",
+        "data": {
+          "eyebrow": "Pull request review",
+          "title": "Add GitHub artefact refresh",
+          "summary": "The change refreshes the shared artefact after each PR update.",
+          "tags": ["GitHub", "Backend"]
+        },
+        "children": [
+          {
+            "id": "checks",
+            "template": "check-list",
+            "data": {
+              "title": "Checks",
+              "checks": [
+                { "name": "Backend tests", "status": "passed", "detail": "17 tests passed" },
+                { "name": "Frontend build", "status": "pending", "detail": "Waiting for CI" }
+              ]
+            }
+          },
+          {
+            "id": "next",
+            "template": "next-steps",
+            "data": {
+              "title": "Next steps",
+              "actions": [
+                { "label": "Review workflow", "description": "Confirm PR updates trigger a refresh.", "action": "open-workflow" }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+History is versioned data, not rendered pages. Version 1 stores this document; later versions store JSON-style patch operations, for example `{ "op": "replace", "path": ["root", "children", 0, "children", 0, "data", "checks", 1, "status"], "value": "passed" }`. To show any version, the app rebuilds its document by replaying patches, then renders that document through the same templates. No HTML snapshot is stored for a version.
+
 ## Visual design
 
 The app currently uses HeroUI for its interface. Some visual inspirations include the Dia browser, early Spotify Wrapped (bold neon colours and black shapes), etc.

@@ -1,4 +1,5 @@
 import {
+	createHash,
 	createHmac,
 	createPrivateKey,
 	createPublicKey,
@@ -122,6 +123,7 @@ type GitHubCheck = {
 };
 
 export type GitHubPullRequestContext = {
+	headSha: string;
 	title: string;
 	body: string;
 	url: string;
@@ -165,6 +167,7 @@ const [pull, files, reviews, comments, reviewComments, commits] = await Promise.
 		path: text(item.path),
 	}));
 	return {
+		headSha: text(head.sha),
 		title: text(pull.title),
 		body: text(pull.body),
 		url: text(pull.html_url),
@@ -202,6 +205,20 @@ const [pull, files, reviews, comments, reviewComments, commits] = await Promise.
 	};
 }
 
+/** Stable input for deciding whether a PR refresh merits another AI generation. */
+export function githubPullRequestFingerprint(context: GitHubPullRequestContext) {
+	return createHash("sha256")
+		.update(JSON.stringify({
+			headSha: context.headSha,
+			files: context.files.map(({ filename, status, additions, deletions }) => ({ filename, status, additions, deletions })),
+			feedback: context.feedback,
+			checks: context.checks
+				.filter((check) => check.conclusion)
+				.map(({ name, conclusion }) => ({ name, result: conclusion === "success" ? "passed" : "failed" })),
+		}))
+		.digest("hex");
+}
+
 export function githubPullRequestPrompt(
 	repository: string,
 	pullRequest: number,
@@ -221,7 +238,7 @@ export function githubPullRequestPrompt(
 
 export function githubArtefactComment(url: string) {
 	const cacheBustedUrl = `${url}${url.includes("?") ? "&" : "?"}_cb=${Date.now()}`;
-	const screenshot = `https://image.thum.io/get/width/1200/crop/900/wait/5/noanimate/${cacheBustedUrl}`;
+	const screenshot = `https://image.thum.io/get/width/1200/crop/900/noanimate/${cacheBustedUrl}`;
 	return `<a href="${url}" target="_blank"><img src="${screenshot}" alt="klee artefact"></a>`;
 }
 
@@ -232,7 +249,7 @@ export function validActionsClaims(claims: Record<string, unknown>) {
 		claims.iss === oidcIssuer &&
 		(audience.includes(githubActionsAudience) || audience.includes(env.betterAuthUrl)) &&
 		typeof claims.repository === "string" &&
-		(claims.event_name === "pull_request" || claims.event_name === "workflow_run") &&
+		(claims.event_name === "pull_request" || claims.event_name === "pull_request_target" || claims.event_name === "workflow_run") &&
 		typeof claims.exp === "number" &&
 		claims.exp > now &&
 		(typeof claims.nbf !== "number" || claims.nbf <= now)

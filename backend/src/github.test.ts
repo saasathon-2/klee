@@ -5,21 +5,23 @@ process.env.DATABASE_URL ??= "postgres://localhost/test";
 process.env.BETTER_AUTH_SECRET ??= "test";
 process.env.GITHUB_WEBHOOK_SECRET = "test-secret";
 
-const { githubArtefactComment, githubPullRequestPrompt, validActionsClaims, validGitHubWebhook } = await import("./github.ts");
+const { githubArtefactComment, githubPullRequestFingerprint, githubPullRequestPrompt, validActionsClaims, validGitHubWebhook } = await import("./github.ts");
 const body = Buffer.from('{"action":"created"}');
 const signature = `sha256=${createHmac("sha256", "test-secret").update(body).digest("hex")}`;
 assert.equal(validGitHubWebhook(body, signature), true);
 assert.equal(validGitHubWebhook(body, "sha256=wrong"), false);
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "klee-github-actions", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), true);
+assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "klee-github-actions", repository: "acme/repo", event_name: "pull_request_target", exp: Math.floor(Date.now() / 1000) + 60 }), true);
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "klee-github-actions", repository: "acme/repo", event_name: "workflow_run", exp: Math.floor(Date.now() / 1000) + 60 }), true);
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "http://localhost:3000", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), true);
 assert.equal(validActionsClaims({ iss: "wrong", aud: "klee-github-actions", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), false);
 const artefactUrl = "https://klee.work/artefacts/shared/example";
 assert.match(
 	githubArtefactComment(artefactUrl),
-	new RegExp(`^<a href="${artefactUrl}" target="_blank"><img src="https://image\\.thum\\.io/get/width/1200/crop/900/wait/5/noanimate/${artefactUrl}\\?_cb=\\d+" alt="klee artefact"></a>$`),
+	new RegExp(`^<a href="${artefactUrl}" target="_blank"><img src="https://image\\.thum\\.io/get/width/1200/crop/900/noanimate/${artefactUrl}\\?_cb=\\d+" alt="klee artefact"></a>$`),
 );
 const prompt = githubPullRequestPrompt("acme/repo", 12, {
+	headSha: "abcdef",
 	title: "Add context",
 	body: "Generate a focused review.",
 	url: "https://github.com/acme/repo/pull/12",
@@ -38,7 +40,42 @@ assert.match(prompt, /added: src\/context\.ts/);
 assert.match(prompt, /https:\/\/github\.com\/acme\/repo\/actions\/runs\/1/);
 assert.match(prompt, /Reviewer feedback:/);
 assert.match(prompt, /CI checks:/);
+const minorContext = {
+	headSha: "abcdef",
+	title: "Minor wording",
+	body: "Edited description",
+	url: "",
+	author: "",
+	base: "main",
+	head: "feature",
+	additions: 1,
+	deletions: 0,
+	files: [],
+	feedback: [],
+	commits: [],
+	checks: [],
+};
+assert.equal(
+	githubPullRequestFingerprint(minorContext),
+	githubPullRequestFingerprint({ ...minorContext, title: "Different wording", body: "Also edited" }),
+);
+assert.notEqual(githubPullRequestFingerprint(minorContext), githubPullRequestFingerprint({
+	headSha: "123456",
+	title: "Minor wording",
+	body: "Edited description",
+	url: "",
+	author: "",
+	base: "main",
+	head: "feature",
+	additions: 1,
+	deletions: 0,
+	files: [],
+	feedback: [],
+	commits: [],
+	checks: [],
+}));
 const largePrompt = githubPullRequestPrompt("acme/repo", 13, {
+	headSha: "abcdef",
 	title: "Large change",
 	body: "",
 	url: "",
