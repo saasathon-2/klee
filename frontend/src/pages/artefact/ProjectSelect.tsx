@@ -52,7 +52,7 @@ export function ProjectSelect({
 	return (
 		<Select
 			aria-label="Project"
-			className="w-44"
+			className="min-w-0 flex-1 sm:w-44 sm:flex-none"
 			value={installationId ?? noProject}
 			onChange={(key) => void choose(String(key))}
 		>

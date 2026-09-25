@@ -57,7 +57,8 @@ function IntegrationCard({
 }) {
 	return (
 		<Card>
-			<Card.Header className="flex-row items-start gap-3">
+			{/* On phones the status/action drops below the title instead of squeezing it. */}
+			<Card.Header className="flex-row flex-wrap items-start gap-3 sm:flex-nowrap">
 				<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-secondary">
 					{icon}
 				</div>
@@ -67,7 +68,7 @@ function IntegrationCard({
 					</Card.Title>
 					<Card.Description>{summary}</Card.Description>
 				</div>
-				{status}
+				{status && <div className="w-full pl-13 sm:w-auto sm:pl-0">{status}</div>}
 			</Card.Header>
 			<Card.Content className="gap-4">
 				<Separator />

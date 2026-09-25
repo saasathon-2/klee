@@ -381,7 +381,11 @@ async function refreshAccess(userId: string) {
 const artefactColumns = (userParam: string) => `artefact.id, artefact.is_shared as "isShared", artefact.prompt, artefact.title,
     artefact.created_at as "createdAt", artefact.updated_at as "updatedAt",
     artefact.owner_id = ${userParam} as "isOwner", project.account_login as "project",
-    artefact.github_installation_id as "installationId"`;
+    artefact.github_installation_id as "installationId", folder_entry.folder_id as "folderId"`;
+
+/** Joins the project (GitHub org) and the folder the user filed the artefact in. */
+const artefactJoins = (userParam: string) => `left join github_installation project on project.installation_id = artefact.github_installation_id
+        left join artefact_folder_entry folder_entry on folder_entry.artefact_id = artefact.id and folder_entry.user_id = ${userParam}`;
 
 /** Loads an artefact the user may access, or undefined (answer 404 so existence isn't leaked). */
 async function accessibleArtefact(artefactId: string, userId: string) {
@@ -389,7 +393,7 @@ async function accessibleArtefact(artefactId: string, userId: string) {
         `select ${artefactColumns("$2")}, artefact.content,
             (select coalesce(max(version), 0) from artefact_version where artefact_id = artefact.id) as version
         from artefact
-        left join github_installation project on project.installation_id = artefact.github_installation_id
+        ${artefactJoins("$2")}
         where artefact.id = $1 and ${accessibleArtefactSql("$2")}`,
         [artefactId, userId],
     );
@@ -424,7 +428,7 @@ app.get("/api/artefacts", async (req, res) => {
     const { rows } = await pool.query(
         `select ${artefactColumns("$1")}
         from artefact
-        left join github_installation project on project.installation_id = artefact.github_installation_id
+        ${artefactJoins("$1")}
         where ${accessibleArtefactSql("$1")}
         order by artefact.updated_at desc`,
         [user.id],
@@ -644,6 +648,81 @@ app.get("/api/artefacts/:id/versions/:version", async (req, res) => {
     if (!Number.isInteger(version) || version < 1 || version > patches.length)
         return res.sendStatus(404);
     res.json({ version, content: documentAtVersion(patches.map((row) => row.patch), version) });
+});
+
+const folderName = (value: unknown) =>
+    typeof value === "string" ? value.trim().slice(0, 80) : "";
+
+app.get("/api/folders", async (req, res) => {
+    const user = await sessionUser(req, res);
+    if (!user) return;
+    const { rows } = await pool.query(
+        'select id, name from artefact_folder where owner_id = $1 order by lower(name)',
+        [user.id],
+    );
+    res.json(rows);
+});
+
+app.post("/api/folders", async (req, res) => {
+    const user = await sessionUser(req, res);
+    if (!user) return;
+    const name = folderName(req.body?.name);
+    if (!name) return res.status(400).json({ error: "A folder name is required." });
+    const { rows } = await pool.query(
+        "insert into artefact_folder (id, owner_id, name) values ($1, $2, $3) returning id, name",
+        [randomUUID(), user.id, name],
+    );
+    res.status(201).json(rows[0]);
+});
+
+app.patch("/api/folders/:id", async (req, res) => {
+    const user = await sessionUser(req, res);
+    if (!user) return;
+    const name = folderName(req.body?.name);
+    if (!name) return res.status(400).json({ error: "A folder name is required." });
+    const { rows } = await pool.query(
+        "update artefact_folder set name = $3, updated_at = current_timestamp where id = $1 and owner_id = $2 returning id, name",
+        [req.params.id, user.id, name],
+    );
+    if (!rows[0]) return res.sendStatus(404);
+    res.json(rows[0]);
+});
+
+/** Deletes the folder only; its artefacts become unfiled. */
+app.delete("/api/folders/:id", async (req, res) => {
+    const user = await sessionUser(req, res);
+    if (!user) return;
+    const { rowCount } = await pool.query(
+        "delete from artefact_folder where id = $1 and owner_id = $2",
+        [req.params.id, user.id],
+    );
+    if (!rowCount) return res.sendStatus(404);
+    res.sendStatus(204);
+});
+
+app.put("/api/artefacts/:id/folder", async (req, res) => {
+    const user = await sessionUser(req, res);
+    if (!user) return;
+    const folderId = typeof req.body?.folderId === "string" ? req.body.folderId : null;
+    if (!(await accessibleArtefact(req.params.id, user.id))) return res.sendStatus(404);
+    if (!folderId) {
+        await pool.query(
+            "delete from artefact_folder_entry where user_id = $1 and artefact_id = $2",
+            [user.id, req.params.id],
+        );
+        return res.json({ folderId: null });
+    }
+    const folder = await pool.query(
+        "select 1 from artefact_folder where id = $1 and owner_id = $2",
+        [folderId, user.id],
+    );
+    if (!folder.rows[0]) return res.status(404).json({ error: "Folder not found." });
+    await pool.query(
+        `insert into artefact_folder_entry (user_id, artefact_id, folder_id) values ($1, $2, $3)
+        on conflict (user_id, artefact_id) do update set folder_id = excluded.folder_id`,
+        [user.id, req.params.id, folderId],
+    );
+    res.json({ folderId });
 });
 
 app.get("/api/projects", async (req, res) => {

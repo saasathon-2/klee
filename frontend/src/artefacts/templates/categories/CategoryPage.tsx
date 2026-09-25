@@ -19,7 +19,7 @@ const CategoryPage: Template = ({ node, children, context }) => {
 						<Heading
 							level={1}
 							align="start"
-							className="text-balance text-inherit"
+							className="w-full text-balance text-inherit"
 						>
 							<EditableText
 								node={node}
@@ -31,7 +31,7 @@ const CategoryPage: Template = ({ node, children, context }) => {
 						</Heading>
 						<Paragraph
 							align="start"
-							className="max-w-2xl text-inherit opacity-80"
+							className="w-full max-w-2xl text-inherit opacity-80"
 						>
 							<EditableText
 								node={node}
