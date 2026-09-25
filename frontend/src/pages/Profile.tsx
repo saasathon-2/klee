@@ -1,4 +1,6 @@
+import { Card } from "@heroui/react";
 import { Navigate } from "react-router-dom";
+import { UserAvatar } from "../components/UserAvatar";
 import { useSession } from "../lib/auth-client";
 
 export function Profile() {
@@ -22,40 +24,28 @@ export function Profile() {
 	const { user } = session;
 
 	return (
-		<main className="mx-auto max-w-sm px-6 py-16">
-			<h1 className="mb-6 text-3xl font-semibold">Profile</h1>
-
-			<div className="flex items-center gap-4">
-				{user.image ? (
-					<img
-						src={user.image}
-						alt={user.name ?? user.email}
-						className="h-16 w-16 rounded-full object-cover"
-					/>
-				) : (
-					<div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/5 text-lg font-semibold dark:bg-white/10">
-						{(user.name ?? user.email).charAt(0).toUpperCase()}
+		<main className="mx-auto max-w-lg px-6 py-16">
+			<Card>
+				<Card.Header className="flex items-center gap-4">
+					<UserAvatar image={user.image} name={user.name || user.email} size="lg" />
+					<div>
+						<Card.Title>{user.name || "Unnamed"}</Card.Title>
+						<Card.Description>{user.email}</Card.Description>
 					</div>
-				)}
-
-				<div>
-					<p className="font-semibold">{user.name || "Unnamed"}</p>
-					<p className="text-sm text-black/60 dark:text-white/60">
-						{user.email}
-					</p>
-				</div>
-			</div>
-
-			<dl className="mt-10 divide-y divide-black/10 text-sm dark:divide-white/10">
-				<div className="flex items-center justify-between py-3">
-					<dt className="text-black/60 dark:text-white/60">Email verified</dt>
-					<dd>{user.emailVerified ? "Yes" : "No"}</dd>
-				</div>
-				<div className="flex items-center justify-between py-3">
-					<dt className="text-black/60 dark:text-white/60">Member since</dt>
-					<dd>{new Date(user.createdAt).toLocaleDateString()}</dd>
-				</div>
-			</dl>
+				</Card.Header>
+				<Card.Content>
+					<dl className="divide-y divide-divider text-sm">
+						<div className="flex items-center justify-between py-3">
+							<dt className="text-muted">Email verified</dt>
+							<dd>{user.emailVerified ? "Yes" : "No"}</dd>
+						</div>
+						<div className="flex items-center justify-between py-3">
+							<dt className="text-muted">Member since</dt>
+							<dd>{new Date(user.createdAt).toLocaleDateString()}</dd>
+						</div>
+					</dl>
+				</Card.Content>
+			</Card>
 		</main>
 	);
 }

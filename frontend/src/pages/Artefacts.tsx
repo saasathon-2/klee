@@ -1,0 +1,680 @@
+import {
+	Button,
+	Card,
+	Header,
+	Input,
+	Label,
+	ListBox,
+	Modal,
+	Popover,
+	Separator,
+	Surface,
+	TextArea,
+	Toolbar,
+} from "@heroui/react";
+import {
+	ArrowUp,
+	CalendarDays,
+	Check,
+	Compass,
+	FileText,
+	GitPullRequest,
+	Home,
+	Inbox,
+	Layers3,
+	LogOut,
+	Maximize2,
+	Minimize2,
+	Network,
+	PanelLeftClose,
+	PanelLeftOpen,
+	Plus,
+	Share2,
+	Sparkles,
+	UserRound,
+	X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
+import {
+	Navigate,
+	useLocation,
+	useNavigate,
+	useParams,
+	useSearchParams,
+} from "react-router-dom";
+import { signOut, useSession } from "../lib/auth-client";
+import { UserAvatar } from "../components/UserAvatar";
+
+type Revision = { id: string; content: string; createdAt: string };
+type Artefact = {
+	id: string;
+	shareId?: string;
+	prompt: string;
+	title: string;
+	createdAt: string;
+	revisions?: Revision[];
+};
+
+function artefactHeading(artefact: Artefact) {
+	if (artefact.title !== "New artefact") return artefact.title;
+	return /\b(pr|pull request|github|change|architecture)\b/i.test(
+		artefact.prompt,
+	)
+		? "Change brief"
+		: "Working brief";
+}
+
+const api = (path: string, options?: RequestInit) =>
+	fetch(`/api${path}`, {
+		credentials: "include",
+		headers: { "Content-Type": "application/json", ...options?.headers },
+		...options,
+	});
+
+export function Artefacts() {
+	const navigate = useNavigate();
+	const location = useLocation();
+	const { id: routeId, shareId } = useParams();
+	const [searchParams] = useSearchParams();
+	const id = routeId ?? searchParams.get("artefact") ?? undefined;
+	const { data: session, isPending } = useSession();
+	const isShared = Boolean(shareId);
+	const isProfile = location.pathname === "/profile";
+	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
+	const [loaded, setLoaded] = useState<{
+		path: string;
+		artefact: Artefact;
+	}>();
+	const [prompt, setPrompt] = useState("");
+	const [followUp, setFollowUp] = useState("");
+	const [error, setError] = useState("");
+	const [copied, setCopied] = useState(false);
+	const [isFullscreen, setFullscreen] = useState(false);
+	const [isSidebarOpen, setSidebarOpen] = useState(true);
+	const artefactPath = shareId
+		? `/shared/artefacts/${shareId}`
+		: id
+			? `/artefacts/${id}`
+			: undefined;
+	const current =
+		loaded?.path === artefactPath ? loaded?.artefact : undefined;
+
+	useEffect(() => {
+		if (isShared || !session?.user) return;
+		api("/artefacts")
+			.then((response) =>
+				response.ok ? response.json() : Promise.reject(),
+			)
+			.then(setArtefacts)
+			.catch(() => setError("Could not load artefacts."));
+	}, [isShared, session?.user]);
+	useEffect(() => {
+		if (!artefactPath) return;
+		api(artefactPath)
+			.then((response) =>
+				response.ok ? response.json() : Promise.reject(),
+			)
+			.then((artefact: Artefact) =>
+				setLoaded({ path: artefactPath, artefact }),
+			)
+			.catch(() => setError("This artefact could not be found."));
+	}, [artefactPath]);
+
+	async function create(event: FormEvent) {
+		event.preventDefault();
+		if (!prompt.trim()) return;
+		const response = await api("/artefacts", {
+			method: "POST",
+			body: JSON.stringify({ prompt }),
+		});
+		if (!response.ok) return setError("Could not create artefact.");
+		const artefact = (await response.json()) as Artefact;
+		setArtefacts([artefact, ...artefacts]);
+		setPrompt("");
+		navigate(`/?artefact=${artefact.id}`);
+	}
+	async function revise(event: FormEvent) {
+		event.preventDefault();
+		if (!current || !followUp.trim()) return;
+		const response = await api(`/artefacts/${current.id}/revisions`, {
+			method: "POST",
+			body: JSON.stringify({ content: followUp }),
+		});
+		if (!response.ok) return setError("Could not save update.");
+		const revision = (await response.json()) as Revision;
+		setLoaded({
+			path: artefactPath!,
+			artefact: {
+				...current,
+				revisions: [...(current.revisions ?? []), revision],
+			},
+		});
+		setFollowUp("");
+	}
+	async function share() {
+		if (!current?.shareId) return;
+		await navigator.clipboard.writeText(
+			`${window.location.origin}/artefacts/shared/${current.shareId}`,
+		);
+		setCopied(true);
+		window.setTimeout(() => setCopied(false), 1500);
+	}
+	function close() {
+		setFullscreen(false);
+		navigate("/");
+	}
+	async function leave() {
+		await signOut();
+		navigate("/");
+	}
+
+	if (isPending && !isShared)
+		return (
+			<main className="grid min-h-screen place-items-center">
+				<span className="text-sm text-muted">Loading</span>
+			</main>
+		);
+	if (!isShared && !session?.user) return <Navigate to="/login" replace />;
+	if (isShared)
+		return (
+			<main className="mx-auto min-h-screen max-w-3xl px-6 py-12">
+				<p className="text-sm font-semibold">Orcastrate</p>
+				{error && <p className="mt-8 text-sm text-danger">{error}</p>}
+				{current && <ArtefactBody artefact={current} />}
+			</main>
+		);
+
+	const user = session!.user;
+	return (
+		<Surface className="flex min-h-screen overflow-hidden rounded-none border border-divider bg-background text-foreground">
+			{isSidebarOpen && (
+				<WorkspaceSidebar
+					artefacts={artefacts}
+					selectedId={id}
+					isHome={!isProfile && !id}
+					user={user}
+					onCreate={() => navigate("/")}
+					onOpenArtefact={(artefactId) =>
+						navigate(`/?artefact=${artefactId}`)
+					}
+					onProfile={() => navigate("/profile")}
+					onSignOut={leave}
+				/>
+			)}
+			<section className="relative flex min-h-screen min-w-0 flex-1 flex-col bg-background">
+				<header className="flex h-20 items-center gap-4 px-7">
+					<Button
+						aria-label={
+							isSidebarOpen ? "Hide sidebar" : "Show sidebar"
+						}
+						variant="ghost"
+						className="size-9 min-w-9 p-0"
+						onPress={() => setSidebarOpen(!isSidebarOpen)}
+					>
+						{isSidebarOpen ? (
+							<PanelLeftClose size={19} />
+						) : (
+							<PanelLeftOpen size={19} />
+						)}
+					</Button>
+					<h1 className="text-2xl font-semibold tracking-tight">{isProfile ? "Profile" : `Good morning, ${user.name?.split(" ")[0] || "there"}`}</h1>
+				</header>
+				{isProfile ? <div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20"><Card className="w-full"><Card.Header className="flex items-center gap-4"><UserAvatar image={user.image} name={user.name || user.email} size="lg" /><div><Card.Title>{user.name || "Unnamed"}</Card.Title><Card.Description>{user.email}</Card.Description></div></Card.Header><Card.Content><dl className="divide-y divide-divider text-sm"><div className="flex items-center justify-between py-3"><dt className="text-muted">Email verified</dt><dd>{user.emailVerified ? "Yes" : "No"}</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted">Member since</dt><dd>{new Date(user.createdAt).toLocaleDateString()}</dd></div></dl></Card.Content></Card></div> : <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
+					<div className="mx-auto w-full max-w-2xl">
+						<div className="mb-8 text-center">
+							<div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+								<Sparkles size={20} />
+							</div>
+							<h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+								Turn context into something useful.
+							</h2>
+							<p className="mx-auto mt-3 max-w-xl text-base leading-6 text-muted">
+								Ask for a shareable brief, technical diagram, or decision-ready plan.
+							</p>
+						</div>
+					<form onSubmit={create} className="w-full">
+						<Surface className="rounded-2xl border border-divider bg-surface p-3 transition-colors focus-within:border-muted">
+							<TextArea
+								aria-label="Artefact prompt"
+								variant="secondary"
+								rows={3}
+								value={prompt}
+								onChange={(event) =>
+									setPrompt(event.target.value)
+								}
+								placeholder="What would you like to make? Paste a PR, issue, or a question…"
+								className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
+							/>
+							<Toolbar
+								aria-label="Create artefact controls"
+								className="flex w-full justify-end px-1 pt-1"
+							>
+								<Button
+									aria-label="Create artefact"
+									type="submit"
+									className="size-9 min-w-9 rounded-full p-0"
+									isDisabled={!prompt.trim()}
+								>
+									<ArrowUp size={17} />
+								</Button>
+							</Toolbar>
+						</Surface>
+					</form>
+					<div className="mt-4 grid gap-2 lg:grid-cols-3">
+						<PromptStarter
+							icon={<GitPullRequest size={17} />}
+							title="Explain a PR"
+							description="Changes, impact, and architecture"
+							onPress={() => setPrompt("Explain the changes and architecture impact in this pull request: ")}
+						/>
+						<PromptStarter
+							icon={<CalendarDays size={17} />}
+							title="Plan my week"
+							description="A focused roadmap from my assigned work"
+							onPress={() => setPrompt("Create a simple roadmap for my assigned tickets this week.")}
+						/>
+						<PromptStarter
+							icon={<Compass size={17} />}
+							title="Make a brief"
+							description="Turn scattered context into a shareable update"
+							onPress={() => setPrompt("Create a concise project update that I can share with my team.")}
+						/>
+					</div>
+					<p className="mt-5 text-center text-xs text-muted">
+						Artefacts are private until you share a link.
+					</p>
+					</div>
+				</div>}
+				{error && (
+					<p className="absolute bottom-8 left-8 text-sm text-danger">
+						{error}
+					</p>
+				)}
+			</section>
+			{current && (
+				<ArtefactModal
+					artefact={current}
+					isFullscreen={isFullscreen}
+					onClose={close}
+					onFullscreen={() => setFullscreen(!isFullscreen)}
+					onShare={share}
+					copied={copied}
+					followUp={followUp}
+					setFollowUp={setFollowUp}
+					onSubmit={revise}
+				/>
+			)}
+		</Surface>
+	);
+}
+
+function PromptStarter({
+	icon,
+	title,
+	description,
+	onPress,
+}: {
+	icon: ReactNode;
+	title: string;
+	description: string;
+	onPress: () => void;
+}) {
+	return (
+		<Button
+			variant="ghost"
+			className="h-auto min-h-24 min-w-0 items-start justify-start gap-3 rounded-xl border border-divider px-4 py-3 text-left whitespace-normal hover:bg-surface-secondary"
+			onPress={onPress}
+		>
+			<span className="mt-0.5 text-muted">{icon}</span>
+			<span className="min-w-0">
+				<span className="block text-sm font-medium">{title}</span>
+				<span className="mt-1 block text-xs leading-4 text-muted text-pretty">
+					{description}
+				</span>
+			</span>
+		</Button>
+	);
+}
+
+function WorkspaceSidebar({
+	artefacts,
+	selectedId,
+	isHome,
+	user,
+	onCreate,
+	onOpenArtefact,
+	onProfile,
+	onSignOut,
+}: {
+	artefacts: Artefact[];
+	selectedId?: string;
+	isHome: boolean;
+	user: { name?: string | null; email: string; image?: string | null };
+	onCreate: () => void;
+	onOpenArtefact: (id: string) => void;
+	onProfile: () => void;
+	onSignOut: () => void;
+}) {
+	const displayName = user.name || user.email;
+	return (
+		<aside className="flex min-h-screen w-[288px] shrink-0 flex-col border-r border-divider bg-default-50 px-4 py-5">
+			<Popover>
+				<Popover.Trigger>
+					<Button
+						variant="ghost"
+						className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-2 text-left"
+					>
+						<UserAvatar image={user.image} name={displayName} size="lg" />
+						<span className="min-w-0">
+							<span className="block truncate text-base font-semibold">
+								{displayName}
+							</span>
+							<span className="block truncate text-sm text-muted">
+								{user.email}
+							</span>
+						</span>
+					</Button>
+				</Popover.Trigger>
+				<Popover.Content placement="bottom" offset={8} className="w-64">
+					<Popover.Arrow />
+					<Popover.Dialog className="p-2">
+						<div className="flex items-center gap-3 px-2 py-2">
+							<UserAvatar image={user.image} name={displayName} />
+							<span className="min-w-0">
+								<span className="block truncate font-medium">{displayName}</span>
+								<span className="block truncate text-xs text-muted">{user.email}</span>
+							</span>
+						</div>
+						<Separator className="my-1" />
+						<Button
+							variant="ghost"
+							className="w-full justify-start"
+							onPress={onProfile}
+						>
+							<UserRound size={16} />
+							Profile
+						</Button>
+						<Button
+							variant="ghost"
+							className="w-full justify-start text-danger"
+							onPress={onSignOut}
+						>
+							<LogOut size={16} />
+							Log out
+						</Button>
+					</Popover.Dialog>
+				</Popover.Content>
+			</Popover>
+			<ListBox
+				aria-label="Workspace navigation"
+				className="mt-5"
+				selectedKeys={isHome ? ["home"] : []}
+				onAction={(key) => {
+					if (key !== "inbox") onCreate();
+				}}
+				disabledKeys={["inbox"]}
+			>
+				<ListBox.Item
+					id="new"
+					className="mb-1"
+					textValue="New artefact"
+				>
+					<Plus size={18} />
+					<Label>New artefact</Label>
+				</ListBox.Item>
+				<ListBox.Item
+					id="home"
+					textValue="Home"
+				>
+					<Home size={18} />
+					<Label>Home</Label>
+				</ListBox.Item>
+				<ListBox.Item id="inbox" textValue="Inbox">
+					<Inbox size={18} />
+					<Label>Inbox</Label>
+				</ListBox.Item>
+			</ListBox>
+			<Separator className="my-5" />
+			<ListBox
+				aria-label="Artefacts"
+				className="min-h-0 flex-1 overflow-y-auto"
+				selectedKeys={selectedId ? [selectedId] : []}
+				onAction={(key) => onOpenArtefact(String(key))}
+			>
+				<ListBox.Section>
+					<Header>Artefacts</Header>
+					{artefacts.map((artefact) => (
+						<ListBox.Item
+							key={artefact.id}
+							id={artefact.id}
+							textValue={artefact.title}
+						>
+							<FileText size={16} />
+							<Label>{artefact.title}</Label>
+						</ListBox.Item>
+					))}
+				</ListBox.Section>
+			</ListBox>
+		</aside>
+	);
+}
+
+function ArtefactModal({
+	artefact,
+	isFullscreen,
+	onClose,
+	onFullscreen,
+	onShare,
+	copied,
+	followUp,
+	setFollowUp,
+	onSubmit,
+}: {
+	artefact: Artefact;
+	isFullscreen: boolean;
+	onClose: () => void;
+	onFullscreen: () => void;
+	onShare: () => void;
+	copied: boolean;
+	followUp: string;
+	setFollowUp: (value: string) => void;
+	onSubmit: (event: FormEvent) => void;
+}) {
+	return (
+		<Modal>
+			<Modal.Backdrop
+				isOpen
+				onOpenChange={(open) => {
+					if (!open) onClose();
+				}}
+				variant={isFullscreen ? "transparent" : "blur"}
+			>
+				<Modal.Container
+					placement="center"
+					scroll="inside"
+					size={isFullscreen ? "full" : "lg"}
+				>
+					<Modal.Dialog
+						aria-label={artefactHeading(artefact)}
+						className={
+							isFullscreen ? "rounded-none" : "rounded-2xl"
+						}
+					>
+						<Modal.Header className="border-b border-divider">
+							<Modal.Heading className="truncate">
+								{artefactHeading(artefact)}
+							</Modal.Heading>
+							<Toolbar
+								aria-label="Artefact actions"
+								className="ml-auto flex gap-1"
+							>
+								<Button
+									aria-label={
+										isFullscreen
+											? "Exit fullscreen"
+											: "Fullscreen"
+									}
+									variant="ghost"
+									className="size-8 min-w-8 p-0"
+									onPress={onFullscreen}
+								>
+									{isFullscreen ? (
+										<Minimize2 size={17} />
+									) : (
+										<Maximize2 size={17} />
+									)}
+								</Button>
+								<Button
+									aria-label={
+										copied
+											? "Share link copied"
+											: "Share artefact"
+									}
+									variant="ghost"
+									className="size-8 min-w-8 p-0"
+									onPress={onShare}
+								>
+									<Share2 size={17} />
+								</Button>
+								<Button
+									aria-label="Close artefact"
+									variant="ghost"
+									className="size-8 min-w-8 p-0"
+									onPress={onClose}
+								>
+									<X size={17} />
+								</Button>
+							</Toolbar>
+						</Modal.Header>
+						<Modal.Body className="px-8 py-7">
+							<ArtefactBody artefact={artefact} />
+						</Modal.Body>
+						<Modal.Footer className="border-t border-divider p-3">
+							<form
+								onSubmit={onSubmit}
+								className="flex w-full items-center gap-2"
+							>
+								<Input
+									aria-label="Ask about artefact"
+									className="flex-1"
+									value={followUp}
+									onChange={(event) =>
+										setFollowUp(event.target.value)
+									}
+									placeholder="Ask a question or make a change"
+								/>
+								<Button
+									aria-label="Send update"
+									type="submit"
+									className="size-9 min-w-9 rounded-full p-0"
+									isDisabled={!followUp.trim()}
+								>
+									<ArrowUp size={17} />
+								</Button>
+							</form>
+						</Modal.Footer>
+					</Modal.Dialog>
+				</Modal.Container>
+			</Modal.Backdrop>
+		</Modal>
+	);
+}
+
+function ArtefactBody({ artefact }: { artefact: Artefact }) {
+	const isChangeBrief = artefactHeading(artefact) === "Change brief";
+	const heading = artefactHeading(artefact);
+	return (
+		<article className="mx-auto max-w-3xl pb-8">
+			<header className="border-b border-divider pb-7">
+				<div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted uppercase">
+					<Layers3 size={14} />
+					Artefact
+				</div>
+				<h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+					{heading}
+				</h2>
+				<div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
+					<span>{new Date(artefact.createdAt).toLocaleString()}</span>
+					<span>Ready to share</span>
+				</div>
+			</header>
+			<section className="py-7">
+				<p className="text-xs font-medium tracking-wide text-muted uppercase">Request</p>
+				<p className="mt-3 whitespace-pre-wrap text-lg leading-8 text-foreground">
+					{artefact.prompt}
+				</p>
+			</section>
+			{isChangeBrief && <ChangeBrief />}
+			{artefact.revisions?.length ? (
+				<section className="border-t border-divider pt-7">
+					<p className="text-xs font-medium tracking-wide text-muted uppercase">Iteration history</p>
+					<div className="mt-3 space-y-3">
+						{artefact.revisions.map((revision) => (
+							<Card key={revision.id} variant="secondary">
+								<Card.Content className="p-4 text-sm">
+									{revision.content}
+								</Card.Content>
+							</Card>
+						))}
+					</div>
+				</section>
+			) : null}
+		</article>
+	);
+}
+
+function ChangeBrief() {
+	return (
+		<section className="border-t border-divider py-7">
+			<div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted uppercase">
+				<Network size={14} />
+				Architecture view
+			</div>
+			<div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+				<ArchitectureNode label="Source" detail="Pull request context" />
+				<div className="hidden h-px w-5 bg-divider sm:block" />
+				<ArchitectureNode label="Change" detail="Generated artefact" isFocused />
+				<div className="hidden h-px w-5 bg-divider sm:block" />
+				<ArchitectureNode label="Outcome" detail="Shareable team brief" />
+			</div>
+			<div className="mt-6 grid gap-3 sm:grid-cols-2">
+				<Card variant="secondary">
+					<Card.Header>
+						<Card.Title className="text-sm">What to review</Card.Title>
+						<Card.Description>
+							Connect a source to generate precise file, service, and dependency changes.
+						</Card.Description>
+					</Card.Header>
+				</Card>
+				<Card variant="secondary">
+					<Card.Header>
+						<Card.Title className="flex items-center gap-2 text-sm"><Check size={15} className="text-success" /> Next step</Card.Title>
+						<Card.Description>
+							Use the composer below to ask for an explanation, a diagram, or a shorter update.
+						</Card.Description>
+					</Card.Header>
+				</Card>
+			</div>
+		</section>
+	);
+}
+
+function ArchitectureNode({
+	label,
+	detail,
+	isFocused = false,
+}: {
+	label: string;
+	detail: string;
+	isFocused?: boolean;
+}) {
+	return (
+		<Card variant={isFocused ? "tertiary" : "secondary"} className="min-h-24">
+			<Card.Header className="gap-1 p-4">
+				<Card.Title className="text-sm">{label}</Card.Title>
+				<Card.Description className="text-xs">{detail}</Card.Description>
+			</Card.Header>
+		</Card>
+	);
+}

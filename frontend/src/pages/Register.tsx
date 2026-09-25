@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Form, Input, Label, TextField } from "@heroui/react";
+import { Button, Card, Form, Input, Label, TextField } from "@heroui/react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { signIn, signUp } from "../lib/auth-client";
 
@@ -45,9 +45,10 @@ export function Register() {
 	}
 
 	return (
-		<main className="mx-auto max-w-sm px-6 py-16">
-			<h1 className="mb-6 text-3xl font-semibold">Register</h1>
-
+		<main className="mx-auto max-w-md px-6 py-16">
+			<Card>
+				<Card.Header><Card.Title>Create account</Card.Title></Card.Header>
+				<Card.Content>
 			<Form onSubmit={handleSubmit} className="flex flex-col gap-4">
 				<TextField name="name" isRequired className="flex flex-col gap-1.5">
 					<Label>Name</Label>
@@ -93,12 +94,14 @@ export function Register() {
 				Continue with Google
 			</Button>
 
-			<p className="mt-4 text-sm text-black/60 dark:text-white/60">
+			<p className="mt-4 text-sm text-muted">
 				Already have an account?{" "}
 				<RouterLink to="/login" className="underline underline-offset-4">
 					Log in
 				</RouterLink>
 			</p>
+				</Card.Content>
+			</Card>
 		</main>
 	);
 }
