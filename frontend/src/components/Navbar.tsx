@@ -18,7 +18,7 @@ export function Navbar() {
 		<header className="border-b border-divider bg-background">
 			<nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
 				<RouterLink to="/" aria-label="Klee home">
-					<img src="/kleelogo.svg" alt="Klee" className="size-7" />
+					<img src="/kleelogo.svg" alt="Klee" className="size-10" />
 				</RouterLink>
 
 				<div className="flex items-center gap-2">
