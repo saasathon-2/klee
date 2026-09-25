@@ -7,6 +7,7 @@ import { env } from "./env.ts";
 import { auth } from "./auth.ts";
 import { pool } from "./db.ts";
 import { ArtefactAgentError, generateArtefact } from "./artefact-agent.ts";
+import { createArtefactDocument } from "./artefact-model.ts";
 import {
     githubActionsClaims,
     githubAppSlug,
