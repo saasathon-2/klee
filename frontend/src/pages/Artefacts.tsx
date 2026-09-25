@@ -31,7 +31,7 @@ import {
 	UserRound,
 	X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import {
 	Navigate,
@@ -46,7 +46,7 @@ import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import { fallbackDocument, type ArtefactDocument } from "../artefacts/model";
 import { ThemeToggle } from "../components/ThemeToggle";
 
-type Revision = { id: string; content: string; createdAt: string };
+type Revision = { id: string; content: string; generatedContent?: ArtefactDocument; createdAt: string };
 type Artefact = {
 	id: string;
 	isShared?: boolean;
@@ -89,12 +89,15 @@ export function Artefacts() {
 	}>();
 	const [prompt, setPrompt] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
+	const [generationStatus, setGenerationStatus] = useState("");
 	const [followUp, setFollowUp] = useState("");
+	const [isRevising, setIsRevising] = useState(false);
 	const [error, setError] = useState("");
 	const [copied, setCopied] = useState(false);
 	const [notShared, setNotShared] = useState(false);
 	const [isFullscreen, setFullscreen] = useState(false);
 	const [isSidebarOpen, setSidebarOpen] = useState(true);
+	const generationAbort = useRef<AbortController | undefined>(undefined);
 	const artefactPath = shareId
 		? `/shared/artefacts/${shareId}`
 		: id
@@ -113,7 +116,7 @@ export function Artefacts() {
 			.catch(() => setError("Could not load artefacts."));
 	}, [isShared, session?.user]);
 	useEffect(() => {
-		if (!artefactPath) return;
+		if (!artefactPath || loaded?.path === artefactPath) return;
 		api(artefactPath)
 			.then((response) => {
 				if (response.ok) return response.json();
@@ -129,46 +132,92 @@ export function Artefacts() {
 				setNotShared(false);
 				setError("This artefact could not be found.");
 			});
-	}, [artefactPath]);
+	}, [artefactPath, loaded?.path]);
 
 	async function create(event: FormEvent) {
 		event.preventDefault();
 		if (!prompt.trim() || isCreating) return;
+		const controller = new AbortController();
+		generationAbort.current = controller;
 		setIsCreating(true);
+		setGenerationStatus("Starting your brief…");
 		setError("");
 		try {
-			const response = await api("/artefacts", {
+			const response = await api("/artefacts/stream", {
 				method: "POST",
 				body: JSON.stringify({ prompt }),
+				signal: controller.signal,
 			});
-			if (!response.ok) throw new Error("create failed");
-			const artefact = (await response.json()) as Artefact;
-			setArtefacts([artefact, ...artefacts]);
+			if (!response.ok || !response.body) throw new Error("create failed");
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let buffer = "";
+			let artefact: Artefact | undefined;
+			while (!artefact) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				buffer += decoder.decode(value, { stream: true });
+				const frames = buffer.split(/\r?\n\r?\n/);
+				buffer = frames.pop() ?? "";
+				for (const frame of frames) {
+					const eventName = frame.match(/^event: (.+)$/m)?.[1];
+					const data = frame.match(/^data: (.+)$/m)?.[1];
+					if (!eventName || !data) continue;
+					const payload = JSON.parse(data) as { message?: string; artefact?: Artefact; error?: string };
+					if (eventName === "progress" && payload.message) setGenerationStatus(payload.message);
+					if (eventName === "error") throw new Error(payload.error);
+					if (eventName === "complete" && payload.artefact) artefact = payload.artefact;
+				}
+			}
+			if (!artefact) throw new Error("create incomplete");
+			const path = `/artefacts/${artefact.id}`;
+			setArtefacts((currentArtefacts) => [artefact, ...currentArtefacts]);
+			setLoaded({ path, artefact });
 			setPrompt("");
 			navigate(`/?artefact=${artefact.id}`);
-		} catch {
-			setError("Could not create artefact.");
+		} catch (error) {
+			if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Could not create artefact.");
 		} finally {
+			generationAbort.current = undefined;
 			setIsCreating(false);
+			setGenerationStatus("");
 		}
+	}
+	function cancelGeneration() {
+		generationAbort.current?.abort();
 	}
 	async function revise(event: FormEvent) {
 		event.preventDefault();
-		if (!current || !followUp.trim()) return;
-		const response = await api(`/artefacts/${current.id}/revisions`, {
-			method: "POST",
-			body: JSON.stringify({ content: followUp }),
-		});
-		if (!response.ok) return setError("Could not save update.");
-		const revision = (await response.json()) as Revision;
-		setLoaded({
-			path: artefactPath!,
-			artefact: {
-				...current,
-				revisions: [...(current.revisions ?? []), revision],
-			},
-		});
-		setFollowUp("");
+		if (!current || !followUp.trim() || isRevising) return;
+		setIsRevising(true);
+		setError("");
+		try {
+			const response = await api(`/artefacts/${current.id}/revisions`, {
+				method: "POST",
+				body: JSON.stringify({ content: followUp }),
+			});
+			if (!response.ok) throw new Error("Could not revise artefact.");
+			const result = (await response.json()) as {
+				revision: Revision;
+				artefact: Pick<Artefact, "title" | "content">;
+			};
+			setLoaded({
+				path: artefactPath!,
+				artefact: {
+					...current,
+					...result.artefact,
+					revisions: [...(current.revisions ?? []), result.revision],
+				},
+			});
+			setArtefacts((currentArtefacts) => currentArtefacts.map((artefact) =>
+				artefact.id === current.id ? { ...artefact, title: result.artefact.title } : artefact,
+			));
+			setFollowUp("");
+		} catch (error) {
+			setError(error instanceof Error ? error.message : "Could not revise artefact.");
+		} finally {
+			setIsRevising(false);
+		}
 	}
 	async function share() {
 		if (!current) return;
@@ -283,17 +332,17 @@ export function Artefacts() {
 								aria-label="Create artefact controls"
 								className="flex w-full justify-end px-1 pt-1"
 							>
-								<Button
+									<Button
 									aria-label={isCreating ? "Generating artefact" : "Create artefact"}
 									type="submit"
 									className="size-9 min-w-9 rounded-full p-0"
 									isDisabled={!prompt.trim() || isCreating}
 								>
 									{isCreating ? "…" : <ArrowUp size={17} />}
-								</Button>
+									</Button>
 							</Toolbar>
 						</Surface>
-					</form>
+						</form>
 					<div className="mt-4 grid gap-2 lg:grid-cols-3">
 						<PromptStarter
 							icon={<GitPullRequest size={17} />}
@@ -325,16 +374,19 @@ export function Artefacts() {
 					</p>
 				)}
 			</section>
-			{current && (
+			{(current || isCreating) && (
 				<ArtefactModal
 					artefact={current}
+					isCreating={isCreating}
+					generationStatus={generationStatus}
 					isFullscreen={isFullscreen}
-					onClose={close}
+					onClose={current ? close : cancelGeneration}
 					onFullscreen={() => setFullscreen(!isFullscreen)}
 					onShare={share}
 					copied={copied}
 					followUp={followUp}
 					setFollowUp={setFollowUp}
+					isRevising={isRevising}
 					onSubmit={revise}
 				/>
 			)}
@@ -495,6 +547,8 @@ function WorkspaceSidebar({
 
 function ArtefactModal({
 	artefact,
+	isCreating,
+	generationStatus,
 	isFullscreen,
 	onClose,
 	onFullscreen,
@@ -502,9 +556,12 @@ function ArtefactModal({
 	copied,
 	followUp,
 	setFollowUp,
+	isRevising,
 	onSubmit,
 }: {
-	artefact: Artefact;
+	artefact?: Artefact;
+	isCreating: boolean;
+	generationStatus: string;
 	isFullscreen: boolean;
 	onClose: () => void;
 	onFullscreen: () => void;
@@ -512,6 +569,7 @@ function ArtefactModal({
 	copied: boolean;
 	followUp: string;
 	setFollowUp: (value: string) => void;
+	isRevising: boolean;
 	onSubmit: (event: FormEvent) => void;
 }) {
 	return (
@@ -529,20 +587,20 @@ function ArtefactModal({
 					size={isFullscreen ? "full" : "cover"}
 				>
 					<Modal.Dialog
-						aria-label={artefactHeading(artefact)}
+						aria-label={artefact ? artefactHeading(artefact) : "Creating artefact"}
 						className={isFullscreen
 							? "h-dvh min-h-dvh w-screen max-w-none rounded-none p-0"
 							: "overflow-hidden rounded-2xl p-0"}
 					>
 						<Modal.Header className="z-10 shrink-0 flex-row items-center gap-4 border-b border-divider bg-surface px-5 py-4 sm:px-6">
 							<Modal.Heading className="truncate">
-								{artefactHeading(artefact)}
+								{artefact ? artefactHeading(artefact) : "Creating artefact"}
 							</Modal.Heading>
 							<Toolbar
 								aria-label="Artefact actions"
 								className="ml-auto flex gap-1"
 							>
-								<Button
+								{artefact && <Button
 									aria-label={
 										isFullscreen
 											? "Exit fullscreen"
@@ -557,8 +615,8 @@ function ArtefactModal({
 									) : (
 										<Maximize2 size={17} />
 									)}
-								</Button>
-								<Button
+								</Button>}
+								{artefact && <Button
 									aria-label={
 										copied
 											? "Share link copied"
@@ -569,9 +627,9 @@ function ArtefactModal({
 									onPress={onShare}
 								>
 									<Share2 size={17} />
-								</Button>
+								</Button>}
 								<Button
-									aria-label="Close artefact"
+									aria-label={artefact ? "Close artefact" : "Cancel generation"}
 									variant="ghost"
 									className="size-8 min-w-8 p-0"
 									onPress={onClose}
@@ -581,33 +639,45 @@ function ArtefactModal({
 							</Toolbar>
 						</Modal.Header>
 						<Modal.Body className="m-0 bg-surface p-0">
-							<ArtefactBody artefact={artefact} canInteract edgeToEdge onAction={setFollowUp} />
-						</Modal.Body>
-						<Modal.Footer className="z-10 m-0 shrink-0 border-t border-divider bg-surface px-4 py-3 sm:px-6">
+								{artefact ? (
+									<ArtefactBody artefact={artefact} canInteract edgeToEdge onAction={setFollowUp} />
+								) : (
+									<div className="grid min-h-96 place-items-center p-8" role="status">
+										<div className="w-full max-w-xl space-y-5 animate-pulse">
+											<p className="text-center text-sm text-muted">{generationStatus || "Starting your artefact…"}</p>
+											<div className="h-8 w-2/3 rounded bg-divider" />
+											<div className="h-4 w-full rounded bg-divider" />
+											<div className="h-4 w-5/6 rounded bg-divider" />
+											<div className="h-32 rounded-xl bg-divider" />
+										</div>
+									</div>
+								)}
+							</Modal.Body>
+							{artefact && !isCreating && <Modal.Footer className="z-10 m-0 shrink-0 border-t border-divider bg-surface px-4 py-3 sm:px-6">
 							<form
 								onSubmit={onSubmit}
 								className="flex w-full items-center gap-2 rounded-full border border-divider bg-field p-1.5 pl-4"
 							>
 								<Input
-									aria-label="Ask about artefact"
+									aria-label="Refine artefact"
 									variant="secondary"
 									className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
 									value={followUp}
 									onChange={(event) =>
 										setFollowUp(event.target.value)
 									}
-									placeholder="Ask a question or make a change"
+									placeholder="Describe what to change"
 								/>
 								<Button
-									aria-label="Send update"
+									aria-label={isRevising ? "Refining artefact" : "Refine artefact"}
 									type="submit"
 									className="size-10 min-w-10 rounded-full p-0"
-									isDisabled={!followUp.trim()}
+									isDisabled={!followUp.trim() || isRevising}
 								>
-									<ArrowUp size={17} />
+									{isRevising ? "…" : <ArrowUp size={17} />}
 								</Button>
 							</form>
-						</Modal.Footer>
+							</Modal.Footer>}
 					</Modal.Dialog>
 				</Modal.Container>
 			</Modal.Backdrop>

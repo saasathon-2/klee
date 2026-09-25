@@ -65,11 +65,18 @@ async function sessionUser(req: Request, res: Response) {
     return session.user;
 }
 
-async function createGeneratedArtefact(ownerId: string, prompt: string, isShared = false) {
-    const { content, sessionId } = await generateArtefact(
+async function createGeneratedArtefact(
+    ownerId: string,
+    prompt: string,
+    isShared = false,
+    options: { onProgress?: (message: string) => void; signal?: AbortSignal } = {},
+) {
+    const startedAt = performance.now();
+    const { content, sessionId, telemetry } = await generateArtefact(
         prompt,
         env.openAiApiKey,
         env.openAiModel,
+        options,
     );
     const artefact = {
         id: randomUUID(),
@@ -77,6 +84,7 @@ async function createGeneratedArtefact(ownerId: string, prompt: string, isShared
         prompt,
         title: String(content.root.data.title),
         content,
+        createdAt: new Date().toISOString(),
     };
     await pool.query(
         "insert into artefact (id, owner_id, share_id, is_shared, prompt, title, content, agent_session_id) values ($1, $2, $1, $3, $4, $5, $6, $7)",
@@ -90,6 +98,11 @@ async function createGeneratedArtefact(ownerId: string, prompt: string, isShared
             sessionId,
         ],
     );
+    console.info("artefact_generation", {
+        ...telemetry,
+        blocks: content.root.children?.[0]?.children?.length ?? 0,
+        totalMs: Math.round(performance.now() - startedAt),
+    });
     return artefact;
 }
 
@@ -199,7 +212,7 @@ app.get("/api/artefacts", async (req, res) => {
     const user = await sessionUser(req, res);
     if (!user) return;
     const { rows } = await pool.query(
-        'select id, is_shared as "isShared", prompt, title, content, created_at as "createdAt", updated_at as "updatedAt" from artefact where owner_id = $1 order by updated_at desc',
+        'select id, is_shared as "isShared", prompt, title, created_at as "createdAt", updated_at as "updatedAt" from artefact where owner_id = $1 order by updated_at desc',
         [user.id],
     );
     res.json(rows);
@@ -228,6 +241,41 @@ app.post("/api/artefacts", async (req, res) => {
     res.status(201).json(artefact);
 });
 
+app.post("/api/artefacts/stream", async (req, res) => {
+    const user = await sessionUser(req, res);
+    if (!user) return;
+    const prompt = typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "";
+    if (!prompt) return res.status(400).json({ error: "prompt is required" });
+
+    res.status(200).set({
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Content-Type": "text/event-stream",
+    });
+    res.flushHeaders();
+    const controller = new AbortController();
+    res.on("close", () => {
+        if (!res.writableEnded) controller.abort();
+    });
+    const send = (event: string, data: unknown) =>
+        res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    try {
+        const artefact = await createGeneratedArtefact(user.id, prompt, false, {
+            signal: controller.signal,
+            onProgress: (message) => send("progress", { message }),
+        });
+        send("complete", { artefact });
+    } catch (error) {
+        const kind = error instanceof ArtefactAgentError ? error.kind : "unknown";
+        if (kind !== "cancelled") {
+            console.error("Artefact generation failed", { kind });
+            send("error", { error: "Could not generate artefact." });
+        }
+    } finally {
+        res.end();
+    }
+});
+
 app.get("/api/artefacts/:id", async (req, res) => {
     const user = await sessionUser(req, res);
     if (!user) return;
@@ -237,7 +285,7 @@ app.get("/api/artefacts/:id", async (req, res) => {
     );
     if (!rows[0]) return res.sendStatus(404);
     const revisions = await pool.query(
-        'select id, content, created_at as "createdAt" from artefact_revision where artefact_id = $1 order by created_at',
+        'select id, content, generated_content as "generatedContent", created_at as "createdAt" from artefact_revision where artefact_id = $1 order by created_at',
         [req.params.id],
     );
     res.json({ ...rows[0], revisions: revisions.rows });
@@ -262,7 +310,7 @@ app.get("/api/shared/artefacts/:id", async (req, res) => {
     if (!rows[0]) return res.sendStatus(404);
     if (!rows[0].isShared) return res.status(403).json({ error: "not_shared" });
     const revisions = await pool.query(
-        'select id, content, created_at as "createdAt" from artefact_revision where artefact_id = $1 order by created_at',
+        'select id, content, generated_content as "generatedContent", created_at as "createdAt" from artefact_revision where artefact_id = $1 order by created_at',
         [rows[0].id],
     );
     res.json({ ...rows[0], revisions: revisions.rows });
@@ -275,20 +323,32 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
         typeof req.body?.content === "string" ? req.body.content.trim() : "";
     if (!content) return res.status(400).json({ error: "content is required" });
     const owned = await pool.query(
-        "select id from artefact where id = $1 and owner_id = $2",
+        "select id, prompt, content from artefact where id = $1 and owner_id = $2",
         [req.params.id, user.id],
     );
     if (!owned.rows[0]) return res.sendStatus(404);
-    const revision = { id: randomUUID(), content };
+    let generated;
+    try {
+        generated = await generateArtefact(
+            `Update the artefact below according to the requested change. Keep useful existing details unless the request replaces them.\n\nRequested change:\n${content}\n\nExisting artefact JSON:\n${JSON.stringify(owned.rows[0].content)}`,
+            env.openAiApiKey,
+            env.openAiModel,
+        );
+    } catch (error) {
+        if (!(error instanceof ArtefactAgentError)) throw error;
+        console.error("Artefact revision failed", { kind: error.kind, ...error.details });
+        return res.status(502).json({ error: "Could not revise artefact." });
+    }
+    const revision = { id: randomUUID(), content, generatedContent: generated.content };
     await pool.query(
-        "insert into artefact_revision (id, artefact_id, content) values ($1, $2, $3)",
-        [revision.id, req.params.id, content],
+        "insert into artefact_revision (id, artefact_id, content, generated_content) values ($1, $2, $3, $4)",
+        [revision.id, req.params.id, content, revision.generatedContent],
     );
-    await pool.query(
-        "update artefact set updated_at = current_timestamp where id = $1",
-        [req.params.id],
+    const updated = await pool.query(
+        'update artefact set title = $2, content = $3, updated_at = current_timestamp where id = $1 returning title, content, updated_at as "updatedAt"',
+        [req.params.id, String(generated.content.root.data.title), generated.content],
     );
-    res.status(201).json(revision);
+    res.status(201).json({ revision, artefact: updated.rows[0] });
 });
 
 app.get("/", (_req: Request, res: Response) => {

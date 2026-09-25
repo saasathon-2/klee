@@ -1,48 +1,51 @@
 import { z } from "zod";
 import type { ArtefactDocument, ArtefactNode } from "./artefact-model.ts";
 
+const shortText = z.string().trim().min(1).max(120);
+const detailText = z.string().trim().min(1).max(280);
+
 const metricSchema = z.object({
-	label: z.string(),
-	value: z.string(),
-	detail: z.string(),
+	label: shortText,
+	value: shortText,
+	detail: shortText,
 }).strict();
-const flowNodeSchema = z.object({ label: z.string(), detail: z.string() }).strict();
+const flowNodeSchema = z.object({ label: shortText, detail: shortText }).strict();
 const taskSchema = z.object({
-	id: z.string(),
-	key: z.string(),
-	title: z.string(),
-	detail: z.string(),
-	meta: z.string(),
-	status: z.string(),
+	id: shortText,
+	key: shortText,
+	title: shortText,
+	detail: detailText,
+	meta: shortText,
+	status: shortText,
 }).strict();
 const actionSchema = z.object({
-	label: z.string(),
-	description: z.string(),
-	action: z.string(),
+	label: shortText,
+	description: shortText,
+	action: shortText,
 }).strict();
 
 const blockSchemas = [
-	z.object({ template: z.literal("prose"), data: z.object({ title: z.string(), body: z.string() }).strict() }).strict(),
-	z.object({ template: z.literal("metric-row"), data: z.object({ items: z.array(metricSchema) }).strict() }).strict(),
-	z.object({ template: z.literal("architecture-flow"), data: z.object({ title: z.string(), description: z.string(), nodes: z.array(flowNodeSchema) }).strict() }).strict(),
-	z.object({ template: z.literal("glue"), data: z.object({ label: z.string() }).strict() }).strict(),
-	z.object({ template: z.literal("task-list"), data: z.object({ title: z.string(), description: z.string(), tasks: z.array(taskSchema) }).strict() }).strict(),
-	z.object({ template: z.literal("next-steps"), data: z.object({ title: z.string(), actions: z.array(actionSchema) }).strict() }).strict(),
+	z.object({ template: z.literal("prose"), data: z.object({ title: shortText, body: detailText }).strict() }).strict(),
+	z.object({ template: z.literal("metric-row"), data: z.object({ items: z.array(metricSchema).min(2).max(3) }).strict() }).strict(),
+	z.object({ template: z.literal("architecture-flow"), data: z.object({ title: shortText, description: shortText, nodes: z.array(flowNodeSchema).min(2).max(3) }).strict() }).strict(),
+	z.object({ template: z.literal("glue"), data: z.object({ label: shortText }).strict() }).strict(),
+	z.object({ template: z.literal("task-list"), data: z.object({ title: shortText, description: shortText, tasks: z.array(taskSchema).min(1).max(3) }).strict() }).strict(),
+	z.object({ template: z.literal("next-steps"), data: z.object({ title: shortText, actions: z.array(actionSchema).min(1).max(3) }).strict() }).strict(),
 ] as const;
 
 const generationSchema = z.object({
-	title: z.string().min(1),
+	title: z.string().trim().min(1).max(80),
 	category: z.enum(["developer-page", "generic-page"]),
-	eyebrow: z.string().min(1),
-	summary: z.string().min(1),
-	tags: z.array(z.string().min(1)),
-	blocks: z.array(z.union(blockSchemas)),
+	eyebrow: z.string().trim().min(1).max(48),
+	summary: z.string().trim().min(1).max(280),
+	tags: z.array(z.string().trim().min(1).max(32)).min(1).max(4),
+	blocks: z.array(z.union(blockSchemas)).min(1).max(4),
 }).strict();
 
 const jsonSchema = generationSchema.toJSONSchema({ target: "draft-7" });
 delete jsonSchema.$schema;
 
-const instructions = `Create a useful artefact by selecting and filling only these supported blocks. Return the requested structured output, with no markdown. Choose developer-page for engineering work and generic-page otherwise. Use prose for unsupported artefact types. Blocks are prose (title/body), metric-row (2-3 comparable items), architecture-flow (2-3 ordered nodes), glue (short transition), task-list (ordered tasks with id/key/title/detail/meta/status), and next-steps (concrete follow-up suggestions). Only choose blocks that fit the category: developer-page supports all blocks; generic-page supports prose, metric-row, glue, and next-steps. Never invent fetched or connected data; work only from the user's prompt. Do not claim that an integration or action has been performed.`;
+const instructions = `Create a concise, useful first-pass artefact. Return only the requested structured output, with no markdown. Choose developer-page for engineering work and generic-page otherwise. Use 2-3 blocks by default and never more than 4. Answer simple requests directly with one prose block; do not add generic metrics, architecture diagrams, task lists, or next steps unless the prompt supplies or clearly asks for that information. Keep every field short and specific. Blocks are prose (title/body), metric-row (2-3 comparable items), architecture-flow (2-3 ordered nodes), glue (short transition), task-list (ordered tasks with id/key/title/detail/meta/status), and next-steps (concrete follow-up suggestions). Only choose blocks that fit the category: developer-page supports all blocks; generic-page supports prose, metric-row, glue, and next-steps. Never invent fetched or connected data; work only from the user's prompt. Do not claim that an integration or action has been performed.`;
 
 export class ArtefactAgentError extends Error {
 	readonly kind: string;
@@ -57,7 +60,7 @@ export class ArtefactAgentError extends Error {
 type Generation = z.infer<typeof generationSchema>;
 
 function toDocument(generation: Generation): ArtefactDocument {
-	if (generation.blocks.length === 0 || generation.blocks.length > 8 || generation.tags.length === 0) {
+	if (generation.blocks.length === 0 || generation.blocks.length > 4 || generation.tags.length === 0) {
 		throw new Error("The generated artefact is incomplete");
 	}
 	const allowed = generation.category === "developer-page"
@@ -98,38 +101,51 @@ function toDocument(generation: Generation): ArtefactDocument {
 	};
 }
 
-export async function generateArtefact(prompt: string, apiKey: string | undefined, model: string) {
+type Progress = (message: string) => void;
+
+export async function generateArtefact(
+	prompt: string,
+	apiKey: string | undefined,
+	model: string,
+	options: { onProgress?: Progress; signal?: AbortSignal } = {},
+) {
 	if (!apiKey) throw new ArtefactAgentError("missing_api_key");
+	const startedAt = performance.now();
+	const reasoningEffort = model.includes("astra") ? "low" : "none";
+	options.onProgress?.("Preparing your brief…");
 	let response: Response;
 	try {
-		response = await fetch("https://api.openai.com/v1/agents/sessions", {
+		response = await fetch("https://api.openai.com/v1/responses", {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${apiKey}`,
 				"Content-Type": "application/json",
 				Accept: "text/event-stream",
-				"OpenAI-Beta": "agents=v1",
 			},
 			body: JSON.stringify({
-				agent: {
-					model,
-					instructions,
-					multi_agent: { enabled: false },
-					text: {
+				model,
+				instructions,
+				reasoning: { effort: reasoningEffort },
+				max_output_tokens: 800,
+				text: {
+					verbosity: "low",
 					format: {
 						type: "json_schema",
+						name: "artefact",
+						strict: true,
 						schema: jsonSchema,
-						},
 					},
 				},
-				environment: { type: "none" },
 				input: prompt,
 				stream: true,
+				store: false,
 			}),
+			signal: options.signal,
 		});
-	} catch {
-		throw new ArtefactAgentError("network_error");
+	} catch (error) {
+		throw new ArtefactAgentError(options.signal?.aborted ? "cancelled" : "network_error");
 	}
+	options.onProgress?.("Drafting the artefact…");
 	if (!response.ok || !response.body) {
 		const body = await response.json().catch(() => ({})) as {
 			error?: { code?: string; type?: string; param?: string };
@@ -149,35 +165,37 @@ export async function generateArtefact(prompt: string, apiKey: string | undefine
 	let sessionId = "";
 	let output = "";
 	let completed = false;
+	let firstEventMs: number | undefined;
 	let failure: ArtefactAgentError | undefined;
 	const consume = (frame: string) => {
 		const data = frame.split(/\r?\n/).filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trimStart()).join("\n");
 		if (!data || data === "[DONE]") return;
-		let event: { type?: string; session?: { id?: string }; session_id?: string; text?: string; error?: { code?: string }; turn?: { subagent_id?: string | null; error?: { code?: string } } };
+		firstEventMs ??= Math.round(performance.now() - startedAt);
+		let event: { type?: string; response?: { id?: string }; delta?: string; text?: string; error?: { code?: string } };
 		try {
 			event = JSON.parse(data);
 		} catch {
 			throw new ArtefactAgentError("invalid_stream_event");
 		}
-		sessionId ||= event.session?.id ?? event.session_id ?? "";
+		sessionId ||= event.response?.id ?? "";
 		switch (event.type) {
-			case "agent.session.created":
+			case "response.created":
+				options.onProgress?.("Shaping the artefact…");
 				break;
-			case "agent.session.turn.output_text.done":
+			case "response.output_text.delta":
+				output += event.delta ?? "";
+				break;
+			case "response.output_text.done":
 				output = event.text ?? output;
 				break;
-			case "agent.session.turn.completed":
-				if (!event.turn?.subagent_id) completed = true;
+			case "response.completed":
+				completed = true;
 				break;
-			case "agent.session.turn.failed":
-			case "agent.session.turn.cancelled":
-			case "agent.session.failed":
-			case "agent.session.environment.failed":
-			case "agent.session.action_required":
-			case "agent.session.requires_action":
+			case "response.failed":
+			case "response.incomplete":
 			case "error":
 				failure = new ArtefactAgentError("agent_turn_error", {
-					code: event.error?.code ?? event.turn?.error?.code,
+					code: event.error?.code,
 					eventType: event.type,
 				});
 				break;
@@ -200,7 +218,17 @@ export async function generateArtefact(prompt: string, apiKey: string | undefine
 	if (failure) throw failure;
 	if (!completed || !sessionId || !output) throw new ArtefactAgentError("incomplete_agent_response");
 	try {
-		return { content: toDocument(generationSchema.parse(JSON.parse(output))), sessionId };
+		return {
+			content: toDocument(generationSchema.parse(JSON.parse(output))),
+			sessionId,
+			telemetry: {
+				model,
+				reasoningEffort,
+				requestId: response.headers.get("x-request-id") ?? undefined,
+				firstEventMs,
+				providerMs: Math.round(performance.now() - startedAt),
+			},
+		};
 	} catch {
 		throw new ArtefactAgentError("invalid_agent_output");
 	}
