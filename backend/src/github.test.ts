@@ -27,9 +27,14 @@ const prompt = githubPullRequestPrompt("acme/repo", 12, {
 	additions: 4,
 	deletions: 1,
 	files: [{ filename: "src/context.ts", status: "added", additions: 4, deletions: 0, patch: "+export const context = true;" }],
+	feedback: [{ author: "reviewer", state: "approved", body: "Ship it", path: "" }],
+	commits: [{ sha: "123456789", author: "author", message: "Add context" }],
+	checks: [{ name: "Unit tests", status: "completed", conclusion: "success" }],
 });
 assert.match(prompt, /Title: Add context/);
 assert.match(prompt, /added: src\/context\.ts/);
+assert.match(prompt, /Reviewer feedback:/);
+assert.match(prompt, /CI checks:/);
 const largePrompt = githubPullRequestPrompt("acme/repo", 13, {
 	title: "Large change",
 	body: "",
@@ -40,6 +45,9 @@ const largePrompt = githubPullRequestPrompt("acme/repo", 13, {
 	additions: 9,
 	deletions: 1,
 	files: Array.from({ length: 9 }, (_, index) => ({ filename: `src/${index}.ts`, status: "modified", additions: 1, deletions: 0, patch: "secret diff" })),
+	feedback: [],
+	commits: [],
+	checks: [],
 });
 assert.match(largePrompt, /Prioritize architecture-flow/);
 assert.doesNotMatch(largePrompt, /secret diff/);
