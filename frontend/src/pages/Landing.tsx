@@ -27,7 +27,7 @@ export function Landing() {
 
 	return (
 		<main>
-			<section className="mx-auto max-w-[108rem] px-6 pt-6">
+			<section className="home-section mx-auto max-w-[108rem] px-6 pt-6">
 				<div className="relative">
 					{/* The painting stops short so the demo hangs off its bottom edge. */}
 					<br />

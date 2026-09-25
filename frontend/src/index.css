@@ -61,3 +61,7 @@ body {
 		transition: none;
 	}
 }
+
+.home-section {
+	padding-top: 0px;
+}

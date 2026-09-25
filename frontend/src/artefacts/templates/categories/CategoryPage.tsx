@@ -14,8 +14,16 @@ const CategoryPage: Template = ({ node, children, context }) => {
 		<>
 			<header className="text-brand-foreground">
 				<div className="relative flex flex-col items-center gap-3 bg-brand px-6 pt-10 pb-5 text-center sm:px-10">
-					<img src="/kleelogo.svg" alt="Klee" className="absolute top-5 left-6 size-7 sm:left-10" />
-					<Heading level={2} align="center" className="text-balance text-inherit">
+					<img
+						src="/kleelogo.svg"
+						alt="klee"
+						className="klee-logo absolute top-5 left-6 size-12 sm:left-10"
+					/>
+					<Heading
+						level={2}
+						align="center"
+						className="text-balance text-inherit"
+					>
 						{data.title}
 					</Heading>
 					<Paragraph
@@ -30,7 +38,10 @@ const CategoryPage: Template = ({ node, children, context }) => {
 								{tag}
 							</Chip>
 						))}
-						<Paragraph size="xs" className="text-inherit opacity-70">
+						<Paragraph
+							size="xs"
+							className="text-inherit opacity-70"
+						>
 							{new Date(context.createdAt).toLocaleDateString(
 								undefined,
 								{

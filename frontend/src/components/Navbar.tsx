@@ -14,7 +14,7 @@ export function Navbar() {
 		<header className="sticky top-0 z-40 bg-background">
 			<nav className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-6">
 				<Link href="/welcome" aria-label="Klee home" className="justify-self-start">
-					<img src="/kleelogo.svg" alt="Klee" className="size-7" />
+					<img src="/kleelogo.svg" alt="Klee" className="size-10" />
 				</Link>
 
 				<div className="hidden items-center gap-2 md:flex">
