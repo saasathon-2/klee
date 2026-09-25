@@ -16,6 +16,7 @@ export const env = {
     corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
     openAiApiKey: process.env.OPENAI_API_KEY,
     openAiModel: process.env.OPENAI_MODEL ?? "gpt-6-luna",
+    openAiServiceTier: process.env.OPENAI_SERVICE_TIER === "fast" ? "fast" as const : undefined,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     betterAuthApiKey: process.env.BETTER_AUTH_API_KEY,
