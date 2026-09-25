@@ -4,15 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch --env-file=.env src/app.ts",
-    "start": "node --env-file-if-exists=.env src/app.ts",
+    "dev": "node --experimental-strip-types --watch --env-file-if-exists=.env --env-file-if-exists=.env.local src/app.ts",
+    "start": "node --experimental-strip-types --env-file-if-exists=.env src/app.ts",
     "typecheck": "tsc -p tfconfig.json",
-    "premigrate": "node --env-file-if-exists=.env scripts/migrate-preflight.mjs",
-    "migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up -j ts -m src/migrations",
-    "migrate:down": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js down -j ts -m src/migrations",
+    "premigrate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/migrate-preflight.mjs",
+    "migrate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/node-pg-migrate/bin/node-pg-migrate.js up -j ts -m src/migrations",
+    "migrate:down": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/node-pg-migrate/bin/node-pg-migrate.js down -j ts -m src/migrations",
     "migrate:create": "node-pg-migrate create -j ts -m src/migrations --",
     "migrations:check": "node scripts/migrations-check.mjs",
-    "test": "node --test --experimental-strip-types src/artefact-model.test.ts src/artefact-agent.test.ts src/github.test.ts"
+    "test": "node --test --experimental-strip-types src/artefact-model.test.ts src/artefact-agent.test.ts src/github.test.ts src/artefact-versions.test.ts src/artefact-access.test.ts"
   },
   "keywords": [],
   "author": "",

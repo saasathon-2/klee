@@ -8,30 +8,25 @@ import {
 	useLocation,
 	useNavigate,
 } from "react-router-dom";
+import { AuthModal } from "./components/AuthModal";
 import { Navbar } from "./components/Navbar";
 import { Landing } from "./pages/Landing";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
 import { FormsExample } from "./pages/FormsExample";
 import { SocialExample } from "./pages/SocialExample";
 import { SettingsExample } from "./pages/SettingsExample";
 import { Artefacts } from "./pages/Artefacts";
+import { Docs } from "./pages/Docs";
 import { useSession } from "./lib/auth-client";
 
 function RequireUser() {
 	const { data: session, isPending } = useSession();
 	if (isPending) return null;
-	return session?.user ? <Outlet /> : <Navigate to="/login" replace />;
-}
-
-function GuestOnly() {
-	const { data: session, isPending } = useSession();
-	if (isPending) return null;
-	return session?.user ? <Navigate to="/" replace /> : <Outlet />;
+	return session?.user ? <Outlet /> : <Navigate to="/?auth=signin" replace />;
 }
 
 function Home() {
 	const { data: session, isPending } = useSession();
+	if (window.location.hostname === "docs.klee.work") return <Docs />;
 	if (isPending) return null;
 	return session?.user ? <Artefacts /> : <Landing />;
 }
@@ -39,7 +34,7 @@ function Home() {
 function App() {
 	const location = useLocation();
 	const navigate = useNavigate();
-	const { data: session } = useSession();
+	const { data: session, isPending } = useSession();
 	const isWorkspace = location.pathname.startsWith("/artefacts") || (["/", "/profile", "/integrations"].includes(location.pathname) && Boolean(session?.user));
 
 	return (
@@ -50,10 +45,10 @@ function App() {
 				<Routes>
 					<Route path="/" element={<Home />} />
 					<Route path="/welcome" element={<Landing />} />
-					<Route element={<GuestOnly />}>
-						<Route path="/login" element={<Login />} />
-						<Route path="/register" element={<Register />} />
-					</Route>
+					<Route path="/docs" element={<Docs />} />
+					{/* Sign-in lives in a modal now; keep the old links working. */}
+					<Route path="/login" element={<Navigate to="/?auth=signin" replace />} />
+					<Route path="/register" element={<Navigate to="/?auth=signup" replace />} />
 					<Route element={<RequireUser />}>
 						<Route path="/profile" element={<Artefacts />} />
 						<Route path="/integrations" element={<Artefacts />} />
@@ -66,6 +61,7 @@ function App() {
 					<Route path="/examples/social" element={<SocialExample />} />
 					<Route path="/examples/settings" element={<SettingsExample />} />
 				</Routes>
+				{!isPending && !session?.user && <AuthModal />}
 			</div>
 		</RouterProvider>
 	);

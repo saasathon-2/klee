@@ -1,4 +1,5 @@
 import { Chip, Heading, Paragraph } from "@heroui/react";
+import { EditableText } from "../page/EditableText";
 import { Scallop } from "../page/Scallop";
 import type { Template, TemplateProps, TemplateSelectionInfo } from "../types";
 
@@ -18,15 +19,28 @@ const CategoryPage: Template = ({ node, children, context }) => {
 						<Heading
 							level={1}
 							align="start"
-							className="text-balance text-inherit"
+							className="w-full text-balance text-inherit"
 						>
-							{data.title}
+							<EditableText
+								node={node}
+								context={context}
+								path={["title"]}
+								value={data.title}
+								label="Artefact title"
+							/>
 						</Heading>
 						<Paragraph
 							align="start"
-							className="max-w-2xl text-inherit opacity-80"
+							className="w-full max-w-2xl text-inherit opacity-80"
 						>
-							{data.summary}
+							<EditableText
+								node={node}
+								context={context}
+								path={["summary"]}
+								value={data.summary}
+								label="Summary"
+								multiline
+							/>
 						</Paragraph>
 						<div className="inline-flex flex-wrap justify-between gap-2 w-full">
 							<div className="inline-flex flex-wrap gap-2">

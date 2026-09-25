@@ -23,7 +23,7 @@ export function Landing() {
 	const { data: session } = useSession();
 	const { theme } = useTheme();
 	const painting = paintings[theme];
-	const start = () => navigate(session?.user ? "/" : "/register");
+	const start = () => navigate(session?.user ? "/" : "?auth=signup");
 
 	return (
 		<main>

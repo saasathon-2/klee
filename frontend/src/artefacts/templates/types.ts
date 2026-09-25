@@ -8,8 +8,14 @@ export type RenderContext = {
 	canInteract: boolean;
 	edgeToEdge: boolean;
 	showFooter: boolean;
+	/** Text fields render as inputs and report changes through `onEdit`. */
+	isEditing: boolean;
 	onAction?: (label: string) => void;
+	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
 };
+
+/** Path to a text field inside a node's `data`, e.g. ["tasks", 0, "title"]. */
+export type EditPath = (string | number)[];
 
 export type TemplateProps = {
 	node: ArtefactNode;

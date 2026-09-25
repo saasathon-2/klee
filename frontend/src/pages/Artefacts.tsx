@@ -1,11 +1,14 @@
 import {
+	Alert,
+	AlertDialog,
 	Button,
 	Card,
-	Header,
+	Drawer,
 	Input,
 	Label,
 	ListBox,
 	Modal,
+	Paragraph,
 	Popover,
 	Separator,
 	Surface,
@@ -15,20 +18,14 @@ import {
 import {
 	ArrowUp,
 	BrainCog,
-	CalendarDays,
 	Check,
-	Compass,
-	FileDiff,
-	FileText,
-	GitCommitHorizontal,
-	GitPullRequest,
-	ListChecks,
+	History,
 	LogOut,
 	Maximize2,
-	MessagesSquare,
 	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
+	Pencil,
 	Plug,
 	Plus,
 	Share2,
@@ -36,7 +33,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import {
 	Navigate,
 	useLocation,
@@ -45,15 +42,26 @@ import {
 	useSearchParams,
 } from "react-router-dom";
 import { signOut, useSession } from "../lib/auth-client";
+import { KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
-import { fallbackDocument, type ArtefactDocument } from "../artefacts/model";
 import {
-	developerExamplePrompts,
-	type ExamplePrompt,
-} from "../artefacts/examplePrompts";
+	fallbackDocument,
+	withEditedText,
+	type ArtefactDocument,
+} from "../artefacts/model";
+import type { EditPath } from "../artefacts/templates/types";
+import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsModal } from "./Integrations";
+import { useMediaQuery } from "../lib/use-media-query";
+import { IntegrationsPanel } from "./Integrations";
+import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
+import { ArtefactNav } from "./artefact/ArtefactNav";
+import { FolderSelect } from "./artefact/FolderSelect";
+import { ProjectSelect } from "./artefact/ProjectSelect";
+import { useFolders, type Folder } from "./artefact/useFolders";
+import { VersionHistory } from "./artefact/VersionHistory";
 
 type Revision = {
 	id: string;
@@ -69,7 +77,19 @@ type Artefact = {
 	createdAt: string;
 	content?: ArtefactDocument;
 	revisions?: Revision[];
+	/** Latest version number; manual saves must be based on it. */
+	version?: number;
+	isOwner?: boolean;
+	/** GitHub org (project) whose members can view and edit this artefact. */
+	project?: string | null;
+	installationId?: string | null;
+	/** The current user's folder for this artefact. */
+	folderId?: string | null;
 };
+
+type SaveResult = "saved" | "conflict" | "failed";
+
+const desktopQuery = "(min-width: 768px)";
 
 function artefactHeading(artefact: Artefact) {
 	if (artefact.title !== "New artefact") return artefact.title;
@@ -80,13 +100,9 @@ function artefactHeading(artefact: Artefact) {
 		: "Working brief";
 }
 
-const developerTemplateIcons: Record<ExamplePrompt["id"], ReactNode> = {
-	"code-diff": <FileDiff size={15} />,
-	"review-comments": <MessagesSquare size={15} />,
-	"commit-list": <GitCommitHorizontal size={15} />,
-	"check-list": <ListChecks size={15} />,
-	"god-prompt": <BrainCog size={15} />,
-};
+const godPrompt = developerExamplePrompts.find(
+	(template) => template.id === "god-prompt",
+);
 
 const api = (path: string, options?: RequestInit) =>
 	fetch(`/api${path}`, {
@@ -116,10 +132,16 @@ export function Artefacts() {
 	const [followUp, setFollowUp] = useState("");
 	const [isRevising, setIsRevising] = useState(false);
 	const [error, setError] = useState("");
+	const { folders, create: createFolder, rename: renameFolder, remove: removeFolder } =
+		useFolders(Boolean(session?.user) && !isShared, setError);
 	const [copied, setCopied] = useState(false);
 	const [notShared, setNotShared] = useState(false);
 	const [isFullscreen, setFullscreen] = useState(false);
-	const [isSidebarOpen, setSidebarOpen] = useState(true);
+	// Phones get the sidebar as a drawer, closed until the toggle is pressed.
+	const isDesktop = useMediaQuery(desktopQuery);
+	const [isSidebarOpen, setSidebarOpen] = useState(
+		() => window.matchMedia(desktopQuery).matches,
+	);
 	const generationAbort = useRef<AbortController | undefined>(undefined);
 	const artefactPath = shareId
 		? `/shared/artefacts/${shareId}`
@@ -281,6 +303,46 @@ export function Artefacts() {
 		setCopied(true);
 		window.setTimeout(() => setCopied(false), 1500);
 	}
+	function updateCurrent(update: Partial<Artefact>) {
+		if (!current) return;
+		setLoaded({ path: artefactPath!, artefact: { ...current, ...update } });
+		setArtefacts((currentArtefacts) =>
+			currentArtefacts.map((artefact) =>
+				artefact.id === current.id ? { ...artefact, ...update, content: undefined } : artefact,
+			),
+		);
+	}
+	async function saveEdits(content: ArtefactDocument): Promise<SaveResult> {
+		if (!current) return "failed";
+		setError("");
+		const response = await api(`/artefacts/${current.id}/content`, {
+			method: "PUT",
+			body: JSON.stringify({ content, baseVersion: current.version ?? 0 }),
+		});
+		if (response.status === 409) return "conflict";
+		if (!response.ok) {
+			setError("Could not save your changes.");
+			return "failed";
+		}
+		const result = (await response.json()) as {
+			artefact: Pick<Artefact, "title" | "content" | "version">;
+		};
+		updateCurrent(result.artefact);
+		return "saved";
+	}
+	async function moveToFolder(folderId: string | null) {
+		if (!current) return;
+		const response = await api(`/artefacts/${current.id}/folder`, {
+			method: "PUT",
+			body: JSON.stringify({ folderId }),
+		});
+		if (!response.ok) return setError("Could not move the artefact.");
+		updateCurrent({ folderId });
+	}
+	function reload() {
+		// Clearing the loaded artefact makes the loading effect fetch it again.
+		setLoaded(undefined);
+	}
 	function close() {
 		setFullscreen(false);
 		navigate("/");
@@ -296,7 +358,7 @@ export function Artefacts() {
 				<span className="text-sm text-muted">Loading</span>
 			</main>
 		);
-	if (!isShared && !session?.user) return <Navigate to="/login" replace />;
+	if (!isShared && !session?.user) return <Navigate to="/?auth=signin" replace />;
 	if (isShared)
 		return (
 			<main className="min-h-screen bg-background">
@@ -317,22 +379,44 @@ export function Artefacts() {
 		);
 
 	const user = session!.user;
+	// On phones, picking something also closes the drawer.
+	const go = (path: string) => {
+		navigate(path);
+		if (!isDesktop) setSidebarOpen(false);
+	};
+	const sidebar = (
+		<WorkspaceSidebar
+			inDrawer={!isDesktop}
+			artefacts={artefacts}
+			folders={folders}
+			onCreateFolder={createFolder}
+			onRenameFolder={renameFolder}
+			onDeleteFolder={removeFolder}
+			selectedId={id}
+			user={user}
+			isIntegrations={isIntegrations}
+			onIntegrations={() => go("/integrations")}
+			onCreate={() => go("/")}
+			onOpenArtefact={(artefactId) => go(`/?artefact=${artefactId}`)}
+			onProfile={() => go("/profile")}
+			onSignOut={leave}
+		/>
+	);
 	return (
 		<Surface className="flex min-h-screen overflow-hidden rounded-none border border-divider bg-background text-foreground">
-			{isSidebarOpen && (
-				<WorkspaceSidebar
-					artefacts={artefacts}
-					selectedId={id}
-					user={user}
-					isIntegrations={isIntegrations}
-					onIntegrations={() => navigate("/integrations")}
-					onCreate={() => navigate("/")}
-					onOpenArtefact={(artefactId) =>
-						navigate(`/?artefact=${artefactId}`)
-					}
-					onProfile={() => navigate("/profile")}
-					onSignOut={leave}
-				/>
+			{isDesktop ? (
+				isSidebarOpen && sidebar
+			) : (
+				// Open state goes on the root: it wraps a DialogTrigger that owns it.
+				<Drawer isOpen={isSidebarOpen} onOpenChange={setSidebarOpen}>
+					<Drawer.Backdrop>
+						<Drawer.Content placement="left">
+							<Drawer.Dialog aria-label="Workspace" className="w-[288px] max-w-[85vw] p-0">
+								{sidebar}
+							</Drawer.Dialog>
+						</Drawer.Content>
+					</Drawer.Backdrop>
+				</Drawer>
 			)}
 			<section className="relative flex min-h-screen min-w-0 flex-1 flex-col bg-background">
 				<header className="flex h-20 items-center gap-4 px-7">
@@ -410,6 +494,7 @@ export function Artefacts() {
 											GitHub connected.
 										</p>
 									)}
+									<GitHubAccountLink />
 								</div>
 							</Card.Content>
 						</Card>
@@ -418,11 +503,7 @@ export function Artefacts() {
 					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 						<div className="mx-auto w-full max-w-2xl">
 							<div className="mb-8 text-center">
-								<img
-									src="/kleelogo.svg"
-									alt="Klee"
-									className="mx-auto mb-4 size-11"
-								/>
+								<KleeLogo className="mx-auto mb-4 size-16" />
 								<h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
 									Turn context into something useful.
 								</h2>
@@ -482,60 +563,19 @@ export function Artefacts() {
 									</Toolbar>
 								</Surface>
 							</form>
-							<div className="mt-4 grid gap-2 lg:grid-cols-3">
-								<PromptStarter
-									icon={<GitPullRequest size={17} />}
-									title="Explain a PR"
-									description="Changes, impact, and architecture"
-									onPress={() =>
-										setPrompt(
-											"Explain the changes and architecture impact in this pull request: ",
-										)
-									}
-								/>
-								<PromptStarter
-									icon={<CalendarDays size={17} />}
-									title="Plan my week"
-									description="A focused roadmap from my assigned work"
-									onPress={() =>
-										setPrompt(
-											"Create a simple roadmap for my assigned tickets this week.",
-										)
-									}
-								/>
-								<PromptStarter
-									icon={<Compass size={17} />}
-									title="Make a brief"
-									description="Turn scattered context into a shareable update"
-									onPress={() =>
-										setPrompt(
-											"Create a concise project update that I can share with my team.",
-										)
-									}
-								/>
-							</div>
-							<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-								<span className="text-xs text-muted">
-									Developer templates
-								</span>
-								{developerExamplePrompts.map((template) => (
+							{godPrompt && (
+								<div className="mt-4 flex justify-center">
 									<Button
-										key={template.id}
 										size="sm"
 										variant="outline"
 										className="rounded-full"
-										onPress={() =>
-											setPrompt(template.prompt)
-										}
+										onPress={() => setPrompt(godPrompt.prompt)}
 									>
-										{developerTemplateIcons[template.id]}
-										{template.label}
+										<BrainCog size={15} />
+										{godPrompt.label}
 									</Button>
-								))}
-							</div>
-							<p className="mt-5 text-center text-xs text-muted">
-								Artefacts are private until you share a link.
-							</p>
+								</div>
+							)}
 						</div>
 					</div>
 				)}
@@ -547,6 +587,7 @@ export function Artefacts() {
 			</section>
 			{(current || isCreating) && (
 				<ArtefactModal
+					key={current?.id ?? "creating"}
 					artefact={current}
 					isCreating={isCreating}
 					generationStatus={generationStatus}
@@ -559,6 +600,12 @@ export function Artefacts() {
 					setFollowUp={setFollowUp}
 					isRevising={isRevising}
 					onSubmit={revise}
+					onSave={saveEdits}
+					onReload={reload}
+					onProjectChange={updateCurrent}
+					folders={folders}
+					onFolderChange={moveToFolder}
+					onError={setError}
 				/>
 			)}
 			{isIntegrations && <IntegrationsModal onClose={() => navigate("/")} />}
@@ -566,36 +613,13 @@ export function Artefacts() {
 	);
 }
 
-function PromptStarter({
-	icon,
-	title,
-	description,
-	onPress,
-}: {
-	icon: ReactNode;
-	title: string;
-	description: string;
-	onPress: () => void;
-}) {
-	return (
-		<Button
-			variant="ghost"
-			className="h-auto min-h-24 min-w-0 items-start justify-start gap-3 rounded-xl border border-divider px-4 py-3 text-left whitespace-normal hover:bg-surface-secondary"
-			onPress={onPress}
-		>
-			<span className="mt-0.5 text-muted">{icon}</span>
-			<span className="min-w-0">
-				<span className="block text-sm font-medium">{title}</span>
-				<span className="mt-1 block text-xs leading-4 text-muted text-pretty">
-					{description}
-				</span>
-			</span>
-		</Button>
-	);
-}
-
 function WorkspaceSidebar({
+	inDrawer = false,
 	artefacts,
+	folders,
+	onCreateFolder,
+	onRenameFolder,
+	onDeleteFolder,
 	selectedId,
 	user,
 	isIntegrations,
@@ -605,7 +629,13 @@ function WorkspaceSidebar({
 	onProfile,
 	onSignOut,
 }: {
+	/** Fills the phone drawer instead of sitting beside the page. */
+	inDrawer?: boolean;
 	artefacts: Artefact[];
+	folders: Folder[];
+	onCreateFolder: (name: string) => Promise<unknown>;
+	onRenameFolder: (id: string, name: string) => Promise<unknown>;
+	onDeleteFolder: (id: string) => Promise<unknown>;
 	selectedId?: string;
 	user: { name?: string | null; email: string; image?: string | null };
 	isIntegrations: boolean;
@@ -617,7 +647,13 @@ function WorkspaceSidebar({
 }) {
 	const displayName = user.name || user.email;
 	return (
-		<aside className="sticky top-0 flex h-screen w-[288px] shrink-0 flex-col border-r border-divider bg-default-50 px-4 py-5">
+		<aside
+			className={
+				inDrawer
+					? "flex h-full w-full flex-col bg-default-50 px-4 py-5"
+					: "sticky top-0 flex h-screen w-[288px] shrink-0 flex-col border-r border-divider bg-default-50 px-4 py-5"
+			}
+		>
 			<ListBox
 				aria-label="Workspace navigation"
 				selectedKeys={isIntegrations ? ["integrations"] : []}
@@ -635,26 +671,15 @@ function WorkspaceSidebar({
 				</ListBox.Item>
 			</ListBox>
 			<Separator className="my-5" />
-			<ListBox
-				aria-label="Artefacts"
-				className="min-h-0 flex-1 overflow-y-auto"
-				selectedKeys={selectedId ? [selectedId] : []}
-				onAction={(key) => onOpenArtefact(String(key))}
-			>
-				<ListBox.Section>
-					<Header>Artefacts</Header>
-					{artefacts.map((artefact) => (
-						<ListBox.Item
-							key={artefact.id}
-							id={artefact.id}
-							textValue={artefact.title}
-						>
-							<FileText size={16} />
-							<Label>{artefact.title}</Label>
-						</ListBox.Item>
-					))}
-				</ListBox.Section>
-			</ListBox>
+			<ArtefactNav
+				artefacts={artefacts}
+				folders={folders}
+				selectedId={selectedId}
+				onOpen={onOpenArtefact}
+				onCreateFolder={onCreateFolder}
+				onRenameFolder={onRenameFolder}
+				onDeleteFolder={onDeleteFolder}
+			/>
 			<Separator className="my-4" />
 			<Popover>
 				<Popover.Trigger>
@@ -728,6 +753,12 @@ function ArtefactModal({
 	setFollowUp,
 	isRevising,
 	onSubmit,
+	onSave,
+	onReload,
+	onProjectChange,
+	folders,
+	onFolderChange,
+	onError,
 }: {
 	artefact?: Artefact;
 	isCreating: boolean;
@@ -741,7 +772,46 @@ function ArtefactModal({
 	setFollowUp: (value: string) => void;
 	isRevising: boolean;
 	onSubmit: (event: FormEvent) => void;
+	onSave: (content: ArtefactDocument) => Promise<SaveResult>;
+	onReload: () => void;
+	onProjectChange: (update: Pick<Artefact, "installationId" | "project">) => void;
+	folders: Folder[];
+	onFolderChange: (folderId: string | null) => void;
+	onError: (message: string) => void;
 }) {
+	// Edit mode keeps a draft copy; `undefined` means not editing.
+	const [draft, setDraft] = useState<ArtefactDocument>();
+	const [isSaving, setIsSaving] = useState(false);
+	const [hasConflict, setHasConflict] = useState(false);
+	const [isDiscarding, setIsDiscarding] = useState(false);
+	const [showHistory, setShowHistory] = useState(false);
+	// A past version picked on the history slider; `undefined` shows the latest.
+	const [pastVersion, setPastVersion] = useState<ArtefactDocument>();
+	const isEditing = draft !== undefined;
+	const isDirty =
+		isEditing && JSON.stringify(draft) !== JSON.stringify(artefact?.content);
+	const historyOpen = isFullscreen && showHistory && !isEditing;
+
+	function startEditing() {
+		if (!artefact?.content) return;
+		setDraft(structuredClone(artefact.content));
+		setShowHistory(false);
+		setPastVersion(undefined);
+	}
+	function stopEditing() {
+		setDraft(undefined);
+		setHasConflict(false);
+		setIsDiscarding(false);
+	}
+	async function save() {
+		if (!draft) return;
+		setIsSaving(true);
+		const result = await onSave(draft);
+		setIsSaving(false);
+		if (result === "saved") stopEditing();
+		if (result === "conflict") setHasConflict(true);
+	}
+
 	return (
 		<Modal>
 			<Modal.Backdrop
@@ -768,16 +838,17 @@ function ArtefactModal({
 								: "overflow-hidden rounded-2xl p-0"
 						}
 					>
-						<Modal.Header className="z-10 shrink-0 flex-row items-center gap-4 border-b border-divider bg-surface px-5 py-3 sm:px-6">
-							<Modal.Heading className="flex min-w-0 items-center gap-2">
+						{/* Phones: title with fullscreen/close on top, the other actions on a second row. */}
+						<Modal.Header className="z-10 shrink-0 flex-row flex-wrap items-center gap-x-4 gap-y-2 border-b border-divider bg-surface px-4 py-3 sm:flex-nowrap sm:px-6">
+							<Modal.Heading className="order-1 flex min-w-0 flex-1 items-center gap-2">
 								{artefact ? (
 									<>
-										<span className="shrink-0 text-muted">
+										<span className="hidden shrink-0 text-muted sm:inline">
 											Artefacts
 										</span>
 										<span
 											aria-hidden
-											className="text-muted"
+											className="hidden text-muted sm:inline"
 										>
 											/
 										</span>
@@ -791,10 +862,54 @@ function ArtefactModal({
 							</Modal.Heading>
 							<Toolbar
 								aria-label="Artefact actions"
-								className="ml-auto flex items-center gap-1"
+								className="order-3 flex w-full flex-wrap items-center gap-1 sm:order-2 sm:ml-auto sm:w-auto sm:flex-nowrap"
 							>
-								{artefact && (
+								{artefact && !isEditing && (
+									<ProjectSelect
+										artefactId={artefact.id}
+										installationId={artefact.installationId ?? null}
+										project={artefact.project ?? null}
+										isOwner={artefact.isOwner ?? true}
+										onChange={onProjectChange}
+										onError={onError}
+									/>
+								)}
+								{artefact && !isEditing && (
+									<FolderSelect
+										folderId={artefact.folderId ?? null}
+										folders={folders}
+										onChange={onFolderChange}
+									/>
+								)}
+								{artefact && !isEditing && isFullscreen && (
 									<Button
+										aria-label="History"
+										variant={showHistory ? "secondary" : "ghost"}
+										size="sm"
+										onPress={() => {
+											setShowHistory(!showHistory);
+											setPastVersion(undefined);
+										}}
+									>
+										<History size={15} />
+										<span className="hidden sm:inline">History</span>
+									</Button>
+								)}
+								{artefact && !isEditing && (
+									<Button
+										aria-label="Edit"
+										variant="ghost"
+										size="sm"
+										isDisabled={!artefact.content || pastVersion !== undefined}
+										onPress={startEditing}
+									>
+										<Pencil size={15} />
+										<span className="hidden sm:inline">Edit</span>
+									</Button>
+								)}
+								{artefact && !isEditing && (
+									<Button
+										aria-label={copied ? "Link copied" : "Share"}
 										variant="secondary"
 										size="sm"
 										onPress={onShare}
@@ -804,9 +919,13 @@ function ArtefactModal({
 										) : (
 											<Share2 size={15} />
 										)}
-										{copied ? "Link copied" : "Share"}
+										<span className="hidden sm:inline">
+											{copied ? "Link copied" : "Share"}
+										</span>
 									</Button>
 								)}
+							</Toolbar>
+							<div className="order-2 flex items-center gap-1 sm:order-3">
 								{artefact && (
 									<Button
 										aria-label={
@@ -837,15 +956,34 @@ function ArtefactModal({
 								>
 									<X size={17} />
 								</Button>
-							</Toolbar>
+							</div>
 						</Modal.Header>
+						{artefact && historyOpen && (
+							<Surface
+								variant="secondary"
+								className="shrink-0 border-b border-divider px-5 py-4 sm:px-6"
+							>
+								<VersionHistory
+									artefactId={artefact.id}
+									latestVersion={artefact.version ?? 1}
+									onView={setPastVersion}
+								/>
+							</Surface>
+						)}
 						<Modal.Body className="m-0 bg-surface p-0">
 							{artefact ? (
 								<ArtefactBody
 									artefact={artefact}
+									document={draft ?? (historyOpen ? pastVersion : undefined)}
 									canInteract
 									edgeToEdge
 									onAction={setFollowUp}
+									isEditing={isEditing}
+									onEdit={(nodeId, path, value) =>
+										setDraft((current) =>
+											current && withEditedText(current, nodeId, path, value),
+										)
+									}
 								/>
 							) : (
 								<div
@@ -865,7 +1003,52 @@ function ArtefactModal({
 								</div>
 							)}
 						</Modal.Body>
-						{artefact && !isCreating && (
+						{artefact && !isCreating && isEditing && (
+							<Modal.Footer className="z-10 m-0 shrink-0 flex-col gap-3 border-t border-divider bg-surface px-4 py-3 sm:px-6">
+								{hasConflict && (
+									<Alert status="warning" className="w-full">
+										<Alert.Indicator />
+										<Alert.Content>
+											<Alert.Title>
+												This artefact changed since you started editing
+											</Alert.Title>
+											<Alert.Description>
+												Reload to get the latest version. Your unsaved
+												changes will be lost.
+											</Alert.Description>
+										</Alert.Content>
+										<Button size="sm" variant="secondary" onPress={onReload}>
+											Reload
+										</Button>
+									</Alert>
+								)}
+								<Toolbar
+									aria-label="Edit actions"
+									className="flex w-full items-center justify-end gap-2"
+								>
+									<Paragraph size="sm" color="muted" className="mr-auto">
+										{isDirty
+											? "You have unsaved changes"
+											: "Click any text to edit it"}
+									</Paragraph>
+									<Button
+										variant="ghost"
+										onPress={() =>
+											isDirty ? setIsDiscarding(true) : stopEditing()
+										}
+									>
+										Cancel
+									</Button>
+									<Button
+										isDisabled={!isDirty || isSaving || hasConflict}
+										onPress={() => void save()}
+									>
+										{isSaving ? "Saving…" : "Save"}
+									</Button>
+								</Toolbar>
+							</Modal.Footer>
+						)}
+						{artefact && !isCreating && !isEditing && (
 							<Modal.Footer className="z-10 m-0 shrink-0 border-t border-divider bg-surface px-4 py-3 sm:px-6">
 								<form
 									onSubmit={onSubmit}
@@ -876,10 +1059,15 @@ function ArtefactModal({
 										variant="secondary"
 										className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
 										value={followUp}
+										disabled={pastVersion !== undefined}
 										onChange={(event) =>
 											setFollowUp(event.target.value)
 										}
-										placeholder="Describe what to change"
+										placeholder={
+											pastVersion
+												? "Return to the latest version to make changes"
+												: "Describe what to change"
+										}
 									/>
 									<Button
 										aria-label={
@@ -890,7 +1078,9 @@ function ArtefactModal({
 										type="submit"
 										className="size-10 min-w-10 rounded-full p-0"
 										isDisabled={
-											!followUp.trim() || isRevising
+											!followUp.trim() ||
+											isRevising ||
+											pastVersion !== undefined
 										}
 									>
 										{isRevising ? (
@@ -905,49 +1095,69 @@ function ArtefactModal({
 					</Modal.Dialog>
 				</Modal.Container>
 			</Modal.Backdrop>
+			<AlertDialog>
+				<AlertDialog.Backdrop
+					isOpen={isDiscarding}
+					onOpenChange={setIsDiscarding}
+				>
+					<AlertDialog.Container>
+						<AlertDialog.Dialog>
+							<AlertDialog.Header>
+								<AlertDialog.Icon status="warning" />
+								<AlertDialog.Heading>Discard your changes?</AlertDialog.Heading>
+							</AlertDialog.Header>
+							<AlertDialog.Body>
+								<Paragraph size="sm" color="muted">
+									Your edits to this artefact haven't been saved.
+								</Paragraph>
+							</AlertDialog.Body>
+							<AlertDialog.Footer>
+								<Button variant="ghost" onPress={() => setIsDiscarding(false)}>
+									Keep editing
+								</Button>
+								<Button variant="danger" onPress={stopEditing}>
+									Discard
+								</Button>
+							</AlertDialog.Footer>
+						</AlertDialog.Dialog>
+					</AlertDialog.Container>
+				</AlertDialog.Backdrop>
+			</AlertDialog>
 		</Modal>
 	);
 }
 
 function ArtefactBody({
 	artefact,
+	document: override,
 	canInteract,
 	edgeToEdge = false,
+	isEditing = false,
 	onAction,
+	onEdit,
 }: {
 	artefact: Artefact;
+	/** Shown instead of the saved content, e.g. an edit draft or a past version. */
+	document?: ArtefactDocument;
 	canInteract: boolean;
 	edgeToEdge?: boolean;
+	isEditing?: boolean;
 	onAction?: (label: string) => void;
+	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
 }) {
 	const document =
+		override ??
 		artefact.content ??
 		fallbackDocument(artefact.prompt, artefactHeading(artefact));
 	return (
-		<>
-			<ArtefactRenderer
-				document={document}
-				createdAt={artefact.createdAt}
-				canInteract={canInteract}
-				edgeToEdge={edgeToEdge}
-				onAction={onAction}
-			/>
-			{artefact.revisions?.length ? (
-				<section className="mx-auto mt-4 max-w-4xl rounded-2xl border border-divider bg-surface p-6 sm:p-8">
-					<p className="text-xs font-medium tracking-wide text-muted uppercase">
-						Iteration history
-					</p>
-					<div className="mt-3 space-y-3">
-						{artefact.revisions.map((revision) => (
-							<Card key={revision.id} variant="secondary">
-								<Card.Content className="p-4 text-sm">
-									{revision.content}
-								</Card.Content>
-							</Card>
-						))}
-					</div>
-				</section>
-			) : null}
-		</>
+		<ArtefactRenderer
+			document={document}
+			createdAt={artefact.createdAt}
+			canInteract={canInteract && !isEditing}
+			edgeToEdge={edgeToEdge}
+			isEditing={isEditing}
+			onAction={onAction}
+			onEdit={onEdit}
+		/>
 	);
 }

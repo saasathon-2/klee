@@ -17,8 +17,11 @@ export const env = {
     openAiApiKey: process.env.OPENAI_API_KEY,
     openAiModel: process.env.OPENAI_MODEL ?? "gpt-6-luna",
     openAiServiceTier: process.env.OPENAI_SERVICE_TIER === "fast" ? "fast" as const : undefined,
-    googleClientId: process.env.GOOGLE_CLIENT_ID,
-    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    // Trimmed: a stray space pasted into a dashboard breaks the OAuth redirect.
+    googleClientId: process.env.GOOGLE_CLIENT_ID?.trim(),
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim(),
+    githubClientId: process.env.GITHUB_CLIENT_ID?.trim(),
+    githubClientSecret: process.env.GITHUB_CLIENT_SECRET?.trim(),
     betterAuthApiKey: process.env.BETTER_AUTH_API_KEY,
     githubAppId: process.env.GITHUB_APP_ID,
     githubPrivateKey: process.env.GITHUB_PRIVATE_KEY,

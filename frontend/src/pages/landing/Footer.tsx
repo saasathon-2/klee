@@ -1,9 +1,11 @@
 import { Link, Paragraph, Separator } from "@heroui/react";
 import { useSession } from "../../lib/auth-client";
+import { useTheme } from "../../lib/use-theme";
 import { navMenus, pricingSection } from "./links";
 
 export function Footer() {
 	const { data: session } = useSession();
+	const { theme } = useTheme();
 	const columns = [
 		...navMenus.slice(0, 2).map((menu) => ({
 			label: menu.label,
@@ -15,22 +17,41 @@ export function Footer() {
 		{
 			label: "Account",
 			links: session?.user
-				? [{ label: "Dashboard", to: "/" }, { label: "Integrations", to: "/integrations" }]
-				: [{ label: "Sign in", to: "/login" }, { label: "Get started", to: "/register" }],
+				? [
+						{ label: "Dashboard", to: "/" },
+						{ label: "Integrations", to: "/integrations" },
+					]
+				: [
+						{ label: "Sign in", to: "/?auth=signin" },
+						{ label: "Get started", to: "/?auth=signup" },
+					],
 		},
-		{ label: "Pricing", links: [{ label: "Pricing", to: `/welcome#${pricingSection}` }] },
+		{
+			label: "Pricing",
+			links: [{ label: "Pricing", to: `/welcome#${pricingSection}` }],
+		},
 	];
 
 	return (
 		<footer>
 			<div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[2fr_repeat(4,1fr)]">
-				<div>
-					<Paragraph weight="semibold" className="text-lg tracking-tight">
-						Klee
-					</Paragraph>
-					<Paragraph size="sm" color="muted" className="mt-2 max-w-xs">
-						Turn engineering context into clear, shareable artefacts.
-					</Paragraph>
+				<div className="flex h-full flex-col">
+					<div className="flex items-center gap-2">
+						<img src="/kleelogo.svg" alt="" className="size-10" />
+						<img
+							src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
+							alt="Klee"
+							className="h-6 w-auto"
+						/>
+					</div>
+					<div className="mt-auto pt-6">
+						<Paragraph size="sm" color="muted" className="max-w-xs">
+							"One eye sees, the other feels.”
+						</Paragraph>
+						<Paragraph size="sm" color="muted" className="mt-2 max-w-xs">
+							- Paul Klee
+						</Paragraph>
+					</div>
 				</div>
 				{columns.map((column) => (
 					<div key={column.label}>
@@ -40,7 +61,10 @@ export function Footer() {
 						<ul className="mt-3 space-y-2">
 							{column.links.map((link) => (
 								<li key={link.label}>
-									<Link href={link.to} className="text-sm font-normal text-muted">
+									<Link
+										href={link.to}
+										className="text-sm font-normal text-muted"
+									>
 										{link.label}
 									</Link>
 								</li>
@@ -50,7 +74,11 @@ export function Footer() {
 				))}
 			</div>
 			<Separator />
-			<Paragraph size="xs" color="muted" className="mx-auto max-w-6xl px-6 py-6">
+			<Paragraph
+				size="xs"
+				color="muted"
+				className="mx-auto max-w-6xl px-6 py-6"
+			>
 				© 2026 Klee. All rights reserved.
 			</Paragraph>
 		</footer>
