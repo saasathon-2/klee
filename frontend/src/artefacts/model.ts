@@ -52,7 +52,6 @@ export type ArtefactNode = {
 		| "task-list"
 		| "next-steps"
 		| "prose"
-		| "code-diff"
 		| "review-comments"
 		| "commit-list"
 		| "check-list";
