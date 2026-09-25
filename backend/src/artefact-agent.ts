@@ -141,7 +141,7 @@ export async function generateArtefact(
 	prompt: string,
 	apiKey: string | undefined,
 	model: string,
-	options: { onProgress?: Progress; signal?: AbortSignal } = {},
+	options: { onProgress?: Progress; signal?: AbortSignal; serviceTier?: "fast" } = {},
 ) {
 	if (!apiKey) throw new ArtefactAgentError("missing_api_key");
 	const startedAt = performance.now();
@@ -158,6 +158,7 @@ export async function generateArtefact(
 			},
 			body: JSON.stringify({
 				model,
+				...(options.serviceTier ? { service_tier: options.serviceTier } : {}),
 				instructions,
 				reasoning: { effort: reasoningEffort },
 				text: {
@@ -199,18 +200,20 @@ export async function generateArtefact(
 	let output = "";
 	let completed = false;
 	let firstEventMs: number | undefined;
+	let servedServiceTier: string | undefined;
 	let failure: ArtefactAgentError | undefined;
 	const consume = (frame: string) => {
 		const data = frame.split(/\r?\n/).filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trimStart()).join("\n");
 		if (!data || data === "[DONE]") return;
 		firstEventMs ??= Math.round(performance.now() - startedAt);
-		let event: { type?: string; response?: { id?: string }; delta?: string; text?: string; error?: { code?: string } };
+		let event: { type?: string; response?: { id?: string; service_tier?: string }; delta?: string; text?: string; error?: { code?: string } };
 		try {
 			event = JSON.parse(data);
 		} catch {
 			throw new ArtefactAgentError("invalid_stream_event");
 		}
 		sessionId ||= event.response?.id ?? "";
+		servedServiceTier ||= event.response?.service_tier;
 		switch (event.type) {
 			case "response.created":
 				options.onProgress?.("Shaping the artefact…");
@@ -257,6 +260,8 @@ export async function generateArtefact(
 			telemetry: {
 				model,
 				reasoningEffort,
+				requestedServiceTier: options.serviceTier ?? "default",
+				servedServiceTier,
 				requestId: response.headers.get("x-request-id") ?? undefined,
 				firstEventMs,
 				providerMs: Math.round(performance.now() - startedAt),

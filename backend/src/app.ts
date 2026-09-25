@@ -71,7 +71,7 @@ async function createGeneratedArtefact(
     ownerId: string,
     prompt: string,
     isShared = false,
-    options: { onProgress?: (message: string) => void; signal?: AbortSignal } = {},
+    options: { onProgress?: (message: string) => void; signal?: AbortSignal; serviceTier?: "fast" } = {},
 ) {
     const startedAt = performance.now();
     const { content, sessionId, telemetry } = await generateArtefact(
@@ -236,6 +236,8 @@ app.post("/api/artefacts", async (req, res) => {
         artefact = await createGeneratedArtefact(
             user.id,
             prompt,
+            false,
+            { serviceTier: env.openAiServiceTier },
         );
     } catch (error) {
         if (!(error instanceof ArtefactAgentError)) throw error;
@@ -270,6 +272,7 @@ app.post("/api/artefacts/stream", async (req, res) => {
         const artefact = await createGeneratedArtefact(user.id, prompt, false, {
             signal: controller.signal,
             onProgress: (message) => send("progress", { message }),
+            serviceTier: env.openAiServiceTier,
         });
         send("complete", { artefact });
     } catch (error) {
@@ -340,6 +343,7 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
             `Update the artefact below according to the requested change. Keep useful existing details unless the request replaces them.\n\nRequested change:\n${content}\n\nExisting artefact JSON:\n${JSON.stringify(owned.rows[0].content)}`,
             env.openAiApiKey,
             env.openAiModel,
+            { serviceTier: env.openAiServiceTier },
         );
     } catch (error) {
         if (!(error instanceof ArtefactAgentError)) throw error;

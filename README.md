@@ -22,6 +22,7 @@ This repository deploys as three Railway services:
     ```
 
    `OPENAI_MODEL` is optional; it defaults to `gpt-6-luna`.
+   Set `OPENAI_SERVICE_TIER=fast` to use Fast mode for user-initiated artefacts. It is billed at a premium; GitHub Action artefacts remain on standard processing.
 
 4. For `web`, set a public domain and add:
 
