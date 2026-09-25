@@ -31,9 +31,9 @@
         "should_escape": false
       },
       {
-        "command": "/webpage",
-        "description": "Shares a webpage in the channel",
-        "usage_hint": "[url]",
+        "command": "/artefact",
+        "description": "Renders an artefact from Orcastrate",
+        "usage_hint": "<artefact-id-or-url>",
         "should_escape": false
       }
     ]
