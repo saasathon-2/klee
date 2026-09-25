@@ -349,7 +349,6 @@ export function Artefacts() {
 							<PanelLeftOpen size={19} />
 						)}
 					</Button>
-					<img src="/klee.svg" alt="Klee" className="h-5 w-auto" />
 					<h1 className="text-2xl font-semibold tracking-tight">
 						{isProfile
 							? "Profile"

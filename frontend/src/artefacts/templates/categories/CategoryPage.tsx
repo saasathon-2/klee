@@ -14,7 +14,7 @@ const CategoryPage: Template = ({ node, children, context }) => {
 		<>
 			<header className="text-lavender-foreground">
 				<div className="relative flex flex-col items-center gap-3 bg-lavender px-6 pt-10 pb-5 text-center sm:px-10">
-					<img src="/klee.svg" alt="Klee" className="absolute top-5 left-6 h-5 w-auto sm:left-10" />
+					<img src="/kleelogo.svg" alt="Klee" className="absolute top-5 left-6 size-7 sm:left-10" />
 					<Heading
 						level={2}
 						align="center"
