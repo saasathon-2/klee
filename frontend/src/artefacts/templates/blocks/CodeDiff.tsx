@@ -104,7 +104,7 @@ export function CodeDiff({ node }: TemplateProps) {
 		title: string;
 		description: string;
 		file: string;
-		url?: string;
+		url?: string | null;
 		hunks: DiffHunk[];
 	};
 	const [mode, setMode] = useState<Mode>("split");

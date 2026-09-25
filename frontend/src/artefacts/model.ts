@@ -36,7 +36,7 @@ export type Commit = {
 };
 export type Check = {
 	name: string;
-	url?: string;
+	url?: string | null;
 	status: "passed" | "failed" | "pending";
 	detail: string;
 };
