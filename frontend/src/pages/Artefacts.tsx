@@ -32,7 +32,6 @@ import {
 	Plug,
 	Plus,
 	Share2,
-	Sparkles,
 	UserRound,
 	X,
 } from "lucide-react";
@@ -425,9 +424,11 @@ export function Artefacts() {
 					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 						<div className="mx-auto w-full max-w-2xl">
 							<div className="mb-8 text-center">
-								<div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-									<Sparkles size={20} />
-								</div>
+								<img
+									src="/kleelogo.svg"
+									alt="Klee"
+									className="mx-auto mb-4 size-11"
+								/>
 								<h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
 									Turn context into something useful.
 								</h2>
