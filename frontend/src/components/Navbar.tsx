@@ -17,8 +17,8 @@ export function Navbar() {
 	return (
 		<header className="border-b border-divider bg-background">
 			<nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-				<RouterLink to="/" className="font-semibold">
-					Orcastrate
+				<RouterLink to="/" aria-label="Klee home">
+					<img src="/klee.svg" alt="Klee" className="h-5 w-auto" />
 				</RouterLink>
 
 				<div className="flex items-center gap-2">
