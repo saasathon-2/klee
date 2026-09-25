@@ -64,6 +64,34 @@ async function sessionUser(req: Request, res: Response) {
     return session.user;
 }
 
+async function createGeneratedArtefact(ownerId: string, prompt: string, isShared = false) {
+    const { content, sessionId } = await generateArtefact(
+        prompt,
+        env.openAiApiKey,
+        env.openAiModel,
+    );
+    const artefact = {
+        id: randomUUID(),
+        isShared,
+        prompt,
+        title: String(content.root.data.title),
+        content,
+    };
+    await pool.query(
+        "insert into artefact (id, owner_id, share_id, is_shared, prompt, title, content, agent_session_id) values ($1, $2, $1, $3, $4, $5, $6, $7)",
+        [
+            artefact.id,
+            ownerId,
+            artefact.isShared,
+            artefact.prompt,
+            artefact.title,
+            artefact.content,
+            sessionId,
+        ],
+    );
+    return artefact;
+}
+
 app.get("/api/integrations/github/install", async (req, res) => {
     const user = await sessionUser(req, res);
     if (!user) return;
@@ -146,14 +174,12 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
         [String(installationId)],
     );
     if (!installation.rows[0]) return res.sendStatus(403);
-    const id = randomUUID();
-    const createdAt = new Date().toISOString();
-    const prompt = `CI placeholder artefact\nCreation ID: ${id}\nCreated at: ${createdAt}`;
-    await pool.query(
-        "insert into artefact (id, owner_id, share_id, is_shared, prompt, title) values ($1, $2, $1, true, $3, $4)",
-        [id, installation.rows[0].owner_id, prompt, "CI artefact"],
+    const artefact = await createGeneratedArtefact(
+        installation.rows[0].owner_id,
+        `Create a useful artefact for pull request #${pullRequest} in ${repository}.`,
+        true,
     );
-    const url = `${env.corsOrigin}/artefacts/shared/${id}`;
+    const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
     await githubInstallationRequest(
         String(installationId),
         `/repos/${repository}/issues/${pullRequest}/comments`,
@@ -165,7 +191,7 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
             }),
         },
     );
-    res.status(201).json({ id, url, createdAt });
+    res.status(201).json({ id: artefact.id, url, createdAt: new Date().toISOString() });
 });
 
 app.get("/api/artefacts", async (req, res) => {
@@ -184,46 +210,20 @@ app.post("/api/artefacts", async (req, res) => {
     const prompt =
         typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ error: "prompt is required" });
-    let generated: Awaited<ReturnType<typeof generateArtefact>>;
+    let artefact;
     try {
-        generated = await generateArtefact(
+        artefact = await createGeneratedArtefact(
+            user.id,
             prompt,
-            env.openAiApiKey,
-            env.openAiModel,
         );
     } catch (error) {
-        if (error instanceof ArtefactAgentError) {
-            console.error("Artefact generation failed", {
-                kind: error.kind,
-                ...error.details,
-            });
-        } else {
-            console.error("Artefact generation failed", {
-                kind: "unknown_error",
-            });
-        }
+        if (!(error instanceof ArtefactAgentError)) throw error;
+        console.error("Artefact generation failed", {
+            kind: error.kind,
+            ...error.details,
+        });
         return res.status(502).json({ error: "Could not generate artefact." });
     }
-    const { content, sessionId } = generated;
-    const title = String(content.root.data.title);
-    const artefact = {
-        id: randomUUID(),
-        isShared: false,
-        prompt,
-        title,
-        content,
-    };
-    await pool.query(
-        "insert into artefact (id, owner_id, share_id, prompt, title, content, agent_session_id) values ($1, $2, $1, $3, $4, $5, $6)",
-        [
-            artefact.id,
-            user.id,
-            artefact.prompt,
-            artefact.title,
-            artefact.content,
-            sessionId,
-        ],
-    );
     res.status(201).json(artefact);
 });
 
