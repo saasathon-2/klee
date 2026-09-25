@@ -155,7 +155,7 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
     if (content.root.children?.[0])
         content.root.children[0].data.title = "CI artefact";
     await pool.query(
-        "insert into artefact (id, owner_id, is_shared, prompt, title, content) values ($1, $2, true, $3, $4, $5)",
+        "insert into artefact (id, owner_id, share_id, is_shared, prompt, title, content) values ($1, $2, $1, true, $3, $4, $5)",
         [id, installation.rows[0].owner_id, prompt, "CI artefact", content],
     );
     const url = `${env.corsOrigin}/artefacts/shared/${id}`;
@@ -219,7 +219,7 @@ app.post("/api/artefacts", async (req, res) => {
         content,
     };
     await pool.query(
-        "insert into artefact (id, owner_id, prompt, title, content, agent_session_id) values ($1, $2, $3, $4, $5, $6)",
+        "insert into artefact (id, owner_id, share_id, prompt, title, content, agent_session_id) values ($1, $2, $1, $3, $4, $5, $6)",
         [
             artefact.id,
             user.id,
