@@ -12,6 +12,7 @@ assert.equal(validGitHubWebhook(body, signature), true);
 assert.equal(validGitHubWebhook(body, "sha256=wrong"), false);
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "klee-github-actions", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), true);
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "klee-github-actions", repository: "acme/repo", event_name: "workflow_run", exp: Math.floor(Date.now() / 1000) + 60 }), true);
+assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "http://localhost:3000", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), true);
 assert.equal(validActionsClaims({ iss: "wrong", aud: "klee-github-actions", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), false);
 const artefactUrl = "https://klee.work/artefacts/shared/example";
 assert.match(

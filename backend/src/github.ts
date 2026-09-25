@@ -226,7 +226,7 @@ export function validActionsClaims(claims: Record<string, unknown>) {
 	const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
 	return (
 		claims.iss === oidcIssuer &&
-		audience.includes(githubActionsAudience) &&
+		(audience.includes(githubActionsAudience) || audience.includes(env.betterAuthUrl)) &&
 		typeof claims.repository === "string" &&
 		(claims.event_name === "pull_request" || claims.event_name === "workflow_run") &&
 		typeof claims.exp === "number" &&
