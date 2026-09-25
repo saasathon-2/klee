@@ -80,6 +80,7 @@ export function Artefacts() {
 	const id = routeId ?? searchParams.get("artefact") ?? undefined;
 	const { data: session, isPending } = useSession();
 	const isShared = Boolean(shareId);
+	const isFullScreenShared = isShared && location.pathname.endsWith("/full");
 	const isProfile = location.pathname === "/profile";
 	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
 	const [loaded, setLoaded] = useState<{
@@ -176,6 +177,13 @@ export function Artefacts() {
 			</main>
 		);
 	if (!isShared && !session?.user) return <Navigate to="/login" replace />;
+	if (isFullScreenShared)
+		return (
+			<main className="min-h-screen bg-background px-10 py-10">
+				{error && <p className="text-sm text-danger">{error}</p>}
+				{current && <ArtefactBody artefact={current} />}
+			</main>
+		);
 	if (isShared)
 		return (
 			<main className="mx-auto min-h-screen max-w-3xl px-6 py-12">
