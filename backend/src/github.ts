@@ -51,6 +51,12 @@ export async function githubInstallationRequest(installationId: string, path: st
 	return response;
 }
 
+export function githubArtefactComment(url: string) {
+	const cacheBustedUrl = `${url}${url.includes("?") ? "&" : "?"}_cb=${Date.now()}`;
+	const screenshot = `https://image.thum.io/get/width/1200/crop/900/noanimate/${cacheBustedUrl}`;
+	return `[![Orcastrate artefact](${screenshot})](${url})`;
+}
+
 export function validActionsClaims(claims: Record<string, unknown>) {
 	const now = Math.floor(Date.now() / 1000);
 	const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];

@@ -9,6 +9,7 @@ import { pool } from "./db.ts";
 import { ArtefactAgentError, generateArtefact } from "./artefact-agent.ts";
 import {
     githubActionsClaims,
+    githubArtefactComment,
     githubAppSlug,
     githubInstallation,
     githubInstallationRequest,
@@ -187,7 +188,7 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                body: `Orcastrate created an artefact: ${url}`,
+                body: githubArtefactComment(url),
             }),
         },
     );
