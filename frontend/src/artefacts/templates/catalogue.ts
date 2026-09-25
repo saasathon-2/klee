@@ -1,5 +1,6 @@
 import type { ArtefactNode } from "../model";
 import { ArchitectureFlow } from "./blocks/ArchitectureFlow";
+import { CodeDiff } from "./blocks/CodeDiff";
 import { Glue } from "./blocks/Glue";
 import { MetricRow } from "./blocks/MetricRow";
 import { NextSteps } from "./blocks/NextSteps";
@@ -34,6 +35,7 @@ export const templateDefinitions: Record<
 	"generic-page": definition(GenericPage),
 	"metric-row": definition(MetricRow),
 	"architecture-flow": definition(ArchitectureFlow),
+	"code-diff": definition(CodeDiff),
 	glue: definition(Glue),
 	"task-list": definition(TaskList),
 	"next-steps": definition(NextSteps),

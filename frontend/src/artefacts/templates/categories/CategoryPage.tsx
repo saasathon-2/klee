@@ -62,6 +62,7 @@ DeveloperPage.children = {
 	max: 8,
 	allowed: [
 		"metric-row",
+		"code-diff",
 		"architecture-flow",
 		"glue",
 		"task-list",

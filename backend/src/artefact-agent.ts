@@ -7,6 +7,7 @@ const metricSchema = z.object({
 	detail: z.string(),
 }).strict();
 const flowNodeSchema = z.object({ label: z.string(), detail: z.string() }).strict();
+const codeDiffSchema = z.object({ filename: z.string(), summary: z.string(), patch: z.string() }).strict();
 const taskSchema = z.object({
 	id: z.string(),
 	key: z.string(),
@@ -24,6 +25,7 @@ const actionSchema = z.object({
 const blockSchemas = [
 	z.object({ template: z.literal("prose"), data: z.object({ title: z.string(), body: z.string() }).strict() }).strict(),
 	z.object({ template: z.literal("metric-row"), data: z.object({ items: z.array(metricSchema) }).strict() }).strict(),
+	z.object({ template: z.literal("code-diff"), data: codeDiffSchema }).strict(),
 	z.object({ template: z.literal("architecture-flow"), data: z.object({ title: z.string(), description: z.string(), nodes: z.array(flowNodeSchema) }).strict() }).strict(),
 	z.object({ template: z.literal("glue"), data: z.object({ label: z.string() }).strict() }).strict(),
 	z.object({ template: z.literal("task-list"), data: z.object({ title: z.string(), description: z.string(), tasks: z.array(taskSchema) }).strict() }).strict(),
@@ -42,7 +44,7 @@ const generationSchema = z.object({
 const jsonSchema = generationSchema.toJSONSchema({ target: "draft-7" });
 delete jsonSchema.$schema;
 
-const instructions = `Create a useful artefact by selecting and filling only these supported blocks. Return the requested structured output, with no markdown. Choose developer-page for engineering work and generic-page otherwise. Use prose for unsupported artefact types. Blocks are prose (title/body), metric-row (2-3 comparable items), architecture-flow (2-3 ordered nodes), glue (short transition), task-list (ordered tasks with id/key/title/detail/meta/status), and next-steps (concrete follow-up suggestions). Only choose blocks that fit the category: developer-page supports all blocks; generic-page supports prose, metric-row, glue, and next-steps. Never invent fetched or connected data; work only from the user's prompt. Do not claim that an integration or action has been performed.`;
+const instructions = `Create a useful artefact by selecting and filling only these supported blocks. Return the requested structured output, with no markdown. Choose developer-page for engineering work and generic-page otherwise. Use prose for unsupported artefact types. Blocks are prose (title/body), metric-row (2-3 comparable items), code-diff (filename/summary/patch for a concise supplied source excerpt), architecture-flow (2-3 ordered nodes), glue (short transition), task-list (ordered tasks with id/key/title/detail/meta/status), and next-steps (concrete follow-up suggestions). Only choose blocks that fit the category: developer-page supports all blocks; generic-page supports prose, metric-row, glue, and next-steps. For PR context, include code-diff only for the one to three most consequential supplied changes; for large or cross-cutting PRs, prefer architecture-flow to explain the implementation over enumerating patches. Never invent fetched or connected data; work only from the user's prompt. Do not claim that an integration or action has been performed.`;
 
 export class ArtefactAgentError extends Error {
 	readonly kind: string;
@@ -61,7 +63,7 @@ function toDocument(generation: Generation): ArtefactDocument {
 		throw new Error("The generated artefact is incomplete");
 	}
 	const allowed = generation.category === "developer-page"
-		? new Set(["prose", "metric-row", "architecture-flow", "glue", "task-list", "next-steps"])
+		? new Set(["prose", "metric-row", "code-diff", "architecture-flow", "glue", "task-list", "next-steps"])
 		: new Set(["prose", "metric-row", "glue", "next-steps"]);
 	if (generation.blocks.some((block) => !allowed.has(block.template))) {
 		throw new Error("The generated artefact contains an unsupported block");

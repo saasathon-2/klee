@@ -30,3 +30,16 @@ const prompt = githubPullRequestPrompt("acme/repo", 12, {
 });
 assert.match(prompt, /Title: Add context/);
 assert.match(prompt, /added: src\/context\.ts/);
+const largePrompt = githubPullRequestPrompt("acme/repo", 13, {
+	title: "Large change",
+	body: "",
+	url: "",
+	author: "",
+	base: "main",
+	head: "feature/large",
+	additions: 9,
+	deletions: 1,
+	files: Array.from({ length: 9 }, (_, index) => ({ filename: `src/${index}.ts`, status: "modified", additions: 1, deletions: 0, patch: "secret diff" })),
+});
+assert.match(largePrompt, /Prioritize architecture-flow/);
+assert.doesNotMatch(largePrompt, /secret diff/);
