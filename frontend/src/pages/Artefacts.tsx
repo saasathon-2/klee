@@ -53,7 +53,7 @@ import {
 	type ExamplePrompt,
 } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { IntegrationsPanel } from "./Integrations";
+import { IntegrationsModal } from "./Integrations";
 
 type Revision = {
 	id: string;
@@ -351,17 +351,11 @@ export function Artefacts() {
 						)}
 					</Button>
 					<h1 className="text-2xl font-semibold tracking-tight">
-						{isProfile
-							? "Profile"
-							: isIntegrations
-								? "Integrations"
-								: `Good morning, ${user.name?.split(" ")[0] || "there"}`}
+						{isProfile ? "Profile" : `Good morning, ${user.name?.split(" ")[0] || "there"}`}
 					</h1>
 					<ThemeToggle className="ml-auto" />
 				</header>
-				{isIntegrations ? (
-					<IntegrationsPanel />
-				) : isProfile ? (
+				{isProfile ? (
 					<div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20">
 						<Card className="w-full">
 							<Card.Header className="flex items-center gap-4">
@@ -436,6 +430,19 @@ export function Artefacts() {
 									Ask for a shareable brief, technical
 									diagram, or decision-ready plan.
 								</p>
+								<Button
+									variant="ghost"
+									className="mt-5 h-auto max-w-full rounded-xl border border-divider bg-surface px-4 py-3 text-left hover:bg-surface-secondary"
+									onPress={() => navigate("/integrations")}
+								>
+									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
+										<Plug size={16} />
+									</span>
+									<span>
+										<span className="block text-sm font-medium">Connect your apps</span>
+										<span className="block text-xs text-muted">Bring in context from GitHub and manage access in one place.</span>
+									</span>
+								</Button>
 							</div>
 							<form onSubmit={create} className="w-full">
 								<Surface className="rounded-2xl border border-divider bg-surface p-3 transition-colors focus-within:border-muted">
@@ -554,6 +561,7 @@ export function Artefacts() {
 					onSubmit={revise}
 				/>
 			)}
+			{isIntegrations && <IntegrationsModal onClose={() => navigate("/")} />}
 		</Surface>
 	);
 }

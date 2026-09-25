@@ -57,6 +57,10 @@ export async function githubInstallation(id: string) {
 	}>;
 }
 
+export async function removeGitHubInstallation(id: string) {
+	await appRequest(`/app/installations/${id}`, { method: "DELETE" });
+}
+
 export async function githubRepositoryInstallation(repository: string) {
 	return (
 		await appRequest(`/repos/${repository}/installation`)
