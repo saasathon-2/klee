@@ -49,6 +49,11 @@ try {
 			appliedNames.delete(recordedName);
 			appliedNames.add(canonicalName);
 		}
+		if (!appliedNames.has(contentName) && appliedNames.has(githubName)) {
+			await client.query('alter table "artefact" add column if not exists "content" jsonb');
+			await client.query("insert into pgmigrations (name, run_on) values ($1, now())", [contentName]);
+			appliedNames.add(contentName);
+		}
 		if (
 			!appliedNames.has(canonicalName) &&
 			appliedNames.has(contentName) &&
