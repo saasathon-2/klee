@@ -15,19 +15,40 @@ export function Footer() {
 		{
 			label: "Account",
 			links: session?.user
-				? [{ label: "Dashboard", to: "/" }, { label: "Integrations", to: "/integrations" }]
-				: [{ label: "Sign in", to: "/login" }, { label: "Get started", to: "/register" }],
+				? [
+						{ label: "Dashboard", to: "/" },
+						{ label: "Integrations", to: "/integrations" },
+					]
+				: [
+						{ label: "Sign in", to: "/login" },
+						{ label: "Get started", to: "/register" },
+					],
 		},
-		{ label: "Pricing", links: [{ label: "Pricing", to: `/welcome#${pricingSection}` }] },
+		{
+			label: "Pricing",
+			links: [{ label: "Pricing", to: `/welcome#${pricingSection}` }],
+		},
 	];
 
 	return (
 		<footer>
 			<div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[2fr_repeat(4,1fr)]">
 				<div>
-					<img src="/klee.svg" alt="Klee" className="h-6 w-auto" />
-					<Paragraph size="sm" color="muted" className="mt-2 max-w-xs">
-						Turn engineering context into clear, shareable artefacts.
+					<div className="flex items-center gap-2">
+						<img src="/kleelogo.svg" alt="" className="size-12" />
+						<img
+							src="/klee.svg"
+							alt="Klee"
+							className="h-6 w-auto"
+						/>
+					</div>
+					<Paragraph
+						size="sm"
+						color="muted"
+						className="mt-2 max-w-xs"
+					>
+						Turn engineering context into clear, shareable
+						artefacts.
 					</Paragraph>
 				</div>
 				{columns.map((column) => (
@@ -38,7 +59,10 @@ export function Footer() {
 						<ul className="mt-3 space-y-2">
 							{column.links.map((link) => (
 								<li key={link.label}>
-									<Link href={link.to} className="text-sm font-normal text-muted">
+									<Link
+										href={link.to}
+										className="text-sm font-normal text-muted"
+									>
 										{link.label}
 									</Link>
 								</li>
@@ -48,7 +72,11 @@ export function Footer() {
 				))}
 			</div>
 			<Separator />
-			<Paragraph size="xs" color="muted" className="mx-auto max-w-6xl px-6 py-6">
+			<Paragraph
+				size="xs"
+				color="muted"
+				className="mx-auto max-w-6xl px-6 py-6"
+			>
 				© 2026 Klee. All rights reserved.
 			</Paragraph>
 		</footer>
