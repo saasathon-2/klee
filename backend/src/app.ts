@@ -115,11 +115,21 @@ async function createGeneratedArtefact(ownerId: string, prompt: string, isShared
     return artefact;
 }
 
+async function createPendingGitHubArtefact(ownerId: string) {
+    const id = randomUUID();
+    await pool.query(
+        "insert into artefact (id, owner_id, share_id, is_shared, prompt, title) values ($1, $2, $1, true, $3, $4)",
+        [id, ownerId, "GitHub PR artefact refresh in progress.", "Generating PR artefact"],
+    );
+    return id;
+}
+
 async function refreshGitHubPullRequestArtefact(
     installationId: string,
     repository: string,
     pullRequest: number,
     ownerId?: string,
+    artefactId?: string,
 ) {
     const { rows } = await pool.query(
         'select owner_id as "ownerId", artefact_id as "artefactId", comment_id as "commentId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
@@ -133,7 +143,7 @@ async function refreshGitHubPullRequestArtefact(
         owner,
         githubPullRequestPrompt(repository, pullRequest, context),
         true,
-        current?.artefactId,
+        current?.artefactId ?? artefactId,
     );
     const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
     let commentId = current?.commentId;
@@ -247,14 +257,20 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
         [String(installationId)],
     );
     if (!installation.rows[0]) return res.sendStatus(403);
-    const refreshed = await refreshGitHubPullRequestArtefact(
+    const { rows } = await pool.query(
+        'select artefact_id as "artefactId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
+        [repository, pullRequest],
+    );
+    const artefactId = rows[0]?.artefactId ?? await createPendingGitHubArtefact(installation.rows[0].owner_id);
+    const url = `${env.corsOrigin}/artefacts/shared/${artefactId}`;
+    res.status(202).json({ id: artefactId, url, createdAt: new Date().toISOString() });
+    void refreshGitHubPullRequestArtefact(
         String(installationId),
         repository,
         pullRequest,
         installation.rows[0].owner_id,
-    );
-    if (!refreshed) return res.sendStatus(404);
-    res.status(201).json({ id: refreshed.artefact.id, url: refreshed.url, createdAt: new Date().toISOString() });
+        artefactId,
+    ).catch((error) => console.error("GitHub Action artefact refresh failed", error));
 });
 
 app.get("/api/artefacts", async (req, res) => {
