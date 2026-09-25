@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@200;300;400;500;600;700;800&display=swap");
 @import "tailwindcss";
 @import "@heroui/styles";
-@import "./themes/orcastrate.css" layer(theme);
+@import "./themes/klee.css" layer(theme);
 
 :root {
 	--font-bricolage-grotesque:

@@ -205,7 +205,7 @@ export function IntegrationsPanel() {
 					summary="Show linked artefacts on Jira issues."
 					status={<Chip size="sm">Site app</Chip>}
 					features={[
-						"Adds an Klee artefacts panel to every Jira issue.",
+						"Adds a Klee artefacts panel to every Jira issue.",
 						"Embeds each artefact linked in the issue's description or comments.",
 						"Reads issues with the viewer's own Jira permissions.",
 					]}
