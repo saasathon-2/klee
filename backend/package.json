@@ -10,7 +10,7 @@
     "migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up -j ts -m src/migrations",
     "migrate:down": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js down -j ts -m src/migrations",
     "migrate:create": "node-pg-migrate create -j ts -m src/migrations --",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test --experimental-strip-types src/github.test.ts"
   },
   "keywords": [],
   "author": "",

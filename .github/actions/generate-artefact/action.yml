@@ -1,0 +1,31 @@
+name: Generate Orcastrate artefact
+description: Creates an Orcastrate artefact for a pull request and posts its link.
+inputs:
+  api-url:
+    description: Public Orcastrate API URL, without a trailing slash.
+    required: true
+  pull-request:
+    description: Pull request number.
+    required: true
+outputs:
+  artefact-url:
+    description: The created Orcastrate artefact URL.
+    value: ${{ steps.create.outputs.artefact-url }}
+runs:
+  using: composite
+  steps:
+    - id: create
+      shell: node {0}
+      env:
+        API_URL: ${{ inputs.api-url }}
+        PULL_REQUEST: ${{ inputs.pull-request }}
+      run: |
+        (async () => {
+          const requestUrl = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+          requestUrl.searchParams.set("audience", process.env.API_URL);
+          const oidc = await fetch(requestUrl, { headers: { Authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}` } }).then(response => response.ok ? response.json() : Promise.reject(new Error(`GitHub OIDC request failed (${response.status})`)));
+          const response = await fetch(`${process.env.API_URL}/api/integrations/github/actions/artefacts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: oidc.value, pullRequest: Number(process.env.PULL_REQUEST) }) });
+          if (!response.ok) throw new Error(`Orcastrate request failed (${response.status}): ${await response.text()}`);
+          const artefact = await response.json();
+          await require("node:fs").promises.appendFile(process.env.GITHUB_OUTPUT, `artefact-url=${artefact.url}\n`);
+        })().catch(error => { console.error(error); process.exitCode = 1; });

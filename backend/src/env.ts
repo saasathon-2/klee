@@ -17,4 +17,7 @@ export const env = {
 	googleClientId: process.env.GOOGLE_CLIENT_ID,
 	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
 	betterAuthApiKey: process.env.BETTER_AUTH_API_KEY,
+	githubAppId: process.env.GITHUB_APP_ID,
+	githubPrivateKey: process.env.GITHUB_PRIVATE_KEY,
+	githubWebhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
 };
