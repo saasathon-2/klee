@@ -18,18 +18,11 @@ import {
 import {
 	ArrowUp,
 	BrainCog,
-	CalendarDays,
 	Check,
-	Compass,
-	FileDiff,
 	FileText,
-	GitCommitHorizontal,
-	GitPullRequest,
 	History,
-	ListChecks,
 	LogOut,
 	Maximize2,
-	MessagesSquare,
 	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
@@ -41,7 +34,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import {
 	Navigate,
 	useLocation,
@@ -58,10 +51,7 @@ import {
 	type ArtefactDocument,
 } from "../artefacts/model";
 import type { EditPath } from "../artefacts/templates/types";
-import {
-	developerExamplePrompts,
-	type ExamplePrompt,
-} from "../artefacts/examplePrompts";
+import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsPanel } from "./Integrations";
 import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
@@ -101,13 +91,9 @@ function artefactHeading(artefact: Artefact) {
 		: "Working brief";
 }
 
-const developerTemplateIcons: Record<ExamplePrompt["id"], ReactNode> = {
-	"code-diff": <FileDiff size={15} />,
-	"review-comments": <MessagesSquare size={15} />,
-	"commit-list": <GitCommitHorizontal size={15} />,
-	"check-list": <ListChecks size={15} />,
-	"god-prompt": <BrainCog size={15} />,
-};
+const godPrompt = developerExamplePrompts.find(
+	(template) => template.id === "god-prompt",
+);
 
 const api = (path: string, options?: RequestInit) =>
 	fetch(`/api${path}`, {
@@ -528,60 +514,19 @@ export function Artefacts() {
 									</Toolbar>
 								</Surface>
 							</form>
-							<div className="mt-4 grid gap-2 lg:grid-cols-3">
-								<PromptStarter
-									icon={<GitPullRequest size={17} />}
-									title="Explain a PR"
-									description="Changes, impact, and architecture"
-									onPress={() =>
-										setPrompt(
-											"Explain the changes and architecture impact in this pull request: ",
-										)
-									}
-								/>
-								<PromptStarter
-									icon={<CalendarDays size={17} />}
-									title="Plan my week"
-									description="A focused roadmap from my assigned work"
-									onPress={() =>
-										setPrompt(
-											"Create a simple roadmap for my assigned tickets this week.",
-										)
-									}
-								/>
-								<PromptStarter
-									icon={<Compass size={17} />}
-									title="Make a brief"
-									description="Turn scattered context into a shareable update"
-									onPress={() =>
-										setPrompt(
-											"Create a concise project update that I can share with my team.",
-										)
-									}
-								/>
-							</div>
-							<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-								<span className="text-xs text-muted">
-									Developer templates
-								</span>
-								{developerExamplePrompts.map((template) => (
+							{godPrompt && (
+								<div className="mt-4 flex justify-center">
 									<Button
-										key={template.id}
 										size="sm"
 										variant="outline"
 										className="rounded-full"
-										onPress={() =>
-											setPrompt(template.prompt)
-										}
+										onPress={() => setPrompt(godPrompt.prompt)}
 									>
-										{developerTemplateIcons[template.id]}
-										{template.label}
+										<BrainCog size={15} />
+										{godPrompt.label}
 									</Button>
-								))}
-							</div>
-							<p className="mt-5 text-center text-xs text-muted">
-								Artefacts are private until you share a link.
-							</p>
+								</div>
+							)}
 						</div>
 					</div>
 				)}
@@ -613,34 +558,6 @@ export function Artefacts() {
 				/>
 			)}
 		</Surface>
-	);
-}
-
-function PromptStarter({
-	icon,
-	title,
-	description,
-	onPress,
-}: {
-	icon: ReactNode;
-	title: string;
-	description: string;
-	onPress: () => void;
-}) {
-	return (
-		<Button
-			variant="ghost"
-			className="h-auto min-h-24 min-w-0 items-start justify-start gap-3 rounded-xl border border-divider px-4 py-3 text-left whitespace-normal hover:bg-surface-secondary"
-			onPress={onPress}
-		>
-			<span className="mt-0.5 text-muted">{icon}</span>
-			<span className="min-w-0">
-				<span className="block text-sm font-medium">{title}</span>
-				<span className="mt-1 block text-xs leading-4 text-muted text-pretty">
-					{description}
-				</span>
-			</span>
-		</Button>
 	);
 }
 
