@@ -232,7 +232,7 @@ export function validActionsClaims(claims: Record<string, unknown>) {
 		claims.iss === oidcIssuer &&
 		(audience.includes(githubActionsAudience) || audience.includes(env.betterAuthUrl)) &&
 		typeof claims.repository === "string" &&
-		(claims.event_name === "pull_request" || claims.event_name === "workflow_run") &&
+		(claims.event_name === "pull_request" || claims.event_name === "pull_request_target" || claims.event_name === "workflow_run") &&
 		typeof claims.exp === "number" &&
 		claims.exp > now &&
 		(typeof claims.nbf !== "number" || claims.nbf <= now)
