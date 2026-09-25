@@ -51,6 +51,7 @@ export function Navbar() {
 				</div>
 
 				<div className="col-start-3 flex items-center justify-self-end gap-3">
+					<Button variant="ghost" size="sm" onPress={() => navigate("/docs")}>Docs</Button>
 					{isPending ? null : session?.user ? (
 						<Button size="sm" onPress={() => navigate("/")}>
 							Dashboard

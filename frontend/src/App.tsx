@@ -16,6 +16,7 @@ import { FormsExample } from "./pages/FormsExample";
 import { SocialExample } from "./pages/SocialExample";
 import { SettingsExample } from "./pages/SettingsExample";
 import { Artefacts } from "./pages/Artefacts";
+import { Docs } from "./pages/Docs";
 import { useSession } from "./lib/auth-client";
 
 function RequireUser() {
@@ -31,6 +32,7 @@ function GuestOnly() {
 }
 
 function Home() {
+	if (window.location.hostname === "docs.klee.work") return <Docs />;
 	const { data: session, isPending } = useSession();
 	if (isPending) return null;
 	return session?.user ? <Artefacts /> : <Landing />;
@@ -50,6 +52,7 @@ function App() {
 				<Routes>
 					<Route path="/" element={<Home />} />
 					<Route path="/welcome" element={<Landing />} />
+					<Route path="/docs" element={<Docs />} />
 					<Route element={<GuestOnly />}>
 						<Route path="/login" element={<Login />} />
 						<Route path="/register" element={<Register />} />

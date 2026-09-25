@@ -1,4 +1,4 @@
-import { Button, Heading, Paragraph } from "@heroui/react";
+import { Button, Heading } from "@heroui/react";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import houseOnTheWater from "../assets/klee-house-on-the-water.jpg";
