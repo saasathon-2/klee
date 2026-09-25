@@ -15,5 +15,5 @@ assert.equal(validActionsClaims({ iss: "wrong", aud: "http://localhost:3000", re
 const artefactUrl = "https://www.orcastrate.net/artefacts/shared/example";
 assert.match(
 	githubArtefactComment(artefactUrl),
-	new RegExp(`^\\[!\\[Orcastrate artefact\\]\\(https://image\\.thum\\.io/get/width/1200/crop/900/noanimate/${artefactUrl}\\?_cb=\\d+\\)\\]\\(${artefactUrl}\\)$`),
+	new RegExp(`^<a href="${artefactUrl}" target="_blank"><img src="https://image\\.thum\\.io/get/width/1200/crop/900/noanimate/${artefactUrl}\\?_cb=\\d+" alt="klee artefact"></a>$`),
 );
