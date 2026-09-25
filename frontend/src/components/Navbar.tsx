@@ -11,7 +11,7 @@ export function Navbar() {
 	const goToSection = (section: string) => navigate(`/welcome#${section}`);
 
 	return (
-		<header className="sticky top-0 z-40 border-b-2 border-divider bg-background">
+		<header className="sticky top-0 z-40 border-b border-divider bg-background">
 			<nav className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-6">
 				<Link
 					href="/welcome"
