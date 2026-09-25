@@ -124,7 +124,7 @@ export function Docs() {
 					level={1}
 					className="mt-5 text-4xl tracking-tight sm:text-5xl"
 				>
-					Create beautiful diagrams.
+					Create beautiful diagrams, with Klee.
 				</Heading>
 				<Paragraph className="mt-5 max-w-2xl text-lg text-muted">
 					Klee turns clutter into minimal, clear, and shareable
