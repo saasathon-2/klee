@@ -9,6 +9,11 @@ export const auth = betterAuth({
 	baseURL: env.betterAuthUrl,
 	basePath: "/api/auth",
 	trustedOrigins: [env.corsOrigin],
+	// Send sign-in failures (e.g. a cancelled or expired OAuth flow) back to the
+	// web app's sign-in modal rather than the API's own error page.
+	onAPIError: {
+		errorURL: `${env.corsOrigin}/?auth=signin`,
+	},
 	emailAndPassword: {
 		enabled: true,
 	},

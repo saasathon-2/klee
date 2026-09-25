@@ -20,8 +20,8 @@ export function Footer() {
 						{ label: "Integrations", to: "/integrations" },
 					]
 				: [
-						{ label: "Sign in", to: "/login" },
-						{ label: "Get started", to: "/register" },
+						{ label: "Sign in", to: "/?auth=signin" },
+						{ label: "Get started", to: "/?auth=signup" },
 					],
 		},
 		{

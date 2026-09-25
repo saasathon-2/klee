@@ -18,14 +18,16 @@ done
 
 echo "==> Installing backend dependencies"
 (cd backend && pnpm install)
-[ -f backend/.env ] || { cp backend/.env.example backend/.env; echo "==> Created backend/.env"; }
+create_env() { [ -f "$2" ] || { cp "$1" "$2"; echo "==> Created $2 (fill in any blank values)"; }; }
+create_env backend/.env.example backend/.env
+create_env backend/.env.local.example backend/.env.local
 
 echo "==> Running database migrations"
 (cd backend && pnpm run migrate)
 
 echo "==> Installing frontend dependencies"
 (cd frontend && pnpm install)
-[ -f frontend/.env ] || { cp frontend/.env.example frontend/.env; echo "==> Created frontend/.env"; }
+create_env frontend/.env.local.example frontend/.env.local
 
 cleanup() {
   echo

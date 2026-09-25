@@ -1,6 +1,6 @@
 import { Button, Chip, Paragraph } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { authClient } from "../../lib/auth-client";
+import { authClient, linkGitHub } from "../../lib/auth-client";
 
 /**
  * Links a GitHub login to the current user so artefacts in their GitHub orgs
@@ -21,10 +21,7 @@ export function GitHubAccountLink() {
 
 	async function link() {
 		setError("");
-		const { error: linkError } = await authClient.linkSocial({
-			provider: "github",
-			callbackURL: "/profile",
-		});
+		const { error: linkError } = await linkGitHub("/profile");
 		if (linkError) setError(linkError.message ?? "Could not link GitHub.");
 	}
 

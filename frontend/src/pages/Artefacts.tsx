@@ -348,7 +348,7 @@ export function Artefacts() {
 				<span className="text-sm text-muted">Loading</span>
 			</main>
 		);
-	if (!isShared && !session?.user) return <Navigate to="/login" replace />;
+	if (!isShared && !session?.user) return <Navigate to="/?auth=signin" replace />;
 	if (isShared)
 		return (
 			<main className="min-h-screen bg-background">

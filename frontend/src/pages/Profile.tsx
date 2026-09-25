@@ -18,7 +18,7 @@ export function Profile() {
 	}
 
 	if (!session?.user) {
-		return <Navigate to="/login" replace />;
+		return <Navigate to="/?auth=signin" replace />;
 	}
 
 	const { user } = session;

@@ -220,6 +220,14 @@ async function refreshGitHubPullRequestArtefact(
     return { artefact, url };
 }
 
+/** Which social sign-in providers have credentials, so the UI only offers working ones. */
+app.get("/api/auth-providers", (_req, res) => {
+    res.json({
+        google: Boolean(env.googleClientId && env.googleClientSecret),
+        github: Boolean(env.githubClientId && env.githubClientSecret),
+    });
+});
+
 app.get("/api/integrations/github/install", async (req, res) => {
     const user = await sessionUser(req, res);
     if (!user) return;

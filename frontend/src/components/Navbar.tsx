@@ -93,7 +93,7 @@ export function Navbar() {
 							Dashboard
 						</Button>
 					) : (
-						<Button size="sm" onPress={() => navigate("/login")}>
+						<Button size="sm" onPress={() => navigate("?auth=signin")}>
 							Sign in
 						</Button>
 					)}

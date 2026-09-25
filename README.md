@@ -77,4 +77,12 @@ jobs:
 
 ## Local development
 
-Use `./utils/dev.sh`. It continues to load `backend/.env` and `frontend/.env`; production uses Railway variables instead.
+Use `./utils/dev.sh`. Local settings are split into two files per app; production uses Railway variables and never reads them.
+
+| File | Holds |
+| --- | --- |
+| `backend/.env` | Shared secrets: auth secret, Google and OpenAI keys |
+| `backend/.env.local` | Local only: port, local database, `localhost` URLs, and a local GitHub OAuth app (callback `http://localhost:3000/api/auth/callback/github`). Loaded after `.env`, so it wins. |
+| `frontend/.env.local` | Local only: `VITE_API_URL`, which the Vite dev server also uses as its `/api` proxy target |
+
+`dev.sh` creates any missing file from its `.example` template. Both `.env.local` files are git-ignored.
