@@ -10,6 +10,22 @@ permissions:
     id-token: write
 
 jobs:
+    migration-guard:
+        if: github.event_name == 'pull_request'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+            - run: node backend/scripts/migrations-check.mjs
+              env:
+                  MIGRATIONS_BASE_REF: origin/${{ github.base_ref }}
+
     generate-artefact:
         if: github.event_name == 'pull_request' || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name != 'klee' && github.event.workflow_run.pull_requests[0].number)
         runs-on: ubuntu-latest
