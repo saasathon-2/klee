@@ -1,9 +1,11 @@
 import { Link, Paragraph, Separator } from "@heroui/react";
 import { useSession } from "../../lib/auth-client";
+import { useTheme } from "../../lib/use-theme";
 import { navMenus, pricingSection } from "./links";
 
 export function Footer() {
 	const { data: session } = useSession();
+	const { theme } = useTheme();
 	const columns = [
 		...navMenus.slice(0, 2).map((menu) => ({
 			label: menu.label,
@@ -37,7 +39,7 @@ export function Footer() {
 					<div className="flex items-center gap-2">
 						<img src="/kleelogo.svg" alt="" className="size-10" />
 						<img
-							src="/klee.svg"
+							src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
 							alt="Klee"
 							className="h-6 w-auto"
 						/>

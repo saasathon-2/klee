@@ -6,8 +6,8 @@ export function ArtefactPage({ children, context }: TemplateProps) {
 		<article
 			className={
 				context.edgeToEdge
-					? "w-full overflow-hidden bg-surface text-surface-foreground"
-					: "mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border border-divider bg-surface text-surface-foreground"
+					? "w-full overflow-x-visible overflow-y-clip bg-surface text-surface-foreground"
+					: "mx-auto w-full max-w-4xl overflow-x-visible overflow-y-clip rounded-2xl border border-divider bg-surface text-surface-foreground"
 			}
 		>
 			{children}
