@@ -1,4 +1,4 @@
-import express, { type Express, type Request, type Response } from "express";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { fromNodeHeaders } from "better-auth/node";
@@ -158,13 +158,32 @@ async function createGeneratedArtefact(
     return artefact;
 }
 
-async function createPendingGitHubArtefact(ownerId: string, installationId: string) {
-    const id = randomUUID();
-    await pool.query(
-        "insert into artefact (id, owner_id, share_id, is_shared, prompt, title, github_installation_id) values ($1, $2, $1, true, $3, $4, $5)",
-        [id, ownerId, "GitHub PR artefact refresh in progress.", "Generating PR artefact", installationId],
-    );
-    return id;
+async function reserveGitHubPullRequestArtefact(
+    installationId: string,
+    repository: string,
+    pullRequest: number,
+    ownerId: string,
+) {
+    return transaction(async (client) => {
+        await client.query("select pg_advisory_xact_lock(hashtext($1))", [
+            `${repository}#${pullRequest}`,
+        ]);
+        const { rows } = await client.query(
+            'select artefact_id as "artefactId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
+            [repository, pullRequest],
+        );
+        if (rows[0]) return rows[0].artefactId as string;
+        const artefactId = randomUUID();
+        await client.query(
+            "insert into artefact (id, owner_id, share_id, is_shared, prompt, title, github_installation_id) values ($1, $2, $1, true, $3, $4, $5)",
+            [artefactId, ownerId, "GitHub PR artefact refresh in progress.", "Generating PR artefact", installationId],
+        );
+        await client.query(
+            "insert into github_pull_request_artefact (repository, pull_request, installation_id, owner_id, artefact_id, comment_id) values ($1, $2, $3, $4, $5, null)",
+            [repository, pullRequest, installationId, ownerId, artefactId],
+        );
+        return artefactId;
+    });
 }
 
 async function refreshGitHubPullRequestArtefact(
@@ -174,50 +193,61 @@ async function refreshGitHubPullRequestArtefact(
     ownerId?: string,
     artefactId?: string,
 ) {
-    const { rows } = await pool.query(
-        'select owner_id as "ownerId", artefact_id as "artefactId", comment_id as "commentId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
-        [repository, pullRequest],
-    );
-    const current = rows[0];
-    const owner = ownerId ?? current?.ownerId;
-    if (!owner) return;
-    const context = await githubPullRequestContext(installationId, repository, pullRequest);
-    const artefact = await createGeneratedArtefact(
-        owner,
-        githubPullRequestPrompt(repository, pullRequest, context),
-        true,
-        {},
-        current?.artefactId ?? artefactId,
-        { authorId: null, source: "github", installationId },
-    );
-    const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
-    let commentId = current?.commentId;
-    if (commentId) {
-        await githubInstallationRequest(
-            installationId,
-            `/repos/${repository}/issues/comments/${commentId}`,
-            { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url) }) },
+    const lock = await pool.connect();
+    try {
+        await lock.query("select pg_advisory_lock(hashtext($1))", [
+            `${repository}#${pullRequest}`,
+        ]);
+        const { rows } = await pool.query(
+            'select owner_id as "ownerId", artefact_id as "artefactId", comment_id as "commentId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
+            [repository, pullRequest],
         );
-    } else {
-        const comment = await githubInstallationRequest(
-            installationId,
-            `/repos/${repository}/issues/${pullRequest}/comments`,
-            { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url) }) },
-        );
-        commentId = String((await comment.json() as { id: number }).id);
-    }
-    await pool.query(
-        "insert into github_pull_request_artefact (repository, pull_request, installation_id, owner_id, artefact_id, comment_id) values ($1, $2, $3, $4, $5, $6) on conflict (repository, pull_request) do update set installation_id = excluded.installation_id, owner_id = excluded.owner_id, artefact_id = excluded.artefact_id, comment_id = excluded.comment_id, updated_at = current_timestamp",
-        [
-            repository,
-            pullRequest,
-            installationId,
+        const current = rows[0];
+        const owner = ownerId ?? current?.ownerId;
+        if (!owner) return;
+        const context = await githubPullRequestContext(installationId, repository, pullRequest);
+        const artefact = await createGeneratedArtefact(
             owner,
-            artefact.id,
-            commentId,
-        ],
-    );
-    return { artefact, url };
+            githubPullRequestPrompt(repository, pullRequest, context),
+            true,
+            {},
+            current?.artefactId ?? artefactId,
+            { authorId: null, source: "github", installationId },
+        );
+        const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
+        let commentId = current?.commentId;
+        if (commentId) {
+            await githubInstallationRequest(
+                installationId,
+                `/repos/${repository}/issues/comments/${commentId}`,
+                { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url) }) },
+            );
+        } else {
+            const comment = await githubInstallationRequest(
+                installationId,
+                `/repos/${repository}/issues/${pullRequest}/comments`,
+                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url) }) },
+            );
+            commentId = String((await comment.json() as { id: number }).id);
+        }
+        await pool.query(
+            "insert into github_pull_request_artefact (repository, pull_request, installation_id, owner_id, artefact_id, comment_id) values ($1, $2, $3, $4, $5, $6) on conflict (repository, pull_request) do update set installation_id = excluded.installation_id, owner_id = excluded.owner_id, artefact_id = excluded.artefact_id, comment_id = excluded.comment_id, updated_at = current_timestamp",
+            [
+                repository,
+                pullRequest,
+                installationId,
+                owner,
+                artefact.id,
+                commentId,
+            ],
+        );
+        return { artefact, url };
+    } finally {
+        await lock.query("select pg_advisory_unlock(hashtext($1))", [
+            `${repository}#${pullRequest}`,
+        ]);
+        lock.release();
+    }
 }
 
 /** Which social sign-in providers have credentials, so the UI only offers working ones. */
@@ -300,30 +330,45 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
             .json({
                 error: "A GitHub Actions token and pull request number are required.",
             });
-    const { repository } = await githubActionsClaims(token);
+    let repository: string;
+    try {
+        ({ repository } = await githubActionsClaims(token));
+    } catch (error) {
+        console.warn("Invalid GitHub Actions token", error);
+        return res.status(401).json({ error: "Invalid GitHub Actions token." });
+    }
     if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository))
         return res.status(400).json({ error: "Invalid repository." });
-    const { id: installationId } =
-        await githubRepositoryInstallation(repository);
-    const installation = await pool.query(
-        "select owner_id from github_installation where installation_id = $1",
-        [String(installationId)],
-    );
-    if (!installation.rows[0]) return res.sendStatus(403);
-    const { rows } = await pool.query(
-        'select artefact_id as "artefactId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
-        [repository, pullRequest],
-    );
-    const artefactId = rows[0]?.artefactId ?? await createPendingGitHubArtefact(installation.rows[0].owner_id, String(installationId));
-    const url = `${env.corsOrigin}/artefacts/shared/${artefactId}`;
-    res.status(202).json({ id: artefactId, url, createdAt: new Date().toISOString() });
-    void refreshGitHubPullRequestArtefact(
-        String(installationId),
-        repository,
-        pullRequest,
-        installation.rows[0].owner_id,
-        artefactId,
-    ).catch((error) => console.error("GitHub Action artefact refresh failed", error));
+    try {
+        const { id: installationId } =
+            await githubRepositoryInstallation(repository);
+        const installation = await pool.query(
+            "select owner_id from github_installation where installation_id = $1",
+            [String(installationId)],
+        );
+        if (!installation.rows[0])
+            return res.status(403).json({ error: "GitHub App is not installed for this repository." });
+        const artefactId = await reserveGitHubPullRequestArtefact(
+            String(installationId),
+            repository,
+            pullRequest,
+            installation.rows[0].owner_id,
+        );
+        const url = `${env.corsOrigin}/artefacts/shared/${artefactId}`;
+        res.status(202).json({ id: artefactId, url, createdAt: new Date().toISOString() });
+        void refreshGitHubPullRequestArtefact(
+            String(installationId),
+            repository,
+            pullRequest,
+            installation.rows[0].owner_id,
+            artefactId,
+        ).catch((error) => console.error("GitHub Action artefact refresh failed", error));
+    } catch (error) {
+        console.error("Failed to create GitHub Actions artefact", error);
+        if (error instanceof Error && error.message === "GitHub API request failed (404)")
+            return res.status(404).json({ error: "Repository is unavailable to the GitHub App." });
+        return res.status(500).json({ error: "Failed to create artefact." });
+    }
 });
 
 /** Refreshes cached GitHub org membership; a GitHub outage keeps the cached list. */
@@ -643,6 +688,15 @@ app.get("/", (_req: Request, res: Response) => {
 
 app.get("/health", (_req: Request, res: Response) => {
     res.sendStatus(204);
+});
+
+app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
+    if (
+        req.path === "/api/integrations/github/actions/artefacts" &&
+        error instanceof SyntaxError
+    )
+        return res.status(400).json({ error: "Invalid JSON body." });
+    next(error);
 });
 
 app.listen(env.port, () => {
