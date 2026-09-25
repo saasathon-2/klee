@@ -43,6 +43,7 @@ import {
 	useSearchParams,
 } from "react-router-dom";
 import { signOut, useSession } from "../lib/auth-client";
+import { KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import {
@@ -463,11 +464,7 @@ export function Artefacts() {
 					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 						<div className="mx-auto w-full max-w-2xl">
 							<div className="mb-8 text-center">
-								<img
-									src="/kleelogo.svg"
-									alt="Klee"
-									className="mx-auto mb-4 size-11"
-								/>
+								<KleeLogo className="mx-auto mb-4 size-16" />
 								<h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
 									Turn context into something useful.
 								</h2>
