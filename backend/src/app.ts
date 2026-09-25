@@ -23,6 +23,7 @@ import {
     githubArtefactComment,
     githubAppSlug,
     githubInstallation,
+    removeGitHubInstallation,
     githubInstallationRequest,
     githubPullRequestContext,
     githubPullRequestPrompt,
@@ -305,7 +306,7 @@ async function completeGitHubInstallation(req: Request, res: Response) {
             .send(
                 "This GitHub installation is connected to another Klee account.",
             );
-    res.redirect(`${env.corsOrigin}/profile?github=connected`);
+    res.redirect(`${env.corsOrigin}/integrations?github=connected`);
 }
 
 app.get("/api/integrations/github/setup", completeGitHubInstallation);
@@ -319,6 +320,23 @@ app.get("/api/integrations/github", async (req, res) => {
         [user.id],
     );
     res.json(rows);
+});
+
+app.delete("/api/integrations/github/:installationId", async (req, res) => {
+    const user = await sessionUser(req, res);
+    if (!user) return;
+    const installationId = req.params.installationId;
+    const { rows } = await pool.query(
+        "select installation_id from github_installation where installation_id = $1 and owner_id = $2",
+        [installationId, user.id],
+    );
+    if (!rows[0]) return res.sendStatus(404);
+    await removeGitHubInstallation(installationId);
+    await pool.query(
+        "delete from github_installation where installation_id = $1 and owner_id = $2",
+        [installationId, user.id],
+    );
+    res.sendStatus(204);
 });
 
 app.post("/api/integrations/github/actions/artefacts", async (req, res) => {

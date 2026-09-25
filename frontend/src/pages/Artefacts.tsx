@@ -53,8 +53,8 @@ import {
 import type { EditPath } from "../artefacts/templates/types";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { IntegrationsModal } from "./Integrations";
 import { useMediaQuery } from "../lib/use-media-query";
-import { IntegrationsPanel } from "./Integrations";
 import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 import { ArtefactNav } from "./artefact/ArtefactNav";
 import { FolderSelect } from "./artefact/FolderSelect";
@@ -131,8 +131,12 @@ export function Artefacts() {
 	const [followUp, setFollowUp] = useState("");
 	const [isRevising, setIsRevising] = useState(false);
 	const [error, setError] = useState("");
-	const { folders, create: createFolder, rename: renameFolder, remove: removeFolder } =
-		useFolders(Boolean(session?.user) && !isShared, setError);
+	const {
+		folders,
+		create: createFolder,
+		rename: renameFolder,
+		remove: removeFolder,
+	} = useFolders(Boolean(session?.user) && !isShared, setError);
 	const [copied, setCopied] = useState(false);
 	const [notShared, setNotShared] = useState(false);
 	const [isFullscreen, setFullscreen] = useState(false);
@@ -307,7 +311,9 @@ export function Artefacts() {
 		setLoaded({ path: artefactPath!, artefact: { ...current, ...update } });
 		setArtefacts((currentArtefacts) =>
 			currentArtefacts.map((artefact) =>
-				artefact.id === current.id ? { ...artefact, ...update, content: undefined } : artefact,
+				artefact.id === current.id
+					? { ...artefact, ...update, content: undefined }
+					: artefact,
 			),
 		);
 	}
@@ -316,7 +322,10 @@ export function Artefacts() {
 		setError("");
 		const response = await api(`/artefacts/${current.id}/content`, {
 			method: "PUT",
-			body: JSON.stringify({ content, baseVersion: current.version ?? 0 }),
+			body: JSON.stringify({
+				content,
+				baseVersion: current.version ?? 0,
+			}),
 		});
 		if (response.status === 409) return "conflict";
 		if (!response.ok) {
@@ -357,7 +366,8 @@ export function Artefacts() {
 				<span className="text-sm text-muted">Loading</span>
 			</main>
 		);
-	if (!isShared && !session?.user) return <Navigate to="/?auth=signin" replace />;
+	if (!isShared && !session?.user)
+		return <Navigate to="/?auth=signin" replace />;
 	if (isShared)
 		return (
 			<main className="min-h-screen bg-background">
@@ -410,7 +420,10 @@ export function Artefacts() {
 				<Drawer isOpen={isSidebarOpen} onOpenChange={setSidebarOpen}>
 					<Drawer.Backdrop>
 						<Drawer.Content placement="left">
-							<Drawer.Dialog aria-label="Workspace" className="w-[288px] max-w-[85vw] p-0">
+							<Drawer.Dialog
+								aria-label="Workspace"
+								className="w-[288px] max-w-[85vw] p-0"
+							>
 								{sidebar}
 							</Drawer.Dialog>
 						</Drawer.Content>
@@ -436,15 +449,11 @@ export function Artefacts() {
 					<h1 className="text-2xl font-semibold tracking-tight">
 						{isProfile
 							? "Profile"
-							: isIntegrations
-								? "Integrations"
-								: `Good morning, ${user.name?.split(" ")[0] || "there"}`}
+							: `Good morning, ${user.name?.split(" ")[0] || "there"}`}
 					</h1>
 					<ThemeToggle className="ml-auto" />
 				</header>
-				{isIntegrations ? (
-					<IntegrationsPanel />
-				) : isProfile ? (
+				{isProfile ? (
 					<div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20">
 						<Card className="w-full">
 							<Card.Header className="flex items-center gap-4">
@@ -516,6 +525,24 @@ export function Artefacts() {
 									Ask for a shareable brief, technical
 									diagram, or decision-ready plan.
 								</p>
+								<Button
+									variant="ghost"
+									className="mt-5 h-auto max-w-full rounded-xl border border-divider bg-surface px-4 py-3 text-left hover:bg-surface-secondary"
+									onPress={() => navigate("/integrations")}
+								>
+									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
+										<Plug size={16} />
+									</span>
+									<span>
+										<span className="block text-sm font-medium">
+											Connect your apps
+										</span>
+										<span className="block text-xs text-muted">
+											Bring in context from GitHub and
+											manage access in one place.
+										</span>
+									</span>
+								</Button>
 							</div>
 							<form onSubmit={create} className="w-full">
 								<Surface className="rounded-2xl border border-divider bg-surface p-3 transition-colors focus-within:border-muted">
@@ -561,7 +588,9 @@ export function Artefacts() {
 										size="sm"
 										variant="outline"
 										className="rounded-full"
-										onPress={() => setPrompt(godPrompt.prompt)}
+										onPress={() =>
+											setPrompt(godPrompt.prompt)
+										}
 									>
 										<BrainCog size={15} />
 										{godPrompt.label}
@@ -599,6 +628,9 @@ export function Artefacts() {
 					onFolderChange={moveToFolder}
 					onError={setError}
 				/>
+			)}
+			{isIntegrations && (
+				<IntegrationsModal onClose={() => navigate("/")} />
 			)}
 		</Surface>
 	);
@@ -765,7 +797,9 @@ function ArtefactModal({
 	onSubmit: (event: FormEvent) => void;
 	onSave: (content: ArtefactDocument) => Promise<SaveResult>;
 	onReload: () => void;
-	onProjectChange: (update: Pick<Artefact, "installationId" | "project">) => void;
+	onProjectChange: (
+		update: Pick<Artefact, "installationId" | "project">,
+	) => void;
 	folders: Folder[];
 	onFolderChange: (folderId: string | null) => void;
 	onError: (message: string) => void;
@@ -780,7 +814,8 @@ function ArtefactModal({
 	const [pastVersion, setPastVersion] = useState<ArtefactDocument>();
 	const isEditing = draft !== undefined;
 	const isDirty =
-		isEditing && JSON.stringify(draft) !== JSON.stringify(artefact?.content);
+		isEditing &&
+		JSON.stringify(draft) !== JSON.stringify(artefact?.content);
 	const historyOpen = isFullscreen && showHistory && !isEditing;
 
 	function startEditing() {
@@ -858,7 +893,9 @@ function ArtefactModal({
 								{artefact && !isEditing && (
 									<ProjectSelect
 										artefactId={artefact.id}
-										installationId={artefact.installationId ?? null}
+										installationId={
+											artefact.installationId ?? null
+										}
 										project={artefact.project ?? null}
 										isOwner={artefact.isOwner ?? true}
 										onChange={onProjectChange}
@@ -875,7 +912,9 @@ function ArtefactModal({
 								{artefact && !isEditing && isFullscreen && (
 									<Button
 										aria-label="History"
-										variant={showHistory ? "secondary" : "ghost"}
+										variant={
+											showHistory ? "secondary" : "ghost"
+										}
 										size="sm"
 										onPress={() => {
 											setShowHistory(!showHistory);
@@ -883,7 +922,9 @@ function ArtefactModal({
 										}}
 									>
 										<History size={15} />
-										<span className="hidden sm:inline">History</span>
+										<span className="hidden sm:inline">
+											History
+										</span>
 									</Button>
 								)}
 								{artefact && !isEditing && (
@@ -891,16 +932,23 @@ function ArtefactModal({
 										aria-label="Edit"
 										variant="ghost"
 										size="sm"
-										isDisabled={!artefact.content || pastVersion !== undefined}
+										isDisabled={
+											!artefact.content ||
+											pastVersion !== undefined
+										}
 										onPress={startEditing}
 									>
 										<Pencil size={15} />
-										<span className="hidden sm:inline">Edit</span>
+										<span className="hidden sm:inline">
+											Edit
+										</span>
 									</Button>
 								)}
 								{artefact && !isEditing && (
 									<Button
-										aria-label={copied ? "Link copied" : "Share"}
+										aria-label={
+											copied ? "Link copied" : "Share"
+										}
 										variant="secondary"
 										size="sm"
 										onPress={onShare}
@@ -965,14 +1013,24 @@ function ArtefactModal({
 							{artefact ? (
 								<ArtefactBody
 									artefact={artefact}
-									document={draft ?? (historyOpen ? pastVersion : undefined)}
+									document={
+										draft ??
+										(historyOpen ? pastVersion : undefined)
+									}
 									canInteract
 									edgeToEdge
 									onAction={setFollowUp}
 									isEditing={isEditing}
 									onEdit={(nodeId, path, value) =>
-										setDraft((current) =>
-											current && withEditedText(current, nodeId, path, value),
+										setDraft(
+											(current) =>
+												current &&
+												withEditedText(
+													current,
+													nodeId,
+													path,
+													value,
+												),
 										)
 									}
 								/>
@@ -1001,14 +1059,20 @@ function ArtefactModal({
 										<Alert.Indicator />
 										<Alert.Content>
 											<Alert.Title>
-												This artefact changed since you started editing
+												This artefact changed since you
+												started editing
 											</Alert.Title>
 											<Alert.Description>
-												Reload to get the latest version. Your unsaved
-												changes will be lost.
+												Reload to get the latest
+												version. Your unsaved changes
+												will be lost.
 											</Alert.Description>
 										</Alert.Content>
-										<Button size="sm" variant="secondary" onPress={onReload}>
+										<Button
+											size="sm"
+											variant="secondary"
+											onPress={onReload}
+										>
 											Reload
 										</Button>
 									</Alert>
@@ -1017,7 +1081,11 @@ function ArtefactModal({
 									aria-label="Edit actions"
 									className="flex w-full items-center justify-end gap-2"
 								>
-									<Paragraph size="sm" color="muted" className="mr-auto">
+									<Paragraph
+										size="sm"
+										color="muted"
+										className="mr-auto"
+									>
 										{isDirty
 											? "You have unsaved changes"
 											: "Click any text to edit it"}
@@ -1025,13 +1093,17 @@ function ArtefactModal({
 									<Button
 										variant="ghost"
 										onPress={() =>
-											isDirty ? setIsDiscarding(true) : stopEditing()
+											isDirty
+												? setIsDiscarding(true)
+												: stopEditing()
 										}
 									>
 										Cancel
 									</Button>
 									<Button
-										isDisabled={!isDirty || isSaving || hasConflict}
+										isDisabled={
+											!isDirty || isSaving || hasConflict
+										}
 										onPress={() => void save()}
 									>
 										{isSaving ? "Saving…" : "Save"}
@@ -1095,15 +1167,21 @@ function ArtefactModal({
 						<AlertDialog.Dialog>
 							<AlertDialog.Header>
 								<AlertDialog.Icon status="warning" />
-								<AlertDialog.Heading>Discard your changes?</AlertDialog.Heading>
+								<AlertDialog.Heading>
+									Discard your changes?
+								</AlertDialog.Heading>
 							</AlertDialog.Header>
 							<AlertDialog.Body>
 								<Paragraph size="sm" color="muted">
-									Your edits to this artefact haven't been saved.
+									Your edits to this artefact haven't been
+									saved.
 								</Paragraph>
 							</AlertDialog.Body>
 							<AlertDialog.Footer>
-								<Button variant="ghost" onPress={() => setIsDiscarding(false)}>
+								<Button
+									variant="ghost"
+									onPress={() => setIsDiscarding(false)}
+								>
 									Keep editing
 								</Button>
 								<Button variant="danger" onPress={stopEditing}>

@@ -32,10 +32,14 @@ body {
 
 .artefact-scallop[data-edge="bottom"] {
 	margin-top: -1px;
+	-webkit-mask-position: 0.75rem top;
+	mask-position: 0.75rem top;
 }
 
 .artefact-scallop[data-edge="top"] {
 	margin-bottom: -1px;
+	-webkit-mask-position: 0.75rem top;
+	mask-position: 0.75rem top;
 	transform: scaleY(-1);
 }
 
