@@ -1,0 +1,36 @@
+{
+  "name": "klee",
+  "version": "1.0.0",
+  "description": "Klee Slack app",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "dev": "node --watch app.js",
+    "lint": "npx @biomejs/biome check *.js listeners",
+    "lint:fix": "npx @biomejs/biome check --write *.js listeners",
+    "start": "node app.js",
+    "test": "node --test tests/**/*.spec.js"
+  },
+  "author": "Slack Technologies, LLC",
+  "license": "MIT",
+  "keywords": [
+    "slack",
+    "bolt",
+    "slackapi"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/slack-samples/bolt-js-starter-template.git"
+  },
+  "bugs": {
+    "url": "https://github.com/slack-samples/bolt-js-starter-template/issues"
+  },
+  "dependencies": {
+    "@slack/bolt": "^5.0.0",
+    "dotenv": "~17.4.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.11",
+    "@slack/cli-hooks": "^2.0.0"
+  }
+}
