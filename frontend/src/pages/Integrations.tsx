@@ -178,7 +178,7 @@ export function IntegrationsPanel() {
 					summary="Preview artefacts in channels and threads."
 					status={<Chip size="sm">Workspace app</Chip>}
 					features={[
-						"Posts a rendered artefact preview to the channel with the /artefact command.",
+						"Posts a rendered artefact preview to the channel with the /klee command.",
 						"Unfurls any Klee artefact link pasted into a message into a preview.",
 						"Accepts either an artefact ID or its full share link.",
 					]}
@@ -192,7 +192,7 @@ export function IntegrationsPanel() {
 						<>
 							Paste the link, or run{" "}
 							<Code className="text-xs">
-								/artefact &lt;link or ID&gt;
+								/klee &lt;link or ID&gt;
 							</Code>{" "}
 							in any channel.
 						</>,
