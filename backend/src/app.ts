@@ -235,7 +235,7 @@ async function completeGitHubInstallation(req: Request, res: Response) {
         return res
             .status(409)
             .send(
-                "This GitHub installation is connected to another Orcastrate account.",
+                "This GitHub installation is connected to another Klee account.",
             );
     res.redirect(`${env.corsOrigin}/profile?github=connected`);
 }
