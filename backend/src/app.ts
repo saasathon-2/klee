@@ -38,9 +38,12 @@ app.post(
         const payload = JSON.parse(req.body.toString()) as {
             action?: string;
             installation?: { id?: number };
+            repository?: { full_name?: string };
+            check_run?: { pull_requests?: { number?: number }[] };
         };
+        const event = req.header("x-github-event");
         if (
-            req.header("x-github-event") === "installation" &&
+            event === "installation" &&
             ["deleted", "suspend"].includes(payload.action ?? "")
         ) {
             const { installation } = payload;
@@ -49,6 +52,18 @@ app.post(
                     "delete from github_installation where installation_id = $1",
                     [String(installation.id)],
                 );
+        }
+        if (event === "check_run" && payload.repository?.full_name && payload.installation?.id) {
+            res.sendStatus(204);
+            for (const { number } of payload.check_run?.pull_requests ?? []) {
+                if (Number.isInteger(number) && number! > 0)
+                    void refreshGitHubPullRequestArtefact(
+                        String(payload.installation.id),
+                        payload.repository.full_name,
+                        number!,
+                    ).catch((error) => console.error("GitHub check-run artefact refresh failed", error));
+            }
+            return;
         }
         res.sendStatus(204);
     },
@@ -67,32 +82,87 @@ async function sessionUser(req: Request, res: Response) {
     return session.user;
 }
 
-async function createGeneratedArtefact(ownerId: string, prompt: string, isShared = false) {
+async function createGeneratedArtefact(ownerId: string, prompt: string, isShared = false, id?: string) {
     const { content, sessionId } = await generateArtefact(
         prompt,
         env.openAiApiKey,
         env.openAiModel,
     );
     const artefact = {
-        id: randomUUID(),
+        id: id ?? randomUUID(),
         isShared,
         prompt,
         title: String(content.root.data.title),
         content,
     };
-    await pool.query(
+    const values = [
+        artefact.id,
+        ownerId,
+        artefact.isShared,
+        artefact.prompt,
+        artefact.title,
+        artefact.content,
+        sessionId,
+    ];
+    if (id) await pool.query(
+        "update artefact set is_shared = $3, prompt = $4, title = $5, content = $6, agent_session_id = $7, updated_at = current_timestamp where id = $1 and owner_id = $2",
+        values,
+    );
+    else await pool.query(
         "insert into artefact (id, owner_id, share_id, is_shared, prompt, title, content, agent_session_id) values ($1, $2, $1, $3, $4, $5, $6, $7)",
-        [
-            artefact.id,
-            ownerId,
-            artefact.isShared,
-            artefact.prompt,
-            artefact.title,
-            artefact.content,
-            sessionId,
-        ],
+        values,
     );
     return artefact;
+}
+
+async function refreshGitHubPullRequestArtefact(
+    installationId: string,
+    repository: string,
+    pullRequest: number,
+    ownerId?: string,
+) {
+    const { rows } = await pool.query(
+        'select owner_id as "ownerId", artefact_id as "artefactId", comment_id as "commentId" from github_pull_request_artefact where repository = $1 and pull_request = $2',
+        [repository, pullRequest],
+    );
+    const current = rows[0];
+    const owner = ownerId ?? current?.ownerId;
+    if (!owner) return;
+    const context = await githubPullRequestContext(installationId, repository, pullRequest);
+    const artefact = await createGeneratedArtefact(
+        owner,
+        githubPullRequestPrompt(repository, pullRequest, context),
+        true,
+        current?.artefactId,
+    );
+    const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
+    let commentId = current?.commentId;
+    if (commentId) {
+        await githubInstallationRequest(
+            installationId,
+            `/repos/${repository}/issues/comments/${commentId}`,
+            { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url) }) },
+        );
+    } else {
+        const comment = await githubInstallationRequest(
+            installationId,
+            `/repos/${repository}/issues/${pullRequest}/comments`,
+            { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url) }) },
+        );
+        commentId = String((await comment.json() as { id: number }).id);
+    }
+    await pool.query(
+        "insert into github_pull_request_artefact (repository, pull_request, installation_id, owner_id, artefact_id, comment_id) values ($1, $2, $3, $4, $5, $6) on conflict (repository, pull_request) do update set installation_id = excluded.installation_id, owner_id = excluded.owner_id, artefact_id = excluded.artefact_id, comment_id = excluded.comment_id, updated_at = current_timestamp",
+        [
+            repository,
+            pullRequest,
+            installationId,
+            owner,
+            artefact.id,
+            commentId,
+        ],
+    );
+    return { artefact, url };
 }
 
 app.get("/api/integrations/github/install", async (req, res) => {
@@ -177,29 +247,14 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
         [String(installationId)],
     );
     if (!installation.rows[0]) return res.sendStatus(403);
-    const context = await githubPullRequestContext(
+    const refreshed = await refreshGitHubPullRequestArtefact(
         String(installationId),
         repository,
         pullRequest,
-    );
-    const artefact = await createGeneratedArtefact(
         installation.rows[0].owner_id,
-        githubPullRequestPrompt(repository, pullRequest, context),
-        true,
     );
-    const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
-    await githubInstallationRequest(
-        String(installationId),
-        `/repos/${repository}/issues/${pullRequest}/comments`,
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                body: githubArtefactComment(url),
-            }),
-        },
-    );
-    res.status(201).json({ id: artefact.id, url, createdAt: new Date().toISOString() });
+    if (!refreshed) return res.sendStatus(404);
+    res.status(201).json({ id: refreshed.artefact.id, url: refreshed.url, createdAt: new Date().toISOString() });
 });
 
 app.get("/api/artefacts", async (req, res) => {
