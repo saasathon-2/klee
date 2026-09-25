@@ -4,9 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch src/app.ts",
-    "start": "node src/app.ts",
+    "dev": "node --watch --env-file=.env src/app.ts",
+    "start": "node --env-file-if-exists=.env src/app.ts",
     "typecheck": "tsc -p tfconfig.json",
+    "migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up -j ts -m src/migrations",
+    "migrate:down": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js down -j ts -m src/migrations",
+    "migrate:create": "node-pg-migrate create -j ts -m src/migrations --",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,18 +18,29 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "12.6.0",
+      "version": "12.5.1",
       "onFail": "download"
     }
   },
-  "packageManager": "pnpm@12.6.0",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=22.6.0"
+  },
   "type": "module",
   "dependencies": {
-    "express": "^5.2.1"
+    "@better-auth/infra": "^0.4.10",
+    "better-auth": "^1.7.5",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.2",
+    "@types/pg": "^8.23.1",
+    "node-pg-migrate": "^9.0.0",
     "typescript": "^7.0.2"
   }
 }

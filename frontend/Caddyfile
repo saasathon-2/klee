@@ -1,0 +1,14 @@
+:{$PORT:3000} {
+	respond /health 200
+
+	handle /api/* {
+		reverse_proxy {$BACKEND_URL}
+	}
+
+	handle {
+		root * /srv
+		encode zstd gzip
+		try_files {path} /index.html
+		file_server
+	}
+}

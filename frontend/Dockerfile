@@ -1,0 +1,14 @@
+FROM node:22-alpine AS build
+
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
+COPY . .
+ARG VITE_API_URL
+RUN pnpm build
+
+FROM caddy:2-alpine
+
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv
+EXPOSE 3000
