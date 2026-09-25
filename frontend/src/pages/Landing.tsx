@@ -26,26 +26,20 @@ export function Landing() {
 			<section className="mx-auto max-w-[108rem] px-6 pt-6">
 				<div className="relative">
 					{/* The painting stops short so the demo hangs off its bottom edge. */}
+					<br /><br />
+
 					<div className="absolute inset-x-0 top-0 h-[40rem] overflow-hidden rounded-3xl sm:h-[46rem]">
 						<img
 							src={painting.src}
 							alt=""
 							className={`absolute inset-0 size-full object-cover ${theme === "light" ? "opacity-80" : ""}`}
 						/>
-						<Paragraph size="xs" className="absolute top-4 right-5 lg:hidden">
-							Paul Klee, <i>{painting.title}</i>
-							{painting.year && `, ${painting.year}`}
-						</Paragraph>
 					</div>
 					<div className="relative flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
 						<div className="max-w-3xl text-center">
 							<Heading level={1} align="center" className="text-4xl text-balance sm:text-6xl">
 								Create beautiful, shareable diagrams effortlessly
 							</Heading>
-							<Paragraph align="center" className="mx-auto mt-5 max-w-xl text-base sm:text-lg">
-								The workspace that turns pull requests, tickets, and notes into
-								clear, shareable artefacts.
-							</Paragraph>
 							<div className="mt-8 flex flex-wrap justify-center gap-3">
 								<Button size="lg" onPress={start}>
 									Start creating
