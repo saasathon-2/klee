@@ -144,6 +144,15 @@ const api = (path: string, options?: RequestInit) =>
 		...options,
 	});
 
+function greetingFor(date: Date) {
+	const hour = date.getHours();
+	if (hour < 5) return { text: "Hello, night owl", icon: "✦", note: "One more idea before the day begins." };
+	if (hour < 12) return { text: "Good morning", icon: "☀", note: "A fresh page is a good place to start." };
+	if (hour < 17) return { text: "Good afternoon", icon: "✦", note: "Turn the moving pieces into something clear." };
+	if (hour < 22) return { text: "Good evening", icon: "☾", note: "Bring the day’s context together." };
+	return { text: "Hello, night owl", icon: "✦", note: "One more idea before you call it." };
+}
+
 function textareaCaretPoint(textarea: HTMLTextAreaElement) {
 	const styles = getComputedStyle(textarea);
 	const mirror = document.createElement("div");
@@ -190,6 +199,7 @@ export function Artefacts() {
 	const [prompt, setPrompt] = useState("");
 	const [promptCaret, setPromptCaret] = useState<{ x: number; y: number }>();
 	const [googleFiles, setGoogleFiles] = useState<GoogleFile[]>([]);
+	const [localTime, setLocalTime] = useState(() => new Date());
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
 	const [generationCommentary, setGenerationCommentary] = useState("");
@@ -230,6 +240,10 @@ export function Artefacts() {
 		() => () => window.clearTimeout(promptCaretTimer.current),
 		[],
 	);
+	useEffect(() => {
+		const timer = window.setInterval(() => setLocalTime(new Date()), 60_000);
+		return () => window.clearInterval(timer);
+	}, []);
 	// Dropping a sidebar artefact onto the main view opens it.
 	const mainRef = useRef<HTMLElement>(null);
 	const { dropProps: mainDropProps, isDropTarget: isMainDropTarget } =
@@ -718,6 +732,7 @@ export function Artefacts() {
 		);
 
 	const user = session!.user;
+	const greeting = greetingFor(localTime);
 	// On phones, picking something also closes the drawer.
 	const go = (path: string) => {
 		navigate(path);
@@ -796,9 +811,15 @@ export function Artefacts() {
 						<div className="mb-8 text-center">
 							<KleeLogo className="mx-auto mb-4 size-16" lookAt={promptCaret} />
 							<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-								Good morning,{" "}
-								{user.name?.split(" ")[0] || "there"}
+								{greeting.text},{" "}
+								<span className="text-accent-text">
+									{user.name?.split(" ")[0] || "there"}
+								</span>{" "}
+								<span aria-hidden>{greeting.icon}</span>
 							</h1>
+							<p className="mt-2 text-sm text-muted">
+								{greeting.note}
+							</p>
 						</div>
 						<form onSubmit={create} className="w-full">
 							<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
