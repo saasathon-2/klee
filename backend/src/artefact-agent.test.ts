@@ -2,7 +2,18 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ??= "postgres://localhost/test";
 
-const { toDocument } = await import("./artefact-agent.ts");
+const { jsonSchema, toDocument } = await import("./artefact-agent.ts");
+
+function schemaFormats(value: unknown): string[] {
+	if (!value || typeof value !== "object") return [];
+	const record = value as Record<string, unknown>;
+	return [
+		...(typeof record.format === "string" ? [record.format] : []),
+		...Object.values(record).flatMap(schemaFormats),
+	];
+}
+
+assert.deepEqual(schemaFormats(jsonSchema), []);
 const document = toDocument({
 	title: "PR review",
 	category: "developer-page",

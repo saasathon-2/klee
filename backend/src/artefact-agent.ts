@@ -51,6 +51,8 @@ const diffHunkSchema = z
 const reviewCommentSchema = z
 	.object({
 		author: z.string(),
+		avatarUrl: z.string().nullable(),
+		url: z.string().nullable(),
 		verdict: z.enum(["approved", "changes-requested", "commented"]),
 		body: z.string(),
 	})
@@ -60,12 +62,15 @@ const commitSchema = z
 		sha: z.string(),
 		message: z.string(),
 		author: z.string(),
+		avatarUrl: z.string().nullable(),
+		url: z.string().nullable(),
 		detail: z.string(),
 	})
 	.strict();
 const checkSchema = z
 	.object({
 		name: z.string(),
+		url: z.string().nullable(),
 		status: z.enum(["passed", "failed", "pending"]),
 		detail: z.string(),
 	})
@@ -135,6 +140,7 @@ const blockSchemas = [
 					title: z.string(),
 					description: z.string(),
 					file: z.string(),
+					url: z.string().nullable(),
 					hunks: z.array(diffHunkSchema),
 				})
 				.strict(),
@@ -185,7 +191,7 @@ const generationSchema = z
 	})
 	.strict();
 
-const jsonSchema = generationSchema.toJSONSchema({ target: "draft-7" });
+export const jsonSchema = generationSchema.toJSONSchema({ target: "draft-7" });
 delete jsonSchema.$schema;
 
 const instructions = readFileSync(
@@ -200,6 +206,7 @@ export class ArtefactAgentError extends Error {
 		code?: string;
 		type?: string;
 		param?: string;
+		message?: string;
 		requestId?: string;
 		eventType?: string;
 	};
@@ -210,6 +217,7 @@ export class ArtefactAgentError extends Error {
 			code?: string;
 			type?: string;
 			param?: string;
+			message?: string;
 			requestId?: string;
 			eventType?: string;
 		} = {},
@@ -363,13 +371,19 @@ export async function generateArtefact(
 	options.onProgress?.("Drafting the artefact…");
 	if (!response.ok || !response.body) {
 		const body = (await response.json().catch(() => ({}))) as {
-			error?: { code?: string; type?: string; param?: string };
+			error?: {
+				code?: string;
+				type?: string;
+				param?: string;
+				message?: string;
+			};
 		};
 		throw new ArtefactAgentError("openai_http_error", {
 			status: response.status,
 			code: body.error?.code,
 			type: body.error?.type,
 			param: body.error?.param,
+			message: body.error?.message,
 			requestId: response.headers.get("x-request-id") ?? undefined,
 		});
 	}

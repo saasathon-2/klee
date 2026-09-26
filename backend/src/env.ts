@@ -26,4 +26,8 @@ export const env = {
     githubAppId: process.env.GITHUB_APP_ID,
     githubPrivateKey: process.env.GITHUB_PRIVATE_KEY,
     githubWebhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
+    r2Endpoint: process.env.R2_ENDPOINT,
+    r2Bucket: process.env.R2_BUCKET,
+    r2AccessKeyId: process.env.R2_ACCESS_KEY_ID,
+    r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
 };
