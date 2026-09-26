@@ -3,6 +3,7 @@ import { PlugZap, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { GitHubIcon, JiraIcon, SlackIcon } from "../components/BrandIcons";
+import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 
 type GitHubInstallation = {
 	installationId: string;
@@ -72,6 +73,7 @@ export function IntegrationsModal({ onClose }: { onClose: () => void }) {
 						</Modal.Header>
 						<Modal.Body className="m-0 space-y-3 p-6">
 							<IntegrationRow icon={<GitHubIcon size={20} />} name="GitHub" summary={installations?.length ? `Connected as ${installations.map((app) => app.accountLogin).join(", ")}` : "Generate an artefact for every pull request."} action={gitHubAction}>
+								<GitHubAccountLink />
 								<ul className="list-disc space-y-1 pl-4"><li>Choose repositories for the Klee app.</li><li>Add the Klee GitHub Actions workflow to each repository.</li><li>Open or update a pull request to generate its artefact.</li></ul>
 							</IntegrationRow>
 							<IntegrationRow icon={<SlackIcon size={20} />} name="Slack" summary="Preview artefacts in channels and threads." action={<Button size="sm" variant="secondary" onPress={() => window.open(slackInstallUrl, "_blank", "noopener,noreferrer")}>Install</Button>}>

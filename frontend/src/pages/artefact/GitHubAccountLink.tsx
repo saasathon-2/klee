@@ -2,10 +2,7 @@ import { Button, Chip, Paragraph } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { authClient, linkGitHub } from "../../lib/auth-client";
 
-/**
- * Links a GitHub login to the current user so artefacts in their GitHub orgs
- * become visible and editable. Separate from installing the GitHub App.
- */
+/** Links a GitHub login so org-shared artefacts can be accessed. */
 export function GitHubAccountLink() {
 	const [isLinked, setIsLinked] = useState<boolean>();
 	const [error, setError] = useState("");
@@ -21,7 +18,7 @@ export function GitHubAccountLink() {
 
 	async function link() {
 		setError("");
-		const { error: linkError } = await linkGitHub("/profile");
+		const { error: linkError } = await linkGitHub("/?panel=integrations");
 		if (linkError) setError(linkError.message ?? "Could not link GitHub.");
 	}
 
@@ -29,22 +26,16 @@ export function GitHubAccountLink() {
 	return (
 		<div className="mt-3">
 			{isLinked ? (
-				<Chip size="sm" color="success">
-					GitHub account linked
-				</Chip>
+				<Chip size="sm" color="success">GitHub account linked</Chip>
 			) : (
 				<Button variant="secondary" onPress={() => void link()}>
 					Link GitHub account
 				</Button>
 			)}
 			<Paragraph size="xs" color="muted" className="mt-2">
-				Members of your GitHub orgs can view and edit artefacts in those projects.
+				Link your account to access artefacts shared with your GitHub organisations.
 			</Paragraph>
-			{error && (
-				<Paragraph size="xs" className="mt-1 text-danger">
-					{error}
-				</Paragraph>
-			)}
+			{error && <Paragraph size="xs" className="mt-1 text-danger">{error}</Paragraph>}
 		</div>
 	);
 }
