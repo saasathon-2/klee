@@ -18,6 +18,8 @@ import {
 	ArrowUp,
 	BrainCog,
 	Building2,
+	Check,
+	Copy,
 	ExternalLink,
 	House,
 	History,
@@ -177,6 +179,7 @@ export function Artefacts() {
 	const [notShared, setNotShared] = useState(false);
 	const [sharedCommentsOpen, setSharedCommentsOpen] = useState(false);
 	const [sharedCommentCount, setSharedCommentCount] = useState(0);
+	const [copiedSharedLinkId, setCopiedSharedLinkId] = useState<string>();
 	const [sharedAccess, setSharedAccess] = useState<{
 		artefactId: string;
 		viewerId: string;
@@ -458,10 +461,10 @@ export function Artefacts() {
 			setIsRevising(false);
 		}
 	}
-	function markShared() {
+	function setShared(isShared: boolean) {
 		if (!current) return;
-		setLoaded({ path: artefactPath!, artefact: { ...current, isShared: true } });
-		setArtefacts((items) => items.map((item) => item.id === current.id ? { ...item, isShared: true } : item));
+		setLoaded({ path: artefactPath!, artefact: { ...current, isShared } });
+		setArtefacts((items) => items.map((item) => item.id === current.id ? { ...item, isShared } : item));
 	}
 	function updateCurrent(update: Partial<Artefact>) {
 		if (!current) return;
@@ -558,26 +561,53 @@ export function Artefacts() {
 									<House size={15} />
 									Artefact home
 								</Button>
-								<Button
-									aria-label={`Comments, ${sharedCommentCount}`}
-									variant={
-										sharedCommentsOpen
-											? "secondary"
-											: "ghost"
-									}
-									size="sm"
-									className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-									onPress={() =>
-										setSharedCommentsOpen(
-											!sharedCommentsOpen,
-										)
-									}
-								>
-									<MessageCircle size={15} />
-									Comments
-									{sharedCommentCount > 0 &&
-										` ${sharedCommentCount}`}
-								</Button>
+								<div className="flex items-center gap-2">
+									<Button
+										aria-label="Copy artefact link"
+										variant="ghost"
+										size="sm"
+										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+										onPress={() =>
+											void navigator.clipboard
+												.writeText(
+													`${window.location.origin}/artefacts/shared/${current.id}`,
+												)
+												.then(() => setCopiedSharedLinkId(current.id))
+												.catch(() =>
+													setError("Could not copy the artefact link."),
+												)
+										}
+									>
+										{copiedSharedLinkId === current.id ? (
+											<Check size={15} />
+										) : (
+											<Copy size={15} />
+										)}
+										{copiedSharedLinkId === current.id
+											? "Link copied"
+											: "Copy link"}
+									</Button>
+									<Button
+										aria-label={`Comments, ${sharedCommentCount}`}
+										variant={
+											sharedCommentsOpen
+												? "secondary"
+												: "ghost"
+										}
+										size="sm"
+										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+										onPress={() =>
+											setSharedCommentsOpen(
+												!sharedCommentsOpen,
+											)
+										}
+									>
+										<MessageCircle size={15} />
+										Comments
+										{sharedCommentCount > 0 &&
+											` ${sharedCommentCount}`}
+									</Button>
+								</div>
 					</div>
 				)}
 				{current &&
@@ -811,7 +841,7 @@ export function Artefacts() {
 				<OrganisationsModal onClose={() => navigate("/")} />
 			)}
 			{shareOpen && current?.isOwner && (
-				<ShareDialog artefactId={current.id} isShared={Boolean(current.isShared)} onShared={markShared} onClose={() => setShareOpen(false)} />
+				<ShareDialog artefactId={current.id} isShared={Boolean(current.isShared)} onSharingChange={setShared} onClose={() => setShareOpen(false)} />
 			)}
 		</Surface>
 	);
@@ -1204,7 +1234,7 @@ function ArtefactModal({
 								)}
 							</Toolbar>
 							<div className="order-2 flex items-center gap-1 sm:order-3">
-								{artefact?.isShared && (
+								{artefact && (
 									<Button
 										aria-label="Open shared artefact"
 										variant="ghost"
