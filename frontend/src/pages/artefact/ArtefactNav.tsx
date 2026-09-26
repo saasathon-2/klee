@@ -46,6 +46,17 @@ type NavArtefact = {
 
 type Preview = { artefact: NavArtefact; x: number; y: number };
 
+const closedFoldersKey = "klee.closed-artefact-folders";
+
+function savedClosedFolders() {
+	try {
+		const value = JSON.parse(localStorage.getItem(closedFoldersKey) ?? "[]");
+		return new Set(Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : []);
+	} catch {
+		return new Set<string>();
+	}
+}
+
 const artefactIcons = {
 	"git-pull-request": GitPullRequest,
 	"git-branch": GitBranch,
@@ -272,6 +283,18 @@ export function ArtefactNav({
 		{ kind: "create" } | { kind: "rename" | "delete"; folder: Folder }
 	>();
 	const [preview, setPreview] = useState<Preview>();
+	const [closedFolders, setClosedFolders] = useState(savedClosedFolders);
+	const setFolderExpanded = (id: string, isExpanded: boolean) => {
+		setClosedFolders((current) => {
+			const next = new Set(current);
+			if (isExpanded) next.delete(id);
+			else next.add(id);
+			try {
+				localStorage.setItem(closedFoldersKey, JSON.stringify([...next]));
+			} catch {}
+			return next;
+		});
+	};
 	const showPreview = (artefact: NavArtefact, x: number, y: number) => {
 		setPreview({ artefact, x, y });
 	};
@@ -331,7 +354,12 @@ export function ArtefactNav({
 						key={folder.id}
 						onDropArtefact={(id) => onMoveArtefact(id, folder.id)}
 					>
-						<Disclosure defaultExpanded>
+						<Disclosure
+							isExpanded={!closedFolders.has(folder.id)}
+							onExpandedChange={(isExpanded) =>
+								setFolderExpanded(folder.id, isExpanded)
+							}
+						>
 							{({ isExpanded }) => (
 								<>
 									<Disclosure.Heading className="group/folder flex h-10 items-center rounded-xl hover:bg-default focus-within:bg-default">
