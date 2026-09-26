@@ -21,8 +21,8 @@ This repository deploys as three Railway services:
     OPENAI_API_KEY=<OpenAI-Platform-application-key>
     ```
 
-   `OPENAI_MODEL` is optional; it defaults to `gpt-6-luna`.
-   Set `OPENAI_SERVICE_TIER=fast` to use Fast mode for user-initiated artefacts. It is billed at a premium; GitHub Action artefacts remain on standard processing.
+    `OPENAI_MODEL` is optional; it defaults to `gpt-6-luna`.
+    Set `OPENAI_SERVICE_TIER=fast` to use Fast mode for user-initiated artefacts. It is billed at a premium; GitHub Action artefacts remain on standard processing.
 
 4. For `web`, set a public domain and add:
 
@@ -34,7 +34,7 @@ This repository deploys as three Railway services:
 
 5. Deploy. The API migration runs before each API release; if it fails, the release does not go live.
 
-`PORT` is supplied by Railway. Do not set it manually. `CORS_ORIGIN` should be the exact web origin (no trailing slash).
+`PORT` is supplied by Railway. Do not set it manually. `CORS_ORIGIN` should be the exact web origin (no trailing slash). The API's `nixpacks.toml` installs the Chromium runtime libraries needed for artefact screenshots.
 
 ## Migrations
 
@@ -61,16 +61,16 @@ To create an artefact and comment its link on every pull request, add this to a 
 on: pull_request
 
 permissions:
-  id-token: write
+    id-token: write
 
 jobs:
-  klee:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: saasathon-2/integrations/github@main
-        with:
-          api-url: https://<api-domain>
-          pull-request: ${{ github.event.pull_request.number }}
+    klee:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: saasathon-2/integrations/github@main
+              with:
+                  api-url: https://<api-domain>
+                  pull-request: ${{ github.event.pull_request.number }}
 ```
 
 `api-url` must exactly match `BETTER_AUTH_URL` (without a trailing slash), which is how the API verifies the Action's OIDC audience. The GitHub App needs `Issues: Read and write` permission to post the pull request comment.
@@ -79,10 +79,10 @@ jobs:
 
 Use `./utils/dev.sh`. Local settings are split into two files per app; production uses Railway variables and never reads them.
 
-| File | Holds |
-| --- | --- |
-| `backend/.env` | Shared secrets: auth secret, Google and OpenAI keys |
-| `backend/.env.local` | Local only: port, local database, `localhost` URLs, and a local GitHub OAuth app (callback `http://localhost:3000/api/auth/callback/github`). Loaded after `.env`, so it wins. |
-| `frontend/.env.local` | Local only: `VITE_API_URL`, which the Vite dev server also uses as its `/api` proxy target |
+| File                  | Holds                                                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `backend/.env`        | Shared secrets: auth secret, Google and OpenAI keys                                                                                                                            |
+| `backend/.env.local`  | Local only: port, local database, `localhost` URLs, and a local GitHub OAuth app (callback `http://localhost:3000/api/auth/callback/github`). Loaded after `.env`, so it wins. |
+| `frontend/.env.local` | Local only: `VITE_API_URL`, which the Vite dev server also uses as its `/api` proxy target                                                                                     |
 
 `dev.sh` creates any missing file from its `.example` template. Both `.env.local` files are git-ignored.
