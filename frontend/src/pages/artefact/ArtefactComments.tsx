@@ -1,6 +1,5 @@
 import { Button, TextArea } from "@heroui/react";
-import { ArrowLeft, MessageCircle, Reply, Send, Sparkles, X } from "lucide-react";
-import { HiOutlineEye, HiOutlineHandThumbUp, HiOutlineHeart, HiOutlineSparkles } from "react-icons/hi2";
+import { ArrowLeft, Heart, MessageCircle, Reply, Send, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, PointerEvent, ReactNode } from "react";
 import { UserAvatar } from "../../components/UserAvatar";
@@ -19,10 +18,7 @@ type Comment = {
 };
 
 const reactions = [
-	{ emoji: "👍", label: "like", Icon: HiOutlineHandThumbUp },
-	{ emoji: "❤️", label: "love", Icon: HiOutlineHeart },
-	{ emoji: "🎉", label: "celebrate", Icon: HiOutlineSparkles },
-	{ emoji: "👀", label: "eyes", Icon: HiOutlineEye },
+	{ emoji: "❤️", label: "love", Icon: Heart },
 ];
 
 function userColor(id: string) {
@@ -98,6 +94,23 @@ export function ArtefactComments({
 	const [error, setError] = useState("");
 	const [isPosting, setPosting] = useState(false);
 	const [isDrafting, setDrafting] = useState(false);
+	const hoverTimeout = useRef<number | undefined>(undefined);
+
+	function showCommentHover(id: string) {
+		window.clearTimeout(hoverTimeout.current);
+		hoverTimeout.current = undefined;
+		setHoveredCommentId(id);
+	}
+
+	function hideCommentHover() {
+		window.clearTimeout(hoverTimeout.current);
+		hoverTimeout.current = window.setTimeout(() => {
+			hoverTimeout.current = undefined;
+			setHoveredCommentId(undefined);
+		}, 700);
+	}
+
+	useEffect(() => () => window.clearTimeout(hoverTimeout.current), []);
 
 	const loadComments = useCallback(async () => {
 		const response = await commentApi(artefactId, "", undefined, isShared && !canComment);
@@ -377,10 +390,10 @@ export function ArtefactComments({
 								key={comment.id}
 								className="pointer-events-none absolute z-[5]"
 								style={{ left, top, width, height }}
-								onMouseEnter={() => setHoveredCommentId(comment.id)}
-								onMouseLeave={() => setHoveredCommentId(undefined)}
-								onFocusCapture={() => setHoveredCommentId(comment.id)}
-								onBlurCapture={() => setHoveredCommentId(undefined)}
+								onMouseEnter={() => showCommentHover(comment.id)}
+								onMouseLeave={hideCommentHover}
+								onFocusCapture={() => showCommentHover(comment.id)}
+								onBlurCapture={hideCommentHover}
 							>
 								<button
 									type="button"
@@ -413,6 +426,7 @@ export function ArtefactComments({
 										aria-label={"Reply to comment by " + (comment.author.name || "teammate")}
 										title="Reply to comment"
 										className="pointer-events-auto absolute left-1/2 top-full z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-surface px-2 py-1 text-xs shadow-md hover:bg-surface-secondary"
+										onMouseEnter={() => showCommentHover(comment.id)}
 										onPointerDown={(event) => event.stopPropagation()}
 										onClick={() => openThread(comment.id)}
 									>
@@ -473,8 +487,8 @@ export function ArtefactComments({
 									comment={comment}
 									onReact={react}
 									canComment={canComment}
-									onHover={() => setHoveredCommentId(comment.parentId ?? comment.id)}
-									onHoverEnd={() => setHoveredCommentId(undefined)}
+									onHover={() => showCommentHover(comment.parentId ?? comment.id)}
+									onHoverEnd={hideCommentHover}
 								/>
 							))
 						) : roots.length ? (
@@ -484,10 +498,10 @@ export function ArtefactComments({
 									<div
 										key={comment.id}
 										className="mb-3 rounded-xl border border-border p-3"
-										onMouseEnter={() => setHoveredCommentId(comment.id)}
-										onMouseLeave={() => setHoveredCommentId(undefined)}
-										onFocusCapture={() => setHoveredCommentId(comment.id)}
-										onBlurCapture={() => setHoveredCommentId(undefined)}
+										onMouseEnter={() => showCommentHover(comment.id)}
+										onMouseLeave={hideCommentHover}
+										onFocusCapture={() => showCommentHover(comment.id)}
+										onBlurCapture={hideCommentHover}
 									>
 										<button
 											type="button"
@@ -498,14 +512,17 @@ export function ArtefactComments({
 											<span className="min-w-0 flex-1">
 												<span className="block truncate text-sm font-medium">{comment.author.name || "Teammate"}</span>
 												<span className="mt-1 block line-clamp-3 text-sm text-muted">{comment.body}</span>
-												<span className="mt-2 block text-xs text-muted">
-													{replyCount
-														? `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`
-														: canComment ? "Reply" : "View thread"}
-												</span>
 											</span>
 										</button>
-										<ReactionBar comment={comment} onReact={react} canComment={canComment} />
+											<div className="mt-2 flex items-center justify-between gap-2">
+												<button type="button" onClick={() => openThread(comment.id)} className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground">
+													<Reply size={14} />
+													{canComment
+														? replyCount ? `${replyCount} ${replyCount === 1 ? "reply" : "replies"} · Reply` : "Reply"
+														: replyCount ? `${replyCount} ${replyCount === 1 ? "reply" : "replies"}` : "View thread"}
+												</button>
+											<ReactionBar comment={comment} onReact={react} canComment={canComment} />
+										</div>
 									</div>
 								);
 							})
@@ -553,10 +570,10 @@ function ReactionBar({ comment, onReact, canComment }: { comment: Comment; onRea
 		<div className="mt-2 flex flex-wrap gap-1">
 			{reactions.map(({ emoji, label, Icon }) => {
 				const reaction = comment.reactions.find((item) => item.emoji === emoji);
-				if (!canComment) return reaction ? <span key={emoji} aria-label={label + ", " + reaction.count + " reactions"} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs"><Icon size={14} aria-hidden="true" /> {reaction.count}</span> : null;
+				if (!canComment) return reaction ? <span key={emoji} aria-label={label + ", " + reaction.count + " reactions"} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs"><Icon size={15} strokeWidth={2.75} aria-hidden="true" /> {reaction.count}</span> : null;
 				return (
 					<button key={emoji} type="button" aria-label={(reaction?.reacted ? "Remove " : "Add ") + label + " reaction"} aria-pressed={reaction?.reacted ?? false} onClick={() => onReact(comment.id, emoji)} className={reaction?.reacted ? "inline-flex items-center gap-1 rounded-full border border-accent-text bg-accent/20 px-2 py-0.5 text-xs" : "inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-secondary"}>
-						<Icon size={14} aria-hidden="true" />{reaction?.count ? " " + reaction.count : ""}
+						<Icon size={15} strokeWidth={2.75} aria-hidden="true" />{reaction?.count ? " " + reaction.count : ""}
 					</button>
 				);
 			})}
