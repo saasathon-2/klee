@@ -52,8 +52,13 @@ function BauhausShapes() {
 	return (
 		<div ref={shapes} aria-hidden="true" className="bauhaus-shapes">
 			<div className="bauhaus-arch" />
-			<div className="bauhaus-bloom"><i /><i /><i /><i /></div>
-			<img className="bauhaus-star" src={starTwo} alt="" draggable={false} />
+			<div className="bauhaus-bloom">
+				<i />
+				<i />
+				<i />
+				<i />
+			</div>
+			<img className="bauhaus-star" src={starTwo} alt="" />
 			<div className="bauhaus-dot" />
 			{drifters.map(({ src, side, top, inset, width, rotate, duration, delay }, index) => (
 				<img
@@ -105,8 +110,8 @@ export function Landing() {
 						))}
 					</div>
 					<BauhausShapes />
-					{/* Only the content itself takes the pointer, so the shapes around it can be dragged. */}
-					<div className="pointer-events-none relative z-10 flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24 [&>*]:pointer-events-auto">
+					{/* Decorative shapes stay behind the interactive content. */}
+					<div className="relative z-10 flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
 						<div className="max-w-3xl text-center">
 							<Heading
 								level={1}

@@ -87,7 +87,7 @@ function EditableNodeText({
 		return (
 			<button
 				type="button"
-				className={`nodrag nowheel w-full text-left ${
+				className={`artefact-editable nodrag nowheel w-full rounded border border-dashed px-1 py-0.5 text-left transition-colors ${
 					field === "label"
 						? "text-base font-semibold leading-6"
 						: "text-sm leading-5 text-muted"
@@ -115,7 +115,7 @@ function EditableNodeText({
 			<textarea
 				autoFocus
 				aria-label="Component detail"
-				className="nodrag nowheel size-full min-h-12 resize-none rounded border border-brand bg-surface px-1 py-0.5 text-sm leading-5 text-muted outline-none"
+			className="nodrag nowheel size-full min-h-12 resize-none rounded border border-[color:var(--chart-1)] bg-surface px-1 py-0.5 text-sm leading-5 text-muted outline-none"
 				value={draft}
 				onChange={(event) => setDraft(event.target.value)}
 				onBlur={commit}
@@ -129,7 +129,7 @@ function EditableNodeText({
 		<input
 			autoFocus
 			aria-label="Component name"
-			className="nodrag nowheel w-full rounded border border-brand bg-surface px-1 py-0.5 text-base font-semibold leading-6 outline-none"
+			className="nodrag nowheel w-full rounded border border-[color:var(--chart-1)] bg-surface px-1 py-0.5 text-base font-semibold leading-6 outline-none"
 			value={draft}
 			onChange={(event) => setDraft(event.target.value)}
 			onBlur={commit}
@@ -147,7 +147,7 @@ function ComponentNode({ data }: NodeProps<FlowNode>) {
 		<div
 			role="group"
 			aria-label={`${data.label}: ${data.detail}`}
-			className="software-diagram-node group relative flex size-full flex-col rounded-xl border border-divider border-l-4 bg-surface p-4 text-surface-foreground shadow-sm"
+			className={`software-diagram-node group relative flex size-full flex-col rounded-xl border border-l-4 bg-surface p-4 text-surface-foreground shadow-sm ${data.isEditing ? "border-[color:var(--chart-1)]" : "border-divider"}`}
 			style={{
 				borderLeftColor:
 					"color-mix(in oklab, var(--brand) 35%, var(--brand-foreground))",
@@ -249,7 +249,7 @@ function EditableRelationshipLabel({ data }: { data: FlowEdgeData }) {
 			<input
 				autoFocus
 				aria-label="Relationship label"
-				className="nodrag nowheel w-32 rounded border border-brand bg-surface px-1 py-0.5 text-xs text-foreground outline-none"
+				className="nodrag nowheel w-32 rounded border border-[color:var(--chart-1)] bg-surface px-1 py-0.5 text-xs text-foreground outline-none"
 				value={draft}
 				onChange={(event) => setDraft(event.target.value)}
 				onBlur={() => {
@@ -266,7 +266,7 @@ function EditableRelationshipLabel({ data }: { data: FlowEdgeData }) {
 			/>
 		);
 	return (
-		<div className="group flex items-center gap-0.5 rounded bg-surface-tertiary px-1 py-0.5 text-xs text-foreground shadow-sm">
+		<div className="artefact-editable group flex items-center gap-0.5 rounded border border-dashed px-1 py-0.5 text-xs text-foreground shadow-sm">
 			<button
 				type="button"
 				className="nodrag nowheel"
@@ -327,6 +327,7 @@ function RelationshipEdge({
 						className="nodrag nopan absolute pointer-events-auto"
 						style={{
 							transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+							color: "var(--foreground)",
 						}}
 					>
 						<EditableRelationshipLabel data={data} />
