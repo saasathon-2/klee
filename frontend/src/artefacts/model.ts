@@ -7,6 +7,8 @@ export type SoftwareDiagramNode = {
 	position?: { x: number; y: number };
 	width?: number;
 	height?: number;
+	/** The component's source, e.g. its repository or service page. */
+	url?: string | null;
 };
 export type SoftwareDiagramEdge = {
 	source: string;
@@ -109,6 +111,23 @@ export type GraphCommit = {
 	branchIds: string[];
 	url?: string | null;
 };
+export type FlowchartStep = {
+	id: string;
+	label: string;
+	kind: "start" | "end" | "step" | "decision";
+	detail?: string | null;
+	url?: string | null;
+};
+export type DependencyHealth = "current" | "outdated" | "vulnerable";
+export type DependencyNode = {
+	id: string;
+	label: string;
+	kind: "package" | "module" | "service" | "database" | "external";
+	detail: string;
+	version?: string | null;
+	health?: DependencyHealth | null;
+	url?: string | null;
+};
 export type ChangeState = "added" | "modified" | "at-risk" | "unchanged";
 export type ImpactNode = SoftwareDiagramNode & {
 	change: ChangeState;
@@ -192,6 +211,8 @@ export type ArtefactNode = {
 		| "code-diff"
 		| "architecture-flow"
 		| "software-diagram"
+		| "flowchart"
+		| "dependency-graph"
 		| "glue"
 		| "task-list"
 		| "next-steps"

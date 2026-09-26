@@ -16,7 +16,7 @@ const flowNodeSchema = z
 	.object({ label: shortText, detail: shortText })
 	.strict();
 const softwareDiagramNodeSchema = z
-	.object({ id: shortText, label: shortText, detail: detailText })
+	.object({ id: shortText, label: shortText, detail: detailText, url: z.string().nullable() })
 	.strict();
 const softwareDiagramEdgeSchema = z
 	.object({
@@ -153,6 +153,26 @@ const impactNodeSchema = z
 		detail: detailText,
 		change: z.enum(["added", "modified", "at-risk", "unchanged"]),
 		owner: optionalText,
+		url: link,
+	})
+	.strict();
+const flowchartStepSchema = z
+	.object({
+		id: shortText,
+		label: shortText,
+		kind: z.enum(["start", "end", "step", "decision"]),
+		detail: optionalText,
+		url: link,
+	})
+	.strict();
+const dependencyNodeSchema = z
+	.object({
+		id: shortText,
+		label: shortText,
+		kind: z.enum(["package", "module", "service", "database", "external"]),
+		detail: detailText,
+		version: optionalText,
+		health: z.enum(["current", "outdated", "vulnerable"]).nullable(),
 		url: link,
 	})
 	.strict();
@@ -401,6 +421,32 @@ const blockSchemas = [
 						.min(1)
 						.max(6),
 					commits: z.array(graphCommitSchema).min(2).max(24),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("flowchart"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					steps: z.array(flowchartStepSchema).min(3).max(14),
+					edges: z.array(softwareDiagramEdgeSchema).min(2).max(20),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("dependency-graph"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					nodes: z.array(dependencyNodeSchema).min(2).max(14),
+					edges: z.array(softwareDiagramEdgeSchema).min(1).max(24),
 				})
 				.strict(),
 		})
@@ -730,6 +776,8 @@ export function toDocument(generation: Generation): ArtefactDocument {
 					"metric-row",
 					"architecture-flow",
 					"software-diagram",
+					"flowchart",
+					"dependency-graph",
 					"glue",
 					"task-list",
 					"next-steps",
@@ -755,6 +803,7 @@ export function toDocument(generation: Generation): ArtefactDocument {
 				])
 			: new Set([
 					"prose",
+					"flowchart",
 					"metric-row",
 					"glue",
 					"next-steps",
@@ -820,12 +869,19 @@ export function toDocument(generation: Generation): ArtefactDocument {
 			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
 				throw new Error("Software diagram edges must reference existing nodes");
 		}
-		if (block.template === "change-impact-map") {
+		if (block.template === "change-impact-map" || block.template === "dependency-graph") {
 			const ids = new Set(block.data.nodes.map((node) => node.id));
 			if (ids.size !== block.data.nodes.length)
-				throw new Error("Change impact map node IDs must be unique");
+				throw new Error("Diagram node IDs must be unique");
 			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
-				throw new Error("Change impact map edges must reference existing nodes");
+				throw new Error("Diagram edges must reference existing nodes");
+		}
+		if (block.template === "flowchart") {
+			const ids = new Set(block.data.steps.map((step) => step.id));
+			if (ids.size !== block.data.steps.length)
+				throw new Error("Flowchart step IDs must be unique");
+			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
+				throw new Error("Flowchart edges must reference existing steps");
 		}
 		if (block.template === "git-graph") {
 			const branches = new Set(block.data.branches.map((branch) => branch.id));

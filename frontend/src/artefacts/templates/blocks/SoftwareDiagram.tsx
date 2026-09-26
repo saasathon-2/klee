@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import type { SoftwareDiagramEdge, SoftwareDiagramNode } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { SourceLink } from "../page/SourceLink";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 const nodeWidth = 256;
@@ -189,38 +190,40 @@ function ComponentNode({ data }: NodeProps<FlowNode>) {
 					<Trash2 size={14} aria-hidden />
 				</button>
 			)}
-			<div className="pr-5">
-				{data.isEditing ? (
-					<EditableNodeText
-						field="label"
-						value={data.label}
-						editing={data.editingField === "label"}
-						onStartEdit={() => data.onStartEdit?.("label")}
-						onCommit={(value) => data.onCommit?.("label", value)}
-						onStopEdit={data.onStopEdit}
-					/>
-				) : (
-					<div className="line-clamp-2 text-base font-semibold leading-6">
+			{data.isEditing ? (
+				<>
+					<div className="pr-5">
+						<EditableNodeText
+							field="label"
+							value={data.label}
+							editing={data.editingField === "label"}
+							onStartEdit={() => data.onStartEdit?.("label")}
+							onCommit={(value) => data.onCommit?.("label", value)}
+							onStopEdit={data.onStopEdit}
+						/>
+					</div>
+					<div className="mt-2 min-h-0 flex-1">
+						<EditableNodeText
+							field="detail"
+							value={data.detail}
+							editing={data.editingField === "detail"}
+							onStartEdit={() => data.onStartEdit?.("detail")}
+							onCommit={(value) => data.onCommit?.("detail", value)}
+							onStopEdit={data.onStopEdit}
+						/>
+					</div>
+				</>
+			) : (
+				// Fills the card so a linked component opens its source from anywhere on it.
+				<SourceLink href={data.url} className="-m-4 flex min-h-0 flex-1 flex-col rounded-xl p-4">
+					<div className="line-clamp-2 pr-5 text-base font-semibold leading-6">
 						{data.label}
 					</div>
-				)}
-			</div>
-			<div className="mt-2 min-h-0 flex-1">
-				{data.isEditing ? (
-					<EditableNodeText
-						field="detail"
-						value={data.detail}
-						editing={data.editingField === "detail"}
-						onStartEdit={() => data.onStartEdit?.("detail")}
-						onCommit={(value) => data.onCommit?.("detail", value)}
-						onStopEdit={data.onStopEdit}
-					/>
-				) : (
-					<div className="line-clamp-2 text-sm leading-5 text-muted">
+					<div className="mt-2 line-clamp-2 text-sm leading-5 text-muted">
 						{data.detail}
 					</div>
-				)}
-			</div>
+				</SourceLink>
+			)}
 		</div>
 	);
 }

@@ -16,7 +16,9 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - `prose`: title and body.
 - `metric-row`: two or three comparable items.
 - `architecture-flow`: two or three ordered nodes.
-- `software-diagram`: two to ten software components and one to sixteen directed dependencies. Give each component a stable id, label, and detail; give every dependency source and target ids, and use a short label or `null` when useful. Include only nodes and relationships supported by the supplied code or description; never infer edges from filenames alone.
+- `software-diagram`: two to ten software components and one to sixteen directed dependencies. Give each component a stable id, label, detail, and url; give every dependency source and target ids, and use a short label or `null` when useful. Include only nodes and relationships supported by the supplied code or description; never infer edges from filenames alone.
+- `flowchart`: three to fourteen steps of a process, each with a stable id, a short label, kind (start, end, step, or decision), optional detail, and url, plus directed edges between step ids. Label the edges leaving a decision with its outcome, such as “Yes” and “No”; use `null` for other edge labels. Phrase decisions as short questions.
+- `dependency-graph`: two to fourteen packages, modules, services, databases, or external APIs with kind, detail, optional version, health (current, outdated, vulnerable, or `null` when unknown), and url, plus directed edges from dependant to dependency.
 - `glue`: an optional, short, forward-looking hook between groups of blocks.
 - `task-list`: ordered tasks with id, key, title, detail, meta, and status.
 - `next-steps`: concrete follow-up suggestions.
@@ -51,14 +53,18 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - Use prose only for narrative that no other block represents.
 - Treat glue as editorial rhythm, not a structural divider. When an artefact has three or more substantive blocks, it must contain exactly one `glue` block that earns the next detail with a curiosity-building hook, such as “Which means…” or “But here’s the interesting part…”. Do not add glue to shorter artefacts unless the shift is especially compelling. Never place it at the beginning, end, or beside another glue block.
 - Choose delivery blocks by the question being answered: `delivery-progress` for “are we on track?”, `sprint-timeline` for what happens when inside a window, `work-item-board` for triaging several items by state, and `task-list` for a short ordered plan. Do not use `delivery-progress` merely to repeat task counts.
+- Git work should be visual. When the request is about branches, merges, rebases, commits, pull requests, releases, or history, lead with a git diagram: `git-graph` when parent SHAs are supplied, otherwise `commit-list`. Add `code-diff` for the key change, `check-list` for CI results, and `flowchart` for a branching or release strategy (for example, how a hotfix reaches main and the release branch). If the user asks how to perform a git workflow and no real commits are supplied, draw the workflow as a `flowchart` rather than inventing SHAs.
 - Use `git-graph` only when branch ancestry or merges matter and parent SHAs are supplied; otherwise use `commit-list`.
+- Use `flowchart` for processes with order and branches: runbooks, pipelines, review or release processes, request handling. Use `architecture-flow` instead for two or three linear stages with no branches.
+- Use `dependency-graph` for package, module, or service dependencies, upgrades, and audits; mark health only from supplied audit, lockfile, or advisory data. Use `change-impact-map` instead when the question is which systems a change affects.
+- Link diagram nodes to their source: set a node's `url` to the supplied repository, file, service, ticket, or package page so readers can click through. Use `null` when no link is supplied.
 - Use `change-impact-map` only when supplied evidence establishes which systems are affected and how they depend on each other; never infer relationships from filenames. Pair it with `service-ownership` when owners and runbooks are known.
 - In `incident-timeline`, mark an event’s causal role confirmed only when the source says so; otherwise mark it suspected, or `null` for plain observations. The same applies to the root cause.
 - Use `dependency-risk-register` only for concrete items with an owner or a next action, not vague concerns.
 - Use `activity-trend` only for supplied dated values; never invent, interpolate, or smooth data points.
 - When the user asks for two blocks beside each other, side by side, next to each other, or in two columns, you must return them as one `two-column` block with both as its children, never as two separate top-level blocks. Otherwise use `two-column` only when the two blocks are read together, for example a chart and the records behind it. Never nest it or use it to pair unrelated blocks; it counts as one block for glue placement.
 - Prefer `evidence-table` over prose when comparing or linking several heterogeneous records that no specialised block represents.
-- `developer-page` supports every block. `generic-page` supports only prose, metric-row, glue, next-steps, decision-record, evidence-table, activity-trend, handoff-brief, and two-column, whose children must also be generic-page blocks.
+- `developer-page` supports every block. `generic-page` supports only prose, flowchart, metric-row, glue, next-steps, decision-record, evidence-table, activity-trend, handoff-brief, and two-column, whose children must also be generic-page blocks.
 
 ## Accuracy
 

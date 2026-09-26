@@ -118,3 +118,9 @@ body {
 	border-left-color: color-mix(in oklab, var(--brand) 35%, var(--brand-foreground));
 	color: var(--surface-tertiary-foreground);
 }
+
+[data-theme="dark"] .software-diagram-canvas .flowchart-shape {
+	background: var(--surface-tertiary);
+	fill: var(--surface-tertiary);
+	color: var(--surface-tertiary-foreground);
+}

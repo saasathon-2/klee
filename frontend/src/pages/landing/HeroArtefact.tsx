@@ -57,6 +57,27 @@ const demo: ArtefactDocument = {
 								"With the GitHub Action installed, Klee comments on each pull request with a page like this. It shows what changed, what reviewers said and whether the checks passed.",
 						},
 					},
+					block("tour-flow", "flowchart", {
+						title: "How a pull request ships",
+						description: "Processes with branches become flowcharts.",
+						steps: [
+							{ id: "open", label: "PR opened", kind: "start", detail: null, url: null },
+							{ id: "checks", label: "Checks pass?", kind: "decision", detail: null, url: null },
+							{ id: "fix", label: "Fix and push", kind: "step", detail: "Klee refreshes the page", url: null },
+							{ id: "review", label: "Approved?", kind: "decision", detail: null, url: null },
+							{ id: "changes", label: "Address feedback", kind: "step", detail: "Comments stay on the page", url: null },
+							{ id: "merge", label: "Merged to main", kind: "end", detail: null, url: null },
+						],
+						edges: [
+							{ source: "open", target: "checks", label: null },
+							{ source: "checks", target: "fix", label: "No" },
+							{ source: "fix", target: "checks", label: null },
+							{ source: "checks", target: "review", label: "Yes" },
+							{ source: "review", target: "changes", label: "No" },
+							{ source: "changes", target: "review", label: null },
+							{ source: "review", target: "merge", label: "Yes" },
+						],
+					}),
 					block("tour-sprint", "sprint-timeline", {
 						title: "Sprint progress",
 						start: "2026-09-21",
