@@ -158,6 +158,7 @@ export function Artefacts() {
 		path: string;
 		artefact: Artefact;
 	}>();
+	const [failedPath, setFailedPath] = useState<string>();
 	const [prompt, setPrompt] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
@@ -209,6 +210,9 @@ export function Artefacts() {
 			: undefined;
 	const current =
 		loaded?.path === artefactPath ? loaded?.artefact : undefined;
+	const isLoadingArtefact = Boolean(
+		artefactPath && !current && failedPath !== artefactPath,
+	);
 	useDocumentTitle(
 		current
 			? `${artefactHeading(current)} - Klee`
@@ -250,6 +254,7 @@ export function Artefacts() {
 				setLoaded({ path: artefactPath, artefact });
 			})
 			.catch((reason) => {
+				setFailedPath(artefactPath);
 				if (reason === "not_shared") return setNotShared(true);
 				setNotShared(false);
 				setError("This artefact could not be found.");
@@ -514,6 +519,7 @@ export function Artefacts() {
 	}
 	function reload() {
 		// Clearing the loaded artefact makes the loading effect fetch it again.
+		setFailedPath(undefined);
 		setLoaded(undefined);
 	}
 	function close() {
@@ -763,17 +769,18 @@ export function Artefacts() {
 					</p>
 				)}
 			</section>
-			{(current || isCreating) && (
+			{(current || isCreating || isLoadingArtefact) && (
 				<ArtefactModal
-					key={current?.id ?? "creating"}
+					key={current?.id ?? (isCreating ? "creating" : "loading")}
 					artefact={current}
 					isCreating={isCreating}
+					isLoading={isLoadingArtefact}
 					generationStatus={generationStatus}
 					generationCommentary={generationCommentary}
 					isCommentaryStarting={isCommentaryStarting}
 					isFullscreen={isFullscreen}
 					userId={user.id}
-					onClose={current ? close : cancelGeneration}
+					onClose={isCreating ? cancelGeneration : close}
 					onFullscreen={() => setFullscreen(!isFullscreen)}
 					onShare={() => setShareOpen(true)}
 					followUp={followUp}
@@ -943,6 +950,7 @@ function WorkspaceSidebar({
 function ArtefactModal({
 	artefact,
 	isCreating,
+	isLoading,
 	generationStatus,
 	generationCommentary,
 	isCommentaryStarting,
@@ -963,6 +971,7 @@ function ArtefactModal({
 }: {
 	artefact?: Artefact;
 	isCreating: boolean;
+	isLoading: boolean;
 	generationStatus: string;
 	generationCommentary: string;
 	isCommentaryStarting: boolean;
@@ -984,6 +993,7 @@ function ArtefactModal({
 	onError: (message: string) => void;
 }) {
 	const [generationStartedAt] = useState(() => Date.now());
+	const loadingLabel = isLoading ? "Loading artefact" : "Creating artefact";
 	const [generationSeconds, setGenerationSeconds] = useState(0);
 	useEffect(() => {
 		if (!isCreating) return;
@@ -1068,10 +1078,10 @@ function ArtefactModal({
 					size={isFullscreen ? "full" : "cover"}
 				>
 					<Modal.Dialog
-						aria-label={
-							artefact
-								? artefactHeading(artefact)
-								: "Creating artefact"
+							aria-label={
+								artefact
+									? artefactHeading(artefact)
+									: loadingLabel
 						}
 						className={
 							isFullscreen
@@ -1101,7 +1111,7 @@ function ArtefactModal({
 										</span>
 									</>
 								) : (
-									<span>Creating artefact</span>
+									<span>{loadingLabel}</span>
 								)}
 							</Modal.Heading>
 							<Toolbar
@@ -1212,7 +1222,9 @@ function ArtefactModal({
 									aria-label={
 										artefact
 											? "Close artefact"
-											: "Cancel generation"
+											: isCreating
+												? "Cancel generation"
+												: "Close artefact"
 									}
 									variant="ghost"
 									className="size-8 min-w-8 p-0"
@@ -1252,30 +1264,30 @@ function ArtefactModal({
 									<ArtefactSkeleton>
 										<div className="space-y-1 text-sm text-muted">
 											<p role="status">
-												{generationStatus ||
-													"Starting your artefact…"}
-												<span
-													className="ml-2 text-xs tabular-nums"
-													aria-hidden="true"
+												{isCreating ? (
+													<>
+														{generationStatus || "Starting your artefact…"}
+														<span
+															className="ml-2 text-xs tabular-nums"
+															aria-hidden="true"
+														>
+															{Math.floor(generationSeconds / 60)}:
+															{String(generationSeconds % 60).padStart(2, "0")}
+														</span>
+													</>
+												) : (
+													"Loading artefact…"
+												)}
+											</p>
+											{isCreating && (
+												<p
+													className="max-w-full overflow-hidden whitespace-nowrap"
+													aria-label="AI commentary"
+													aria-live="off"
 												>
-													{Math.floor(
-														generationSeconds / 60,
-													)}
-													:
-													{String(
-														generationSeconds % 60,
-													).padStart(2, "0")}
-												</span>
-											</p>
-											<p
-												className="max-w-full overflow-hidden whitespace-nowrap"
-												aria-label="AI commentary"
-												aria-live="off"
-											>
-												<GenerationCommentary
-													text={generationCommentary}
-												/>
-											</p>
+													<GenerationCommentary text={generationCommentary} />
+												</p>
+											)}
 										</div>
 									</ArtefactSkeleton>
 								</div>
