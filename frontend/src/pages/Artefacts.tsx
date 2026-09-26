@@ -21,6 +21,7 @@ import {
 	Check,
 	Copy,
 	ExternalLink,
+	FileText,
 	House,
 	History,
 	LogOut,
@@ -56,7 +57,7 @@ import type { EditPath } from "../artefacts/templates/types";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { useTheme } from "../lib/use-theme";
-import { IntegrationsModal } from "./Integrations";
+import { IntegrationsModal, type GoogleFile } from "./Integrations";
 import { OrganisationsModal } from "./Organisations";
 import { useMediaQuery } from "../lib/use-media-query";
 import { ArtefactSkeleton } from "./artefact/ArtefactSkeleton";
@@ -188,6 +189,7 @@ export function Artefacts() {
 	const [failedPath, setFailedPath] = useState<string>();
 	const [prompt, setPrompt] = useState("");
 	const [promptCaret, setPromptCaret] = useState<{ x: number; y: number }>();
+	const [googleFiles, setGoogleFiles] = useState<GoogleFile[]>([]);
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
 	const [generationCommentary, setGenerationCommentary] = useState("");
@@ -347,10 +349,12 @@ export function Artefacts() {
 		setGenerationStatus("Starting your brief…");
 		setGenerationCommentary("");
 		setError("");
+		const googleFileIds = googleFiles.map((file) => file.id);
+		setGoogleFiles([]);
 		try {
 			const response = await api("/artefacts/stream", {
 				method: "POST",
-				body: JSON.stringify({ prompt }),
+				body: JSON.stringify({ prompt, googleFileIds }),
 				signal: controller.signal,
 			});
 			if (!response.ok || !response.body)
@@ -813,8 +817,34 @@ export function Artefacts() {
 								/>
 								<Toolbar
 									aria-label="Create artefact controls"
-									className="flex w-full justify-end px-1 pt-1"
+									className="flex w-full items-center justify-between px-1 pt-1"
 								>
+									{googleFiles.length ? (
+										<div className="flex min-w-0 items-center gap-2 text-xs text-muted">
+											<FileText size={15} />
+											<span className="truncate">
+												{googleFiles.length === 1
+													? `${googleFiles[0].name} will be used`
+													: `${googleFiles.length} Google files will be used`}
+											</span>
+											<Button
+												size="sm"
+												variant="ghost"
+												onPress={() => setGoogleFiles([])}
+											>
+												Clear
+											</Button>
+										</div>
+									) : (
+										<Button
+											size="sm"
+											variant="ghost"
+											onPress={() => navigate("/?panel=integrations")}
+										>
+											<FileText size={15} />
+											Add Google files
+										</Button>
+									)}
 									<Button
 										aria-label={
 											isCreating
@@ -907,7 +937,10 @@ export function Artefacts() {
 				/>
 			)}
 			{isIntegrations && (
-				<IntegrationsModal onClose={() => navigate("/")} />
+				<IntegrationsModal
+					onClose={() => navigate("/")}
+					onGoogleFilesSelected={setGoogleFiles}
+				/>
 			)}
 			{isOrganisations && (
 				<OrganisationsModal onClose={() => navigate("/")} />

@@ -28,6 +28,8 @@ This repository deploys as three Railway services:
 
     ```text
     VITE_API_URL=https://${{api.RAILWAY_PUBLIC_DOMAIN}}
+    VITE_GOOGLE_PICKER_API_KEY=<restricted-google-picker-api-key>
+    VITE_GOOGLE_CLOUD_PROJECT_NUMBER=<google-cloud-project-number>
     ```
 
     `VITE_API_URL` is compiled into the browser bundle, so redeploy `web` whenever it changes.
@@ -35,6 +37,10 @@ This repository deploys as three Railway services:
 5. Deploy. The API migration runs before each API release; if it fails, the release does not go live.
 
 `PORT` is supplied by Railway. Do not set it manually. `CORS_ORIGIN` should be the exact web origin (no trailing slash). The API Dockerfile installs the Chromium runtime libraries needed for artefact screenshots.
+
+### Google Docs and Sheets context
+
+Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on the API service. The Google OAuth client's callback URL is `https://<api-domain>/api/auth/callback/google` (local: `http://localhost:3000/api/auth/callback/google`). Enable the Google Docs API, Google Sheets API, Drive API, and Google Picker API in the same Google Cloud project as the OAuth client. Restrict the Picker API key to the web origins (including `https://docs.google.com/*`) and the Picker/Drive APIs. Users connect their existing Google account with the `drive.file` scope, then select up to five Docs or Sheets for one artefact request. Klee fetches those files only while generating that artefact and does not persist the selection or document text; the resulting rationale links to its source. Google consent-screen verification may be required before general release.
 
 ## Migrations
 
@@ -83,6 +89,6 @@ Use `./utils/dev.sh`. Local settings are split into two files per app; productio
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `backend/.env`        | Shared secrets: auth secret, Google and OpenAI keys                                                                                                                            |
 | `backend/.env.local`  | Local only: port, local database, `localhost` URLs, and a local GitHub OAuth app (callback `http://localhost:3000/api/auth/callback/github`). Loaded after `.env`, so it wins. |
-| `frontend/.env.local` | Local only: `VITE_API_URL`, which the Vite dev server also uses as its `/api` proxy target                                                                                     |
+| `frontend/.env.local` | Local only: API URL and Google Picker key/project number                                                                                                                      |
 
 `dev.sh` creates any missing file from its `.example` template. Both `.env.local` files are git-ignored.

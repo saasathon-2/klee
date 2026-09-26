@@ -24,6 +24,7 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - `review-comments`: each reviewer's handle without their verdict, their verdict as approved, changes-requested, or commented, their feedback, and the consensus.
 - `commit-list`: commits with sha, message, author, and detail. Use an empty sha when none is given.
 - `check-list`: CI checks, tests, or merge requirements marked passed, failed, or pending.
+- `note-evidence`: related code change, source ID, and paraphrased justification from selected development notes. Use only supplied IDs, never copy note excerpts, and include only notes that directly support the change.
 - `sprint-timeline`: a bounded sprint or delivery window with start and end dates, today when known, dated milestones, and one to twelve work items with id, title, status (planned, active, blocked, or done), optional start, end, and estimate.
 - `delivery-progress`: completed, in-progress, blocked, and not-started amounts in one unit such as items or points, an optional forecast date and scope change, and a one-sentence answer to “are we on track?”.
 - `work-item-board`: three or four columns with id planned, active, blocked, or done, each holding items with key, title, owner, priority, and meta. Set `total` when the source column holds more items than you list.
