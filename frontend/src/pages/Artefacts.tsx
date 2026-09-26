@@ -149,6 +149,8 @@ export function Artefacts() {
 		useState<boolean>();
 	const [copied, setCopied] = useState(false);
 	const [notShared, setNotShared] = useState(false);
+	const [sharedCommentsOpen, setSharedCommentsOpen] = useState(false);
+	const [sharedCommentCount, setSharedCommentCount] = useState(0);
 	const [isFullscreen, setFullscreen] = useState(false);
 	// Phones get the sidebar as a drawer, closed until the toggle is pressed.
 	const isDesktop = useMediaQuery(desktopQuery);
@@ -460,7 +462,7 @@ export function Artefacts() {
 		return <Navigate to="/?auth=signin" replace />;
 	if (isShared)
 		return (
-			<main className="min-h-screen bg-background">
+			<main className="flex min-h-screen flex-col bg-background">
 				{error && <p className="p-10 text-sm text-danger">{error}</p>}
 				{notShared && (
 					<p className="p-10 text-sm text-muted">
@@ -468,11 +470,36 @@ export function Artefacts() {
 					</p>
 				)}
 				{current && (
-					<ArtefactBody
-						artefact={current}
-						canInteract={false}
-						edgeToEdge
-					/>
+					<>
+						<div className="flex justify-end px-4 py-2">
+							<Button
+								aria-label={`Comments, ${sharedCommentCount}`}
+								variant={sharedCommentsOpen ? "secondary" : "ghost"}
+								size="sm"
+								onPress={() => setSharedCommentsOpen(!sharedCommentsOpen)}
+							>
+								<MessageCircle size={15} />
+								Comments{sharedCommentCount > 0 && ` ${sharedCommentCount}`}
+							</Button>
+						</div>
+						<ArtefactComments
+							key={current.id}
+							artefactId={current.id}
+							isOwner={false}
+							userId={session?.user?.id ?? ""}
+							isShared
+							canComment={false}
+							isOpen={sharedCommentsOpen}
+							onOpenChange={setSharedCommentsOpen}
+							onCountChange={setSharedCommentCount}
+						>
+							<ArtefactBody
+								artefact={current}
+								canInteract={false}
+								edgeToEdge
+							/>
+						</ArtefactComments>
+					</>
 				)}
 			</main>
 		);
