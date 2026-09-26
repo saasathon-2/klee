@@ -87,3 +87,14 @@ body {
 .software-diagram-canvas .react-flow__controls-button:hover {
 	background: var(--surface-secondary);
 }
+
+[data-theme="dark"] .software-diagram-canvas {
+	background: var(--surface);
+}
+
+[data-theme="dark"] .software-diagram-canvas .software-diagram-node {
+	background: var(--surface-tertiary);
+	border-color: var(--border);
+	border-left-color: color-mix(in oklab, var(--brand) 35%, var(--brand-foreground));
+	color: var(--surface-tertiary-foreground);
+}

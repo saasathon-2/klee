@@ -18,15 +18,15 @@ import type { SoftwareDiagramEdge, SoftwareDiagramNode } from "../../model";
 import { BlockSection } from "../page/BlockSection";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
-const nodeWidth = 224;
-const nodeHeight = 104;
+const nodeWidth = 256;
+const nodeHeight = 120;
 
 function ComponentNode({ data }: NodeProps<XYFlowNode<SoftwareDiagramNode, "component">>) {
 	return (
-		<div role="group" aria-label={`${data.label}: ${data.detail}`} className="relative h-[104px] w-56 rounded-xl border border-divider border-l-4 border-l-brand bg-surface p-3 text-surface-foreground shadow-sm">
+		<div role="group" aria-label={`${data.label}: ${data.detail}`} className="software-diagram-node relative h-[120px] w-64 rounded-xl border border-divider border-l-4 bg-surface p-4 text-surface-foreground shadow-sm" style={{ borderLeftColor: "color-mix(in oklab, var(--brand) 35%, var(--brand-foreground))" }}>
 			<Handle type="target" position={Position.Left} className="!border-0 !bg-transparent" />
-			<div className="line-clamp-2 text-sm font-semibold leading-5">{data.label}</div>
-			<div className="mt-1 line-clamp-2 text-xs leading-4 text-muted">{data.detail}</div>
+			<div className="line-clamp-2 text-base font-semibold leading-6">{data.label}</div>
+			<div className="mt-2 line-clamp-2 text-sm leading-5 text-muted">{data.detail}</div>
 			<Handle type="source" position={Position.Right} className="!border-0 !bg-transparent" />
 		</div>
 	);
@@ -36,7 +36,7 @@ const nodeTypes = { component: ComponentNode };
 
 function layoutDiagram(nodes: SoftwareDiagramNode[], edges: SoftwareDiagramEdge[]) {
 	const graph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-	graph.setGraph({ rankdir: "LR", nodesep: 36, ranksep: 68, marginx: 24, marginy: 24 });
+	graph.setGraph({ rankdir: "LR", nodesep: 96, ranksep: 200, marginx: 48, marginy: 48 });
 	for (const node of nodes) graph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
 	for (const edge of edges) graph.setEdge(edge.source, edge.target);
 	dagre.layout(graph);
@@ -58,12 +58,12 @@ function layoutDiagram(nodes: SoftwareDiagramNode[], edges: SoftwareDiagramEdge[
 		target: edge.target,
 		type: "smoothstep",
 		label: edge.label || undefined,
-		markerEnd: { type: MarkerType.ArrowClosed, color: "var(--muted)" },
-		style: { stroke: "var(--muted)", strokeWidth: 1.5 },
+		markerEnd: { type: MarkerType.ArrowClosed, color: "var(--border)" },
+		style: { stroke: "var(--border)", strokeWidth: 1.5 },
 		labelStyle: { fill: "var(--foreground)", fontSize: 11 },
-		labelBgStyle: { fill: "var(--surface)", fillOpacity: 0.95 },
+		labelBgStyle: { fill: "var(--surface-tertiary)", fillOpacity: 0.98 },
 	}));
-	return { nodes: flowNodes, edges: flowEdges };
+	return { nodes: flowNodes, edges: flowEdges, height: graph.graph().height };
 }
 
 export function SoftwareDiagram({ node }: TemplateProps) {
@@ -77,13 +77,13 @@ export function SoftwareDiagram({ node }: TemplateProps) {
 	const labels = new Map(nodes.map((item) => [item.id, item.label]));
 	return (
 		<BlockSection title={title} description={description}>
-			<div role="group" className="software-diagram-canvas h-[400px] overflow-hidden rounded-2xl border border-divider bg-background" aria-label={`${title} component diagram`}>
+			<div role="group" className="software-diagram-canvas min-h-[480px] overflow-hidden rounded-2xl border border-divider bg-background" style={{ height: Math.max(480, diagram.height + 80) }} aria-label={`${title} component diagram`}>
 				<ReactFlow
 					nodes={diagram.nodes}
 					edges={diagram.edges}
 					nodeTypes={nodeTypes}
 					fitView
-					fitViewOptions={{ padding: 0.18, maxZoom: 1 }}
+					fitViewOptions={{ padding: 0.24, maxZoom: 1 }}
 					nodesDraggable={false}
 					nodesConnectable={false}
 					elementsSelectable={false}
@@ -91,7 +91,7 @@ export function SoftwareDiagram({ node }: TemplateProps) {
 					panOnDrag
 					proOptions={{ hideAttribution: false }}
 				>
-					<Background color="var(--border)" gap={18} size={1} />
+					<Background color="color-mix(in oklab, var(--border) 55%, transparent)" gap={24} size={1} />
 					<Controls showInteractive={false} className="klee-diagram-controls" />
 				</ReactFlow>
 			</div>
