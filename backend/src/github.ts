@@ -13,6 +13,18 @@ const apiUrl = "https://api.github.com";
 const oidcIssuer = "https://token.actions.githubusercontent.com";
 const githubActionsAudience = "klee-github-actions";
 let oidcKeys: { expiresAt: number; keys: JsonWebKey[] } | undefined;
+const installationTokens = new Map<string, { token: string; expiresAt: number }>();
+const pendingInstallationTokens = new Map<string, Promise<string>>();
+
+async function githubFetch(url: string, init?: RequestInit, retry = true) {
+	try {
+		return await fetch(url, init);
+	} catch (error) {
+		if (!retry) throw error;
+		await new Promise((resolve) => setTimeout(resolve, 200));
+		return fetch(url, init);
+	}
+}
 
 function configured(
 	name: "githubAppId" | "githubPrivateKey" | "githubWebhookSecret",
@@ -33,7 +45,7 @@ function appJwt() {
 }
 
 async function appRequest(path: string, init?: RequestInit) {
-	const response = await fetch(`${apiUrl}${path}`, {
+	const response = await githubFetch(`${apiUrl}${path}`, {
 		...init,
 		headers: {
 			Accept: "application/vnd.github+json",
@@ -45,6 +57,27 @@ async function appRequest(path: string, init?: RequestInit) {
 	if (!response.ok)
 		throw new Error(`GitHub API request failed (${response.status})`);
 	return response;
+}
+
+async function installationToken(installationId: string) {
+	const cached = installationTokens.get(installationId);
+	if (cached && cached.expiresAt > Date.now() + 60_000) return cached.token;
+	const pending = pendingInstallationTokens.get(installationId);
+	if (pending) return pending;
+	const request = (async () => {
+		const { token, expires_at } = (await (
+			await appRequest(`/app/installations/${installationId}/access_tokens`, {
+				method: "POST",
+			})
+		).json()) as { token: string; expires_at?: string };
+		installationTokens.set(installationId, {
+			token,
+			expiresAt: expires_at ? Date.parse(expires_at) : Date.now() + 50 * 60_000,
+		});
+		return token;
+	})().finally(() => pendingInstallationTokens.delete(installationId));
+	pendingInstallationTokens.set(installationId, request);
+	return request;
 }
 
 export async function githubAppSlug() {
@@ -74,12 +107,8 @@ export async function githubInstallationRequest(
 	path: string,
 	init?: RequestInit,
 ) {
-	const { token } = (await (
-		await appRequest(`/app/installations/${installationId}/access_tokens`, {
-			method: "POST",
-		})
-	).json()) as { token: string };
-	const response = await fetch(`${apiUrl}${path}`, {
+	const token = await installationToken(installationId);
+	const response = await githubFetch(`${apiUrl}${path}`, {
 		...init,
 		headers: {
 			Accept: "application/vnd.github+json",
@@ -87,7 +116,7 @@ export async function githubInstallationRequest(
 			"X-GitHub-Api-Version": "2026-03-10",
 			...init?.headers,
 		},
-	});
+	}, !init?.method || init.method === "GET");
 	if (!response.ok)
 		throw new Error(`GitHub API request failed (${response.status})`);
 	return response;
