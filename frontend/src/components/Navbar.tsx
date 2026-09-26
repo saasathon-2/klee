@@ -1,16 +1,22 @@
 import { Button, Description, Dropdown, Label, Link } from "@heroui/react";
-import { ChevronDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronDown, Menu } from "lucide-react";
+import { type ComponentProps, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "../lib/auth-client";
-import { navMenus, pricingSection } from "../pages/landing/links";
+import { navMenus, pricingPath } from "../pages/landing/links";
 import { ThemeToggle } from "./ThemeToggle";
+
+const hrefFor = (link: { section?: string; to?: string }) =>
+	link.to ?? `/welcome#${link.section}`;
+const mobileLinks = [
+	...navMenus.flatMap((menu) => menu.links),
+	{ label: "Pricing", description: "Plans for individual work and teams", to: pricingPath },
+];
 
 export function Navbar() {
 	const { data: session, isPending } = useSession();
 	const navigate = useNavigate();
 	const [scrolled, setScrolled] = useState(false);
-	const goToSection = (section: string) => navigate(`/welcome#${section}`);
 	useEffect(() => {
 		const onScroll = (event: Event) => {
 			const target = event.target;
@@ -48,15 +54,18 @@ export function Navbar() {
 							>
 								<Dropdown.Menu
 									aria-label={menu.label}
-									onAction={(key) =>
-										goToSection(String(key).split(":")[1])
-									}
 								>
 									{menu.links.map((link) => (
 										<Dropdown.Item
 											key={link.label}
-											id={`${link.label}:${link.section}`}
+											id={link.label}
 											textValue={link.label}
+											render={(props) => (
+												<a
+													{...(props as unknown as ComponentProps<"a">)}
+													href={hrefFor(link)}
+												/>
+											)}
 										>
 											<div className="flex flex-col">
 												<Label>{link.label}</Label>
@@ -74,16 +83,49 @@ export function Navbar() {
 						variant="ghost"
 						size="sm"
 						className="px-3 py-1.5"
-						onPress={() => goToSection(pricingSection)}
+						onPress={() => navigate(pricingPath)}
 					>
 						Pricing
 					</Button>
 				</div>
 
 				<div className="col-start-3 flex items-center justify-self-end gap-3">
+					<Dropdown>
+						<Button
+							isIconOnly
+							aria-label="Open navigation"
+							variant="ghost"
+							className="md:hidden"
+						>
+							<Menu aria-hidden size={18} />
+						</Button>
+						<Dropdown.Popover placement="bottom end" className="min-w-72">
+							<Dropdown.Menu aria-label="Navigation">
+								{mobileLinks.map((link) => (
+									<Dropdown.Item
+										key={link.label}
+										id={link.label}
+										textValue={link.label}
+										render={(props) => (
+											<a
+												{...(props as unknown as ComponentProps<"a">)}
+												href={hrefFor(link)}
+											/>
+										)}
+									>
+										<div className="flex flex-col">
+											<Label>{link.label}</Label>
+											<Description>{link.description}</Description>
+										</div>
+									</Dropdown.Item>
+								))}
+							</Dropdown.Menu>
+						</Dropdown.Popover>
+					</Dropdown>
 					<Button
 						variant="ghost"
 						size="sm"
+						className="hidden md:flex"
 						onPress={() => navigate("/docs")}
 					>
 						Docs
