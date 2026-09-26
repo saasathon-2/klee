@@ -259,7 +259,7 @@ export function ArtefactComments({
 								style={regionStyle(comment.anchor!, color)}
 								onClick={() => openThread(comment.id)}
 							>
-								<span className="absolute -right-2 -top-3 rounded-full border-2 border-surface bg-surface shadow-sm">
+								<span className="absolute -right-2 -top-3 leading-none">
 									<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
 								</span>
 							</button>
