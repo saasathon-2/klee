@@ -111,6 +111,7 @@ export function ArtefactComments({
 	const [isPosting, setPosting] = useState(false);
 	const [isDrafting, setDrafting] = useState(false);
 	const hoverTimeout = useRef<number | undefined>(undefined);
+	const pendingReactions = useRef(new Set<string>());
 
 	function showCommentHover(id: string) {
 		window.clearTimeout(hoverTimeout.current);
@@ -385,6 +386,20 @@ export function ArtefactComments({
 
 	async function react(commentId: string, emoji: string) {
 		if (!canComment) return;
+		const key = `${commentId}:${emoji}`;
+		if (pendingReactions.current.has(key)) return;
+		pendingReactions.current.add(key);
+		const previous = comments;
+		setComments((current) => current.map((comment) => {
+			if (comment.id !== commentId) return comment;
+			const reaction = comment.reactions.find((item) => item.emoji === emoji);
+			const reactions = reaction
+				? comment.reactions.map((item) => item.emoji === emoji
+					? { ...item, count: item.reacted ? item.count - 1 : item.count + 1, reacted: !item.reacted }
+					: item).filter((item) => item.count > 0)
+				: [...comment.reactions, { emoji, count: 1, reacted: true }];
+			return { ...comment, reactions };
+		}));
 		setError("");
 		try {
 			const response = await commentApi(artefactId, `/${commentId}/reactions`, {
@@ -392,9 +407,11 @@ export function ArtefactComments({
 				body: JSON.stringify({ emoji }),
 			}, isShared && !canComment);
 			if (!response.ok) throw new Error("Could not add reaction.");
-			await loadComments();
 		} catch (error) {
+			setComments(previous);
 			setError(error instanceof Error ? error.message : "Could not add reaction.");
+		} finally {
+			pendingReactions.current.delete(key);
 		}
 	}
 
