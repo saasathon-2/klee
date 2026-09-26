@@ -10,6 +10,7 @@ import {
 	Paragraph,
 	Popover,
 	Separator,
+	Spinner,
 	Surface,
 	TextArea,
 	Toolbar,
@@ -49,6 +50,7 @@ import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import { useLiveStatus } from "../artefacts/templates/page/liveStatus";
 import {
+	changedBlockIds,
 	fallbackDocument,
 	withEditedValue,
 	type ArtefactDocument,
@@ -795,15 +797,16 @@ export function Artefacts() {
 										}
 										type="submit"
 										className="size-9 min-w-9 rounded-xl p-0"
-										isDisabled={
-											!prompt.trim() || isCreating
-										}
+										isPending={isCreating}
+										isDisabled={!prompt.trim()}
 									>
-										{isCreating ? (
-											"…"
-										) : (
-											<ArrowUp size={17} />
-										)}
+										{({ isPending }) =>
+											isPending ? (
+												<Spinner color="current" size="sm" />
+											) : (
+												<ArrowUp size={17} />
+											)
+										}
 									</Button>
 								</Toolbar>
 							</Surface>
@@ -1134,8 +1137,26 @@ function ArtefactModal({
 	const breadcrumb =
 		folders.find((folder) => folder.id === artefact?.folderId)?.name ??
 		"Artefacts";
+	// Blocks a revision or save changed, so they can be pointed out once.
+	const [seenContent, setSeenContent] = useState(artefact?.content);
+	const [changedIds, setChangedIds] = useState<Set<string>>();
+	if (artefact?.content !== seenContent) {
+		setSeenContent(artefact?.content);
+		setChangedIds(
+			seenContent && artefact?.content
+				? changedBlockIds(seenContent, artefact.content)
+				: undefined,
+		);
+	}
+	useEffect(() => {
+		if (changedIds?.size)
+			window.document
+				.querySelector(".artefact-changed")
+				?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+	}, [changedIds]);
 	const renderedArtefact = artefact && (
 		<ArtefactBody
+			changedIds={changedIds}
 			artefact={artefact}
 			document={draft ?? (historyOpen ? pastVersion : undefined)}
 			canInteract={canEdit}
@@ -1362,7 +1383,16 @@ function ArtefactModal({
 									onCommentingChange={setCommenting}
 									onCountChange={setCommentCount}
 								>
-									{renderedArtefact}
+									<div
+										aria-busy={isRevising}
+										className={
+											isRevising
+												? "artefact-revising"
+												: undefined
+										}
+									>
+										{renderedArtefact}
+									</div>
 								</ArtefactComments>
 							) : (
 								<div className="min-h-0 flex-1 overflow-auto">
@@ -1479,27 +1509,46 @@ function ArtefactModal({
 									<div className="pointer-events-auto relative mx-auto w-[70%] max-sm:w-full">
 										<form
 											onSubmit={onSubmit}
-											className={`flex w-full items-center gap-2 rounded-xl border-2 border-border bg-surface-tertiary p-1.5 pl-4 shadow-2xl ring-1 ring-foreground/10 transition-opacity duration-300 ${isRevising ? "opacity-0" : "opacity-100"}`}
+											className="flex w-full items-center gap-2 rounded-xl border-2 border-border bg-surface-tertiary p-1.5 pl-4 shadow-2xl ring-1 ring-foreground/10"
 										>
-											<Input
-												aria-label="Refine artefact"
-												variant="secondary"
-												className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
-												value={followUp}
-												disabled={
-													pastVersion !== undefined
-												}
-												onChange={(event) =>
-													setFollowUp(
-														event.target.value,
-													)
-												}
-												placeholder={
-													pastVersion
-														? "Return to the latest version to make changes"
-														: "Describe what to change"
-												}
-											/>
+											{isRevising ? (
+												<p
+													className="flex h-9 min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap text-sm text-muted"
+													aria-label="AI commentary"
+													aria-live="off"
+												>
+													<span
+														className={`transition-opacity duration-200 motion-reduce:transition-none ${isCommentaryStarting ? "opacity-0" : "opacity-100"}`}
+													>
+														<GenerationCommentary
+															text={
+																generationCommentary ||
+																`Updating: ${followUp}`
+															}
+														/>
+													</span>
+												</p>
+											) : (
+												<Input
+													aria-label="Refine artefact"
+													variant="secondary"
+													className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
+													value={followUp}
+													disabled={
+														pastVersion !== undefined
+													}
+													onChange={(event) =>
+														setFollowUp(
+															event.target.value,
+														)
+													}
+													placeholder={
+														pastVersion
+															? "Return to the latest version to make changes"
+															: "Describe what to change"
+													}
+												/>
+											)}
 											<Button
 												aria-label={
 													isRevising
@@ -1508,40 +1557,24 @@ function ArtefactModal({
 												}
 												type="submit"
 												className="size-10 min-w-10 rounded-xl p-0"
+												isPending={isRevising}
 												isDisabled={
 													!followUp.trim() ||
-													isRevising ||
 													pastVersion !== undefined
 												}
 											>
-												{isRevising ? (
-													"…"
-												) : (
-													<ArrowUp size={17} />
-												)}
+												{({ isPending }) =>
+													isPending ? (
+														<Spinner
+															color="current"
+															size="sm"
+														/>
+													) : (
+														<ArrowUp size={17} />
+													)
+												}
 											</Button>
 										</form>
-										{isRevising && (
-											<p
-												className="absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap text-sm text-muted"
-												aria-label="AI commentary"
-												aria-live="off"
-											>
-												{generationCommentary ? (
-													<GenerationCommentary
-														text={
-															generationCommentary
-														}
-													/>
-												) : (
-													<span
-														className={`transition-opacity duration-200 motion-reduce:transition-none ${isCommentaryStarting ? "opacity-0" : "opacity-100"}`}
-													>
-														<GenerationCommentary text="Refining artefact…" />
-													</span>
-												)}
-											</p>
-										)}
 									</div>
 								</div>
 							)}
@@ -1596,6 +1629,7 @@ function ArtefactBody({
 	isEditing = false,
 	onAction,
 	onEdit,
+	changedIds,
 }: {
 	artefact: Artefact;
 	/** Shown instead of the saved content, e.g. an edit draft or a past version. */
@@ -1607,6 +1641,8 @@ function ArtefactBody({
 	isEditing?: boolean;
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
+	/** Blocks to flash as just changed. */
+	changedIds?: Set<string>;
 }) {
 	const { data: session } = useSession();
 	const document =
@@ -1622,6 +1658,16 @@ function ArtefactBody({
 	return (
 		<ArtefactRenderer
 			liveStatus={liveStatus}
+			renderNode={
+				changedIds?.size
+					? (node, rendered) =>
+							changedIds.has(node.id) ? (
+								<div className="artefact-changed">{rendered}</div>
+							) : (
+								rendered
+							)
+					: undefined
+			}
 			document={document}
 			createdAt={artefact.createdAt}
 			canInteract={canInteract && !isEditing}

@@ -304,3 +304,15 @@ export function withEditedValue(
 	};
 	return { ...document, root: update(document.root) };
 }
+
+/**
+ * Ids of the content blocks in `after` that weren't in `before`. Blocks are
+ * compared by content, not id, since ids follow position and shift when a
+ * block is added or removed.
+ */
+export function changedBlockIds(before: ArtefactDocument, after: ArtefactDocument) {
+	const blocks = (document: ArtefactDocument) => document.root.children?.[0]?.children ?? [];
+	const key = ({ id: _, ...node }: ArtefactNode) => JSON.stringify(node);
+	const previous = new Set(blocks(before).map(key));
+	return new Set(blocks(after).filter((node) => !previous.has(key(node))).map((node) => node.id));
+}
