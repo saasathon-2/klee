@@ -8,6 +8,7 @@ export type RenderContext = {
 	canInteract: boolean;
 	edgeToEdge: boolean;
 	showFooter: boolean;
+	compactHeader: boolean;
 	/** Text fields render as inputs and report changes through `onEdit`. */
 	isEditing: boolean;
 	onAction?: (label: string) => void;
