@@ -595,6 +595,32 @@ const blockSchemas = [
 		.strict(),
 ] as const;
 
+/** Blocks compact enough to share a row, e.g. a trend chart beside a table. */
+const columnTemplates = new Set<string>([
+	"prose",
+	"activity-trend",
+	"evidence-table",
+	"check-list",
+	"commit-list",
+	"task-list",
+	"delivery-progress",
+	"delivery-readiness",
+	"service-ownership",
+]);
+const columnBlockSchemas = blockSchemas.filter((schema) =>
+	columnTemplates.has(schema.shape.template.value),
+) as unknown as [
+	(typeof blockSchemas)[number],
+	(typeof blockSchemas)[number],
+	...(typeof blockSchemas)[number][],
+];
+const twoColumnSchema = z
+	.object({
+		template: z.literal("two-column"),
+		children: z.array(z.union(columnBlockSchemas)).length(2),
+	})
+	.strict();
+
 const generationSchema = z
 	.object({
 		title: z.string().trim().min(1).max(80),
@@ -603,7 +629,7 @@ const generationSchema = z
 		eyebrow: z.string().trim().min(1).max(48),
 		summary: z.string().trim().min(1).max(280),
 		tags: z.array(z.string().trim().min(1).max(32)).min(1).max(4),
-		blocks: z.array(z.union(blockSchemas)).min(1),
+		blocks: z.array(z.union([...blockSchemas, twoColumnSchema])).min(1),
 	})
 	.strict();
 
@@ -647,13 +673,14 @@ export class ArtefactAgentError extends Error {
 type Generation = z.infer<typeof generationSchema>;
 
 type Block = Generation["blocks"][number];
+type ContentBlock = Exclude<Block, { template: "two-column" }>;
 
 /**
  * Repairs recoverable shapes before validation: a git graph without any
  * in-slice parent relationships becomes a commit list, and evidence rows are
  * padded or trimmed to their column count.
  */
-function normaliseBlock(block: Block): Block {
+function normaliseBlock(block: ContentBlock): ContentBlock {
 	if (block.template === "git-graph") {
 		const shas = new Set(block.data.commits.map((commit) => commit.sha));
 		const linked = block.data.commits.some((commit) =>
@@ -724,6 +751,7 @@ export function toDocument(generation: Generation): ArtefactDocument {
 					"evidence-table",
 					"activity-trend",
 					"handoff-brief",
+					"two-column",
 				])
 			: new Set([
 					"prose",
@@ -734,11 +762,17 @@ export function toDocument(generation: Generation): ArtefactDocument {
 					"evidence-table",
 					"activity-trend",
 					"handoff-brief",
+					"two-column",
 				]);
-	if (generation.blocks.some((block) => !allowed.has(block.template))) {
+	const templates = generation.blocks.flatMap((block) =>
+		block.template === "two-column"
+			? [block.template, ...block.children.map((child) => child.template)]
+			: [block.template],
+	);
+	if (templates.some((template) => !allowed.has(template))) {
 		throw new Error("The generated artefact contains an unsupported block");
 	}
-	const blocks = generation.blocks.map(normaliseBlock).filter((block) => {
+	const keep = (block: ContentBlock) => {
 		if (block.template === "task-list") return block.data.tasks.length > 0;
 		if (block.template === "next-steps")
 			return block.data.actions.length > 0;
@@ -755,10 +789,23 @@ export function toDocument(generation: Generation): ArtefactDocument {
 		if (block.template === "delivery-progress")
 			return block.data.completed + block.data.inProgress + block.data.blocked + block.data.notStarted > 0;
 		return true;
+	};
+	// A two-column row that loses a side to an empty block falls back to the
+	// remaining block on its own.
+	const blocks = generation.blocks.flatMap((block): Block[] => {
+		if (block.template !== "two-column") {
+			const normalised = normaliseBlock(block);
+			return keep(normalised) ? [normalised] : [];
+		}
+		const children = block.children.map(normaliseBlock).filter(keep);
+		return children.length === 2 ? [{ ...block, children }] : children;
 	});
 	if (blocks.length === 0)
 		throw new Error("The generated artefact is incomplete");
-	for (const block of blocks) {
+	const contentBlocks = blocks.flatMap((block) =>
+		block.template === "two-column" ? block.children : [block],
+	);
+	for (const block of contentBlocks) {
 		if (block.template === "metric-row" && block.data.items.length < 2)
 			throw new Error("Metric rows need at least two items");
 		if (
@@ -805,7 +852,14 @@ export function toDocument(generation: Generation): ArtefactDocument {
 	const nodes: ArtefactNode[] = blocks.map((block, index) => ({
 		id: `block-${index + 1}`,
 		template: block.template,
-		data: block.data,
+		data: block.template === "two-column" ? {} : block.data,
+		...(block.template === "two-column" && {
+			children: block.children.map((child, column) => ({
+				id: `block-${index + 1}-${column + 1}`,
+				template: child.template,
+				data: child.data,
+			})),
+		}),
 	}));
 	return {
 		version: 1,

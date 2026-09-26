@@ -125,6 +125,7 @@ DeveloperPage.children = {
 		"evidence-table",
 		"activity-trend",
 		"handoff-brief",
+		"two-column",
 	],
 } satisfies TemplateSelectionInfo["children"];
 
@@ -147,5 +148,6 @@ GenericPage.children = {
 		"evidence-table",
 		"activity-trend",
 		"handoff-brief",
+		"two-column",
 	],
 } satisfies TemplateSelectionInfo["children"];

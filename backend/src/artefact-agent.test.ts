@@ -155,6 +155,38 @@ assert.throws(() =>
 	blocksOf([{ template: "work-item-board", data: { title: "Board", description: "Work", columns: [] } }], "generic-page"),
 );
 
+const trend = {
+	template: "activity-trend",
+	data: {
+		title: "Deploys",
+		description: "Daily deploys",
+		unit: "deploys",
+		chart: "bar",
+		series: [{ label: "Deploys", points: [{ at: "2026-09-25", value: 3 }, { at: "2026-09-26", value: 5 }] }],
+		annotation: null,
+	},
+};
+const checks = (items: unknown[]) => ({ template: "check-list", data: { title: "Checks", checks: items } });
+const passed = { name: "Unit tests", url: null, status: "passed", detail: "412 tests" };
+const row = blocksOf([{ template: "two-column", children: [trend, checks([passed])] }])[0];
+assert.equal(row?.template, "two-column");
+assert.deepEqual(row?.children?.map((child) => [child.id, child.template]), [
+	["block-1-1", "activity-trend"],
+	["block-1-2", "check-list"],
+]);
+// A side that comes back empty leaves its partner as an ordinary block.
+assert.deepEqual(
+	blocksOf([{ template: "two-column", children: [trend, checks([])] }]).map((node) => node.template),
+	["activity-trend"],
+);
+assert.equal(
+	blocksOf([{ template: "two-column", children: [trend, trend] }], "generic-page")[0]?.template,
+	"two-column",
+);
+assert.throws(() =>
+	blocksOf([{ template: "two-column", children: [trend, checks([passed])] }], "generic-page"),
+);
+
 const originalFetch = globalThis.fetch;
 let requestBody: Record<string, unknown> | undefined;
 const output = JSON.stringify({
