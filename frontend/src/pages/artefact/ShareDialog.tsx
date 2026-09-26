@@ -1,13 +1,72 @@
-import { Button, Modal } from "@heroui/react";
-import { Check, Copy, Globe2, Trash2, UsersRound, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+	Button,
+	Form,
+	Input,
+	Label,
+	ListBox,
+	Modal,
+	Paragraph,
+	Select,
+	Separator,
+	Switch,
+	TextField,
+} from "@heroui/react";
+import { Building2, Check, Globe2, Link2, Trash2, X } from "lucide-react";
+import { type FormEvent, useEffect, useState } from "react";
+import { UserAvatar } from "../../components/UserAvatar";
 import type { Organisation } from "../Organisations";
 
 type Permission = "view" | "comment" | "edit";
 type Grant = { organisationId: string; name: string; permission: Permission };
+type Person = {
+	userId: string;
+	name: string | null;
+	email: string;
+	image: string | null;
+	permission: Permission;
+};
+
+const permissionLabels: Record<Permission, string> = {
+	view: "Can view",
+	comment: "Can comment",
+	edit: "Can edit",
+};
 
 const request = (path: string, init?: RequestInit) =>
 	fetch(`/api${path}`, { credentials: "include", headers: { "Content-Type": "application/json" }, ...init });
+
+function PermissionSelect({
+	value,
+	onChange,
+	label,
+}: {
+	value: Permission;
+	onChange: (permission: Permission) => void;
+	label: string;
+}) {
+	return (
+		<Select
+			aria-label={label}
+			className="w-36 shrink-0"
+			value={value}
+			onChange={(key) => onChange(key as Permission)}
+		>
+			<Select.Trigger>
+				<Select.Value />
+				<Select.Indicator />
+			</Select.Trigger>
+			<Select.Popover>
+				<ListBox>
+					{(Object.keys(permissionLabels) as Permission[]).map((permission) => (
+						<ListBox.Item key={permission} id={permission} textValue={permissionLabels[permission]}>
+							{permissionLabels[permission]}
+						</ListBox.Item>
+					))}
+				</ListBox>
+			</Select.Popover>
+		</Select>
+	);
+}
 
 export function ShareDialog({ artefactId, isShared, onSharingChange, onClose }: {
 	artefactId: string;
@@ -17,74 +76,232 @@ export function ShareDialog({ artefactId, isShared, onSharingChange, onClose }: 
 }) {
 	const [organisations, setOrganisations] = useState<Organisation[]>([]);
 	const [grants, setGrants] = useState<Grant[]>([]);
-	const [organisationId, setOrganisationId] = useState("");
-	const [permission, setPermission] = useState<Permission>("view");
+	const [people, setPeople] = useState<Person[]>([]);
+	const [email, setEmail] = useState("");
+	const [invitePermission, setInvitePermission] = useState<Permission>("view");
+	const [isInviting, setInviting] = useState(false);
 	const [error, setError] = useState("");
 	const [copied, setCopied] = useState(false);
+	const link = `${window.location.origin}/artefacts/shared/${artefactId}`;
 
 	useEffect(() => {
-		Promise.all([request("/organisations"), request(`/artefacts/${artefactId}/organisations`)])
-			.then(async ([organisationResponse, grantResponse]) => {
-				if (!organisationResponse.ok || !grantResponse.ok) throw new Error();
+		Promise.all([
+			request("/organisations"),
+			request(`/artefacts/${artefactId}/organisations`),
+			request(`/artefacts/${artefactId}/people`),
+		])
+			.then(async ([organisationResponse, grantResponse, peopleResponse]) => {
+				if (!organisationResponse.ok || !grantResponse.ok || !peopleResponse.ok) throw new Error();
 				setOrganisations((await organisationResponse.json() as Organisation[]).filter((organisation) => organisation.role !== "member"));
 				setGrants(await grantResponse.json() as Grant[]);
+				setPeople(await peopleResponse.json() as Person[]);
 			})
 			.catch(() => setError("Could not load sharing options."));
 	}, [artefactId]);
 
-	async function shareWithEveryone() {
-		const response = await request(`/artefacts/${artefactId}/share`, { method: "POST" });
-		if (!response.ok) return setError("Could not share this artefact.");
-		onSharingChange(true);
-		try {
-			await navigator.clipboard.writeText(`${window.location.origin}/artefacts/shared/${artefactId}`);
-			setCopied(true);
-		} catch {
-			setError("The artefact is shared, but its link could not be copied.");
-		}
+	async function invite(event: FormEvent) {
+		event.preventDefault();
+		if (!email.trim() || isInviting) return;
+		setInviting(true);
+		setError("");
+		const response = await request(`/artefacts/${artefactId}/people`, {
+			method: "PUT",
+			body: JSON.stringify({ email, permission: invitePermission }),
+		});
+		setInviting(false);
+		const body = await response.json().catch(() => ({})) as Person & { error?: string };
+		if (!response.ok) return setError(body.error ?? "Could not share with that person.");
+		setPeople((current) => [...current.filter((person) => person.userId !== body.userId), body]);
+		setEmail("");
 	}
 
-	async function makePrivate() {
-		const response = await request(`/artefacts/${artefactId}/share`, { method: "DELETE" });
-		if (!response.ok) return setError("Could not make this artefact private.");
-		setGrants([]);
-		setCopied(false);
-		onSharingChange(false);
+	async function changePerson(person: Person, permission: Permission) {
+		const response = await request(`/artefacts/${artefactId}/people`, {
+			method: "PUT",
+			body: JSON.stringify({ email: person.email, permission }),
+		});
+		if (!response.ok) return setError("Could not change their access.");
+		setPeople((current) => current.map((item) => item.userId === person.userId ? { ...item, permission } : item));
 	}
 
-	async function saveGrant() {
-		if (!organisationId) return;
-		const response = await request(`/artefacts/${artefactId}/organisations/${organisationId}`, {
+	async function removePerson(userId: string) {
+		const response = await request(`/artefacts/${artefactId}/people/${userId}`, { method: "DELETE" });
+		if (!response.ok) return setError("Could not remove their access.");
+		setPeople((current) => current.filter((person) => person.userId !== userId));
+	}
+
+	async function saveGrant(id: string, permission: Permission) {
+		const response = await request(`/artefacts/${artefactId}/organisations/${id}`, {
 			method: "PUT", body: JSON.stringify({ permission }),
 		});
 		if (!response.ok) return setError("Could not update organisation access.");
-		const organisation = organisations.find((item) => item.id === organisationId);
-		if (!organisation) return;
-		setGrants((current) => [...current.filter((grant) => grant.organisationId !== organisationId), { organisationId, name: organisation.name, permission }]);
-		setOrganisationId("");
+		const organisation = organisations.find((item) => item.id === id);
+		const name = organisation?.name ?? grants.find((grant) => grant.organisationId === id)?.name ?? "";
+		setGrants((current) => [...current.filter((grant) => grant.organisationId !== id), { organisationId: id, name, permission }]);
 	}
 
-	async function removeGrant(organisationId: string) {
-		const response = await request(`/artefacts/${artefactId}/organisations/${organisationId}`, { method: "DELETE" });
+	async function removeGrant(id: string) {
+		const response = await request(`/artefacts/${artefactId}/organisations/${id}`, { method: "DELETE" });
 		if (!response.ok) return setError("Could not revoke organisation access.");
-		setGrants((current) => current.filter((grant) => grant.organisationId !== organisationId));
+		setGrants((current) => current.filter((grant) => grant.organisationId !== id));
 	}
 
-	const sharingStatus = isShared ? "Public" : grants.length ? "Shared with org" : "Private";
+	async function setLinkSharing(on: boolean) {
+		const response = await request(`/artefacts/${artefactId}/share${on ? "" : "?scope=link"}`, { method: on ? "POST" : "DELETE" });
+		if (!response.ok) return setError(on ? "Could not turn on link sharing." : "Could not turn off link sharing.");
+		onSharingChange(on);
+	}
+
+	async function stopSharing() {
+		const response = await request(`/artefacts/${artefactId}/share`, { method: "DELETE" });
+		if (!response.ok) return setError("Could not make this artefact private.");
+		setGrants([]);
+		setPeople([]);
+		onSharingChange(false);
+	}
+
+	async function copyLink() {
+		try {
+			await navigator.clipboard.writeText(link);
+			setCopied(true);
+		} catch {
+			setError("Could not copy the link.");
+		}
+	}
+
+	const unsharedOrganisations = organisations.filter(
+		(organisation) => !grants.some((grant) => grant.organisationId === organisation.id),
+	);
+	const isPrivate = !isShared && people.length === 0 && grants.length === 0;
 
 	return (
 		<Modal>
 			<Modal.Backdrop isOpen onOpenChange={(open) => !open && onClose()} variant="blur">
 				<Modal.Container placement="center" scroll="inside" size="md">
 					<Modal.Dialog aria-label="Share artefact" className="rounded-2xl p-0">
-						<Modal.Header className="flex-row items-start gap-4 border-b border-border px-6 py-5"><div className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground"><UsersRound size={20} /></div><div className="flex-1"><Modal.Heading>Share artefact</Modal.Heading><p className="mt-1 text-sm text-muted">Choose who can access this work.</p></div><Button aria-label="Close share dialog" variant="ghost" className="size-8 min-w-8 p-0" onPress={onClose}><X size={18} /></Button></Modal.Header>
+						<Modal.Header className="flex-row items-center gap-4 border-b border-border px-6 py-4">
+							<Modal.Heading className="flex-1">Share</Modal.Heading>
+							<Button aria-label="Close share dialog" variant="ghost" className="size-8 min-w-8 p-0" onPress={onClose}>
+								<X size={18} />
+							</Button>
+						</Modal.Header>
 						<Modal.Body className="m-0 space-y-5 p-6">
-							<section className="flex items-center gap-3 rounded-xl border border-border p-4"><div className="min-w-0 flex-1"><p className="text-sm text-muted">Current sharing</p><p className="font-medium">{sharingStatus}</p></div>{sharingStatus !== "Private" && <Button size="sm" variant="ghost" className="text-danger" onPress={() => void makePrivate()}>Make private</Button>}</section>
-							<section className="rounded-xl border border-border p-4"><div className="flex items-center gap-3"><Globe2 size={18} /><div className="min-w-0 flex-1"><p className="font-medium">Anyone with the link</p><p className="text-sm text-muted">Anyone can view; they cannot comment or edit.</p></div><Button size="sm" variant={isShared ? "secondary" : "primary"} onPress={() => void shareWithEveryone()}>{copied ? <><Check size={15} /> Link copied</> : isShared ? <><Copy size={15} /> Copy link</> : "Share to all"}</Button></div></section>
-							<section className="rounded-xl border border-border p-4"><p className="font-medium">Organisation</p><p className="mt-1 text-sm text-muted">Choose the access level for one organisation.</p><div className="mt-3 flex flex-wrap gap-2"><select aria-label="Organisation" value={organisationId} onChange={(event) => setOrganisationId(event.target.value)} className="min-w-40 flex-1 rounded-md border border-border bg-surface px-3 py-2 text-sm"><option value="">Select an organisation</option>{organisations.map((organisation) => <option key={organisation.id} value={organisation.id}>{organisation.name}</option>)}</select><select aria-label="Permission" value={permission} onChange={(event) => setPermission(event.target.value as Permission)} className="rounded-md border border-border bg-surface px-3 py-2 text-sm"><option value="view">Can view</option><option value="comment">Can comment</option><option value="edit">Can edit</option></select><Button isDisabled={!organisationId} onPress={() => void saveGrant()}>Share</Button></div></section>
-							{grants.length > 0 && <section><p className="mb-2 text-sm font-medium">Organisation access</p><div className="space-y-2">{grants.map((grant) => <div key={grant.organisationId} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"><span className="min-w-0 flex-1 truncate text-sm">{grant.name}</span><span className="text-xs capitalize text-muted">Can {grant.permission}</span><Button aria-label={`Remove ${grant.name}`} size="sm" variant="ghost" className="size-7 min-w-7 p-0 text-danger" onPress={() => void removeGrant(grant.organisationId)}><Trash2 size={14} /></Button></div>)}</div></section>}
+							<Form onSubmit={invite} className="flex items-end gap-2">
+								<TextField
+									type="email"
+									value={email}
+									onChange={setEmail}
+									className="flex min-w-0 flex-1 flex-col gap-1.5"
+								>
+									<Label>Invite people</Label>
+									<Input fullWidth placeholder="Email of a Klee account" />
+								</TextField>
+								<PermissionSelect label="Access for invited person" value={invitePermission} onChange={setInvitePermission} />
+								<Button type="submit" isPending={isInviting} isDisabled={!email.trim()}>
+									Invite
+								</Button>
+							</Form>
+
+							<section aria-label="People with access" className="space-y-1">
+								{people.map((person) => (
+									<div key={person.userId} className="flex items-center gap-3 py-1.5">
+										<UserAvatar image={person.image} name={person.name || person.email} size="sm" />
+										<div className="min-w-0 flex-1">
+											<p className="truncate text-sm font-medium">{person.name || person.email}</p>
+											{person.name && <p className="truncate text-xs text-muted">{person.email}</p>}
+										</div>
+										<PermissionSelect
+											label={`Access for ${person.name || person.email}`}
+											value={person.permission}
+											onChange={(permission) => void changePerson(person, permission)}
+										/>
+										<Button aria-label={`Remove ${person.name || person.email}`} variant="ghost" className="size-8 min-w-8 p-0 text-danger" onPress={() => void removePerson(person.userId)}>
+											<Trash2 size={14} />
+										</Button>
+									</div>
+								))}
+								{grants.map((grant) => (
+									<div key={grant.organisationId} className="flex items-center gap-3 py-1.5">
+										<span className="grid size-8 place-items-center rounded-full bg-surface-secondary">
+											<Building2 size={15} />
+										</span>
+										<div className="min-w-0 flex-1">
+											<p className="truncate text-sm font-medium">{grant.name}</p>
+											<p className="text-xs text-muted">Organisation</p>
+										</div>
+										<PermissionSelect
+											label={`Access for ${grant.name}`}
+											value={grant.permission}
+											onChange={(permission) => void saveGrant(grant.organisationId, permission)}
+										/>
+										<Button aria-label={`Remove ${grant.name}`} variant="ghost" className="size-8 min-w-8 p-0 text-danger" onPress={() => void removeGrant(grant.organisationId)}>
+											<Trash2 size={14} />
+										</Button>
+									</div>
+								))}
+								{people.length === 0 && grants.length === 0 && (
+									<Paragraph size="sm" color="muted">Only you can see this artefact.</Paragraph>
+								)}
+							</section>
+
+							{unsharedOrganisations.length > 0 && (
+								<Select
+									aria-label="Share with an organisation"
+									placeholder="Share with an organisation…"
+									// Picking one grants view access; the row above then changes it.
+									value={null}
+									onChange={(key) => {
+										if (key) void saveGrant(String(key), "view");
+									}}
+								>
+									<Select.Trigger>
+										<Select.Value />
+										<Select.Indicator />
+									</Select.Trigger>
+									<Select.Popover>
+										<ListBox>
+											{unsharedOrganisations.map((organisation) => (
+												<ListBox.Item key={organisation.id} id={organisation.id} textValue={organisation.name}>
+													{organisation.name}
+												</ListBox.Item>
+											))}
+										</ListBox>
+									</Select.Popover>
+								</Select>
+							)}
+
+							<Separator />
+
+							<div className="flex items-center gap-3">
+								<Globe2 size={18} className="shrink-0 text-muted" />
+								<div className="min-w-0 flex-1">
+									<p className="text-sm font-medium">Anyone with the link</p>
+									<p className="text-xs text-muted">
+										{isShared ? "Anyone can view. Only invited people can comment or edit." : "Off. Only the people above can open the link."}
+									</p>
+								</div>
+								<Switch aria-label="Anyone with the link can view" isSelected={isShared} onChange={(on) => void setLinkSharing(on)}>
+									<Switch.Control>
+										<Switch.Thumb />
+									</Switch.Control>
+								</Switch>
+							</div>
+
 							{error && <p role="alert" className="text-sm text-danger">{error}</p>}
 						</Modal.Body>
+						<Modal.Footer className="flex-row items-center justify-between gap-2 border-t border-border px-6 py-4">
+							{isPrivate ? (
+								<span />
+							) : (
+								<Button variant="ghost" size="sm" className="text-danger" onPress={() => void stopSharing()}>
+									Stop sharing
+								</Button>
+							)}
+							<Button variant="secondary" onPress={() => void copyLink()}>
+								{copied ? <Check size={15} /> : <Link2 size={15} />}
+								{copied ? "Link copied" : "Copy link"}
+							</Button>
+						</Modal.Footer>
 					</Modal.Dialog>
 				</Modal.Container>
 			</Modal.Backdrop>

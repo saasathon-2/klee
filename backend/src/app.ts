@@ -1015,8 +1015,14 @@ app.delete("/api/artefacts/:id/share", async (req, res) => {
 			"update artefact set is_shared = false where id = $1",
 			[req.params.id],
 		);
+		// `?scope=link` only turns off the public link and keeps invited people.
+		if (req.query.scope === "link") return;
 		await client.query(
 			"delete from artefact_organisation_permission where artefact_id = $1",
+			[req.params.id],
+		);
+		await client.query(
+			"delete from artefact_user_permission where artefact_id = $1",
 			[req.params.id],
 		);
 	});
@@ -1388,6 +1394,53 @@ app.delete("/api/artefacts/:id/organisations/:organisationId", async (req, res) 
 	const { rowCount } = await pool.query(
 		"delete from artefact_organisation_permission where artefact_id = $1 and organisation_id = $2",
 		[req.params.id, req.params.organisationId],
+	);
+	if (!rowCount) return res.sendStatus(404);
+	res.sendStatus(204);
+});
+
+app.get("/api/artefacts/:id/people", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user || !(await ownedArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	const { rows } = await pool.query(
+		`select person.id as "userId", person.name, person.email, person.image, user_grant.permission
+		from artefact_user_permission user_grant
+		join "user" person on person.id = user_grant.user_id
+		where user_grant.artefact_id = $1 order by user_grant.created_at`,
+		[req.params.id],
+	);
+	res.json(rows);
+});
+
+/** Shares with one Klee account, found by its email. */
+app.put("/api/artefacts/:id/people", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user || !(await ownedArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	const permission = req.body?.permission;
+	const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+	if (!organisationPermissions.includes(permission)) return res.status(400).json({ error: "Choose view, comment, or edit access." });
+	if (!email) return res.status(400).json({ error: "Enter an email address." });
+	const people = await pool.query(
+		'select id as "userId", name, email, image from "user" where lower(email) = $1',
+		[email],
+	);
+	const person = people.rows[0];
+	if (!person) return res.status(404).json({ error: "No Klee account uses that email." });
+	if (person.userId === user.id) return res.status(400).json({ error: "You already own this artefact." });
+	await pool.query(
+		`insert into artefact_user_permission (artefact_id, user_id, permission) values ($1, $2, $3)
+		on conflict (artefact_id, user_id) do update set permission = excluded.permission`,
+		[req.params.id, person.userId, permission],
+	);
+	res.json({ ...person, permission });
+});
+
+app.delete("/api/artefacts/:id/people/:userId", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user || !(await ownedArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	const { rowCount } = await pool.query(
+		"delete from artefact_user_permission where artefact_id = $1 and user_id = $2",
+		[req.params.id, req.params.userId],
 	);
 	if (!rowCount) return res.sendStatus(404);
 	res.sendStatus(204);
