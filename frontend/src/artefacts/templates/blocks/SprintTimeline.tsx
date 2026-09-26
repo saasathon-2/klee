@@ -123,12 +123,14 @@ export function SprintTimeline({ node, context }: TemplateProps) {
 						>
 							<div className="flex min-w-0 items-center gap-2">
 								<span className="min-w-0 flex-1 truncate text-sm font-medium">
-									<ExternalLink href={item.url}>
+									<ExternalLink href={context.isEditing ? null : item.url}>
 										{text(["items", index, "title"], item.title, "Work item title")}
 									</ExternalLink>
 								</span>
 								{item.estimate && (
-									<span className="shrink-0 text-xs text-muted">{item.estimate}</span>
+									<span className="shrink-0 text-xs text-muted">
+										{text(["items", index, "estimate"], item.estimate, "Estimate")}
+									</span>
 								)}
 								<Chip size="sm" color={status.color} className="shrink-0">
 									{status.label}

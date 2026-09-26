@@ -62,7 +62,11 @@ export function WorkItemBoard({ node, context }: TemplateProps) {
 										</Paragraph>
 										{(item.owner || item.meta) && (
 											<Paragraph size="xs" color="muted" className="truncate">
-												{[item.owner, item.meta].filter(Boolean).join(" · ")}
+												{item.owner &&
+													text(["columns", columnIndex, "items", index, "owner"], item.owner, "Owner")}
+												{item.owner && item.meta && " · "}
+												{item.meta &&
+													text(["columns", columnIndex, "items", index, "meta"], item.meta, "Item detail")}
 											</Paragraph>
 										)}
 									</Card>

@@ -68,7 +68,7 @@ export function DeliveryReadiness({ node, context }: TemplateProps) {
 									<li key={index} className="flex items-start gap-2 text-sm">
 										<CircleAlert size={16} className="mt-0.5 shrink-0 text-danger" aria-hidden />
 										<span className="min-w-0 flex-1">
-											<ExternalLink href={blocker.url}>
+											<ExternalLink href={context.isEditing ? null : blocker.url}>
 												{text(["blockers", index, "title"], blocker.title, "Blocker")}
 											</ExternalLink>
 											{blocker.owner && <span className="text-muted"> · {blocker.owner}</span>}
@@ -92,7 +92,9 @@ export function DeliveryReadiness({ node, context }: TemplateProps) {
 										<Icon size={16} className={`mt-0.5 shrink-0 ${status.tone}`} aria-label={status.label} />
 										<div className="min-w-0 flex-1">
 											<Paragraph size="sm" weight="medium">
-												<ExternalLink href={gate.url}>{gate.name}</ExternalLink>
+												<ExternalLink href={context.isEditing ? null : gate.url}>
+													{text(["gates", index, "name"], gate.name, "Gate name")}
+												</ExternalLink>
 											</Paragraph>
 											<Paragraph size="xs" color="muted">
 												{text(["gates", index, "detail"], gate.detail, "Gate detail")}

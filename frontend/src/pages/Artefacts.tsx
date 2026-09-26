@@ -678,11 +678,11 @@ export function Artefacts() {
 							<PanelLeftOpen size={19} />
 						)}
 					</Button>
-					<h1 className="text-2xl font-semibold tracking-tight">
-						{isProfile
-							? "Profile"
-							: `Good morning, ${user.name?.split(" ")[0] || "there"}`}
-					</h1>
+					{isProfile && (
+						<h1 className="text-2xl font-semibold tracking-tight">
+							Profile
+						</h1>
+					)}
 					<ThemeToggle className="ml-auto" />
 				</header>
 				{isProfile ? (
@@ -752,31 +752,10 @@ export function Artefacts() {
 						<div className="mx-auto w-full max-w-2xl">
 							<div className="mb-8 text-center">
 								<KleeLogo className="mx-auto mb-4 size-16" />
-								<h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-									Turn context into something useful.
-								</h2>
-								<p className="mx-auto mt-3 max-w-xl text-base leading-6 text-muted">
-									Ask for a shareable brief, technical
-									diagram, or decision-ready plan.
-								</p>
-								<Button
-									variant="ghost"
-									className="mt-5 h-auto max-w-full rounded-xl border border-border bg-surface px-4 py-3 text-left hover:bg-surface-secondary"
-									onPress={() => navigate("/integrations")}
-								>
-									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
-										<Plug size={16} />
-									</span>
-									<span>
-										<span className="block text-sm font-medium">
-											Connect your apps
-										</span>
-										<span className="block text-xs text-muted">
-											Bring in context from GitHub and
-											manage access in one place.
-										</span>
-									</span>
-								</Button>
+								<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+									Good morning,{" "}
+									{user.name?.split(" ")[0] || "there"}
+								</h1>
 							</div>
 							<form onSubmit={create} className="w-full">
 								<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
@@ -816,6 +795,26 @@ export function Artefacts() {
 									</Toolbar>
 								</Surface>
 							</form>
+							<div className="mt-5 flex justify-center">
+								<Button
+									variant="ghost"
+									className="h-auto max-w-full rounded-xl justify-center border border-border bg-surface px-4 py-3 hover:bg-surface-secondary"
+									onPress={() => navigate("/integrations")}
+								>
+									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
+										<Plug size={16} />
+									</span>
+									<span>
+										<span className="block text-sm font-medium">
+											Connect your apps
+										</span>
+										<span className="block text-xs text-muted">
+											Bring in context from GitHub and
+											manage access in one place.
+										</span>
+									</span>
+								</Button>
+							</div>
 							<div className="mt-4 flex flex-wrap justify-center gap-2">
 								{starterPrompts.map((template) => (
 									<Button

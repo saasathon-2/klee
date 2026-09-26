@@ -170,7 +170,7 @@ export function IncidentTimeline({ node, context }: TemplateProps) {
 								{index > 0 && <Separator />}
 								<div className="flex items-center gap-3 px-4 py-3">
 									<Paragraph size="sm" className="min-w-0 flex-1">
-										<ExternalLink href={item.url}>
+										<ExternalLink href={context.isEditing ? null : item.url}>
 											{text(["followUps", index, "title"], item.title, "Follow-up")}
 										</ExternalLink>
 									</Paragraph>

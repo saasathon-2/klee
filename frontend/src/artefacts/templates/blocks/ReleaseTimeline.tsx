@@ -41,10 +41,10 @@ export function ReleaseTimeline({ node, context }: TemplateProps) {
 	};
 	const text = editableFor(node, context);
 	const facts = [
-		{ label: "Release", value: release },
-		{ label: "Current stage", value: currentStage },
-		{ label: "Next gate", value: nextGate },
-	].filter((fact): fact is { label: string; value: string } => Boolean(fact.value));
+		{ key: "release", label: "Release", value: release },
+		{ key: "currentStage", label: "Current stage", value: currentStage },
+		{ key: "nextGate", label: "Next gate", value: nextGate },
+	].filter((fact): fact is { key: string; label: string; value: string } => Boolean(fact.value));
 
 	return (
 		<BlockSection title={title} edit={{ node, context }}>
@@ -53,7 +53,7 @@ export function ReleaseTimeline({ node, context }: TemplateProps) {
 					{facts.map((fact) => (
 						<div key={fact.label} className="rounded-xl bg-surface-secondary px-4 py-3">
 							<dt className="text-xs text-muted">{fact.label}</dt>
-							<dd className="mt-0.5 text-sm font-medium">{fact.value}</dd>
+							<dd className="mt-0.5 text-sm font-medium">{text([fact.key], fact.value, fact.label)}</dd>
 						</div>
 					))}
 				</dl>

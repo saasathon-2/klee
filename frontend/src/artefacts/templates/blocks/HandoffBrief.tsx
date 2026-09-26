@@ -1,5 +1,6 @@
 import { Avatar, Card, Chip, Paragraph } from "@heroui/react";
 import { ArrowRight, CircleCheck, CircleDot, Eye, ListTodo } from "lucide-react";
+import type { ReactNode } from "react";
 import type { LinkedItem } from "../../model";
 import { BlockSection } from "../page/BlockSection";
 import { ExternalLink } from "../page/ExternalLink";
@@ -13,7 +14,7 @@ const statuses = {
 	blocked: { label: "Blocked", color: "danger" },
 } as const;
 
-function Person({ name, role }: { name: string; role: string }) {
+function Person({ name, role, children }: { name: string; role: string; children: ReactNode }) {
 	return (
 		<div className="flex min-w-0 items-center gap-2">
 			<Avatar size="sm" className="shrink-0">
@@ -21,7 +22,7 @@ function Person({ name, role }: { name: string; role: string }) {
 			</Avatar>
 			<div className="min-w-0">
 				<Paragraph size="xs" color="muted">{role}</Paragraph>
-				<Paragraph size="sm" weight="medium" className="truncate">{name}</Paragraph>
+				<Paragraph size="sm" weight="medium" className="truncate">{children}</Paragraph>
 			</div>
 		</div>
 	);
@@ -50,7 +51,7 @@ export function HandoffBrief({ node, context }: TemplateProps) {
 	const item = (path: EditPath, entry: LinkedItem) => (
 		<>
 			<Paragraph size="sm" weight="medium">
-				<ExternalLink href={entry.url}>{text([...path, "title"], entry.title, "Item")}</ExternalLink>
+				<ExternalLink href={context.isEditing ? null : entry.url}>{text([...path, "title"], entry.title, "Item")}</ExternalLink>
 			</Paragraph>
 			{(entry.detail || entry.owner) && (
 				<Paragraph size="xs" color="muted">
@@ -65,9 +66,13 @@ export function HandoffBrief({ node, context }: TemplateProps) {
 	return (
 		<BlockSection title={data.title} edit={{ node, context }}>
 			<div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
-				<Person name={data.from} role="From" />
+				<Person name={data.from} role="From">
+					{text(["from"], data.from, "Handed over by")}
+				</Person>
 				<ArrowRight size={16} className="text-muted" aria-hidden />
-				<Person name={data.to ?? "Unassigned"} role="To" />
+				<Person name={data.to ?? "Unassigned"} role="To">
+					{data.to ? text(["to"], data.to, "Handed over to") : "Unassigned"}
+				</Person>
 				<Chip size="sm" color={status.color} className="sm:ml-auto">{status.label}</Chip>
 			</div>
 			<div className="grid gap-3 sm:grid-cols-2">

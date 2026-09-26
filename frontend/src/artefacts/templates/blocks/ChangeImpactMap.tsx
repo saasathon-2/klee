@@ -63,7 +63,7 @@ function ImpactNodeCard({ data }: NodeProps<XYFlowNode<ImpactNode, "impact">>) {
 
 const nodeTypes = { impact: ImpactNodeCard };
 
-export function ChangeImpactMap({ node }: TemplateProps) {
+export function ChangeImpactMap({ node, context }: TemplateProps) {
 	const { title, description, nodes, edges } = node.data as {
 		title: string;
 		description: string;
@@ -74,7 +74,7 @@ export function ChangeImpactMap({ node }: TemplateProps) {
 		.map((state) => ({ state, count: nodes.filter((item) => item.change === state).length }))
 		.filter(({ count }) => count > 0);
 	return (
-		<BlockSection title={title} description={description}>
+		<BlockSection title={title} description={description} edit={{ node, context }}>
 			<ul className="mb-3 flex flex-wrap gap-2" aria-label="Change summary">
 				{counts.map(({ state, count }) => (
 					<li key={state}>

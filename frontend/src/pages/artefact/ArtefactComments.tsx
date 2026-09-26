@@ -577,7 +577,7 @@ export function ArtefactComments({
 									<X size={15} />
 								</button>
 							</div>
-							<textarea
+							<TextArea
 								ref={draftInputRef}
 								aria-label="Write a comment"
 								rows={3}
@@ -585,7 +585,7 @@ export function ArtefactComments({
 								value={body}
 								onChange={(event) => setBody(event.target.value)}
 								placeholder="Write a comment…"
-								className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
+								className="w-full resize-none"
 							/>
 							{error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
 							<div className="mt-2 flex justify-end">

@@ -70,7 +70,7 @@ export function ServiceOwnership({ node, context }: TemplateProps) {
 								<div className="min-w-0 flex-1">
 									<div className="flex flex-wrap items-center gap-2">
 										<Paragraph size="sm" weight="medium">
-											<ExternalLink href={service.url}>
+											<ExternalLink href={context.isEditing ? null : service.url}>
 												{text(["services", index, "name"], service.name, "Service name")}
 											</ExternalLink>
 										</Paragraph>

@@ -20,6 +20,12 @@ export function EvidenceTable({ node, context }: TemplateProps) {
 		<BlockSection title={title} description={description} edit={{ node, context }}>
 			{context.isEditing ? (
 				<Card className="gap-0 p-0">
+					<div className="grid gap-1 px-4 py-3 sm:grid-cols-2">
+						{columns.map((column, index) => (
+							<Fragment key={index}>{text(["columns", index], column, "Column name")}</Fragment>
+						))}
+					</div>
+					<Separator />
 					{rows.map((row, rowIndex) => (
 						<Fragment key={rowIndex}>
 							{rowIndex > 0 && <Separator />}
