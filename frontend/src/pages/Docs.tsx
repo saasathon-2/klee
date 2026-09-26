@@ -161,7 +161,7 @@ export function Docs() {
 						]}
 					/>
 					<Paragraph>
-						Press Comments, then drag across text to add a comment. Press Esc or Comments to leave comment mode.
+						Press Comments, then drag across text to add a comment. Press Comments again to leave comment mode.
 					</Paragraph>
 				</DocsSection>
 
@@ -177,15 +177,24 @@ export function Docs() {
 							"Issues, read and write: the artefact link and its updates.",
 						]}
 					/>
-					<Paragraph>Add this workflow to create an artefact for each pull request:</Paragraph>
+					<Paragraph>
+						Add this job to your existing pull-request workflow. Replace the names in <code>needs</code> with every test, lint, and build job that should finish before Klee runs.
+					</Paragraph>
 					<pre className="overflow-x-auto rounded-xl border border-border bg-surface-secondary p-4 font-mono text-sm leading-6 text-foreground">
-						<code>{`on: pull_request
+						<code>{`name: Klee
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   id-token: write
 
 jobs:
   klee:
+    # Replace these with the CI jobs in this workflow.
+    needs: [test, lint, build]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: saasathon-2/integrations/github@main

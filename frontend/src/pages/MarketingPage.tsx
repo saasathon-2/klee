@@ -173,17 +173,24 @@ function ReviewPage() {
 				<Steps
 					items={[
 						"Connect GitHub from Integrations in your workspace.",
-						"Add the workflow below to a repository where the Klee app is installed.",
+						"Add the Klee job below to an existing pull-request workflow in a repository where the Klee app is installed.",
 						"Open a pull request. The page updates when CI finishes.",
 					]}
 				/>
-				<CodeBlock>{`on: pull_request
+			<CodeBlock>{`name: Klee
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   id-token: write
 
 jobs:
   klee:
+    # Replace these with the CI jobs in this workflow.
+    needs: [test, lint, build]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: saasathon-2/integrations/github@main

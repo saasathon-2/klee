@@ -196,36 +196,47 @@ function UnfiledGroup({
 	const dragAndDropHooks = useArtefactDragAndDrop(onUnfile);
 	return (
 		<div className="mt-3">
-			<Paragraph
-				size="xs"
-				color="muted"
-				weight="medium"
-				className="px-2 py-1.5"
-			>
-				{project ?? "Artefacts"}
-			</Paragraph>
-			<ListBox
-				aria-label={project ?? "Artefacts"}
-				className="rounded-xl transition-colors data-[drop-target]:bg-accent-soft data-[drop-target]:ring-2 data-[drop-target]:ring-accent-text"
-				selectedKeys={selectedId ? [selectedId] : []}
-				onAction={(key) => onOpen(String(key))}
-				dragAndDropHooks={dragAndDropHooks}
-			>
-				{artefacts.map((artefact) => (
-					<ArtefactListItem
-						key={artefact.id}
-						artefact={artefact}
-						onPreview={onPreview}
-						onMovePreview={onMovePreview}
-						onHidePreview={onHidePreview}
-					/>
-				))}
-			</ListBox>
-			{!artefacts.length && (
-				<Paragraph size="xs" color="muted" className="px-2 py-1.5">
-					No unfiled artefacts.
-				</Paragraph>
-			)}
+			<Disclosure defaultExpanded>
+				<Disclosure.Heading className="flex h-10 items-center rounded-xl hover:bg-default focus-within:bg-default">
+					<Disclosure.Trigger className="flex h-full w-full items-center gap-2 rounded-xl px-2 text-left">
+						<Paragraph
+							size="xs"
+							color="muted"
+							weight="medium"
+							className="min-w-0 flex-1 truncate"
+						>
+							{project ?? "Artefacts"}
+						</Paragraph>
+						<Disclosure.Indicator />
+					</Disclosure.Trigger>
+				</Disclosure.Heading>
+				<Disclosure.Content>
+					<Disclosure.Body>
+						<ListBox
+							aria-label={project ?? "Artefacts"}
+							className="rounded-xl transition-colors data-[drop-target]:bg-accent-soft data-[drop-target]:ring-2 data-[drop-target]:ring-accent-text"
+							selectedKeys={selectedId ? [selectedId] : []}
+							onAction={(key) => onOpen(String(key))}
+							dragAndDropHooks={dragAndDropHooks}
+						>
+							{artefacts.map((artefact) => (
+								<ArtefactListItem
+									key={artefact.id}
+									artefact={artefact}
+									onPreview={onPreview}
+									onMovePreview={onMovePreview}
+									onHidePreview={onHidePreview}
+								/>
+							))}
+						</ListBox>
+						{!artefacts.length && (
+							<Paragraph size="xs" color="muted" className="px-2 py-1.5">
+								No unfiled artefacts.
+							</Paragraph>
+						)}
+					</Disclosure.Body>
+				</Disclosure.Content>
+			</Disclosure>
 		</div>
 	);
 }
