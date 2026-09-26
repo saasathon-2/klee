@@ -1548,27 +1548,43 @@ function ArtefactModal({
 									<div className="pointer-events-auto relative mx-auto w-[70%] max-sm:w-full">
 										<form
 											onSubmit={onSubmit}
-											className={`flex w-full items-center gap-2 rounded-xl border-2 border-border bg-surface-tertiary p-1.5 pl-4 shadow-2xl ring-1 ring-foreground/10 transition-opacity duration-300 ${isRevising ? "opacity-0" : "opacity-100"}`}
+											className="flex w-full items-center gap-2 rounded-xl border-2 border-border bg-surface-tertiary p-1.5 pl-4 shadow-2xl ring-1 ring-foreground/10"
 										>
-											<Input
-												aria-label="Refine artefact"
-												variant="secondary"
-												className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
-												value={followUp}
-												disabled={
-													pastVersion !== undefined
-												}
-												onChange={(event) =>
-													setFollowUp(
-														event.target.value,
-													)
-												}
-												placeholder={
-													pastVersion
-														? "Return to the latest version to make changes"
-														: "Describe what to change"
-												}
-											/>
+											{isRevising ? (
+												<p
+													className="min-w-0 flex-1 truncate text-sm text-muted"
+													aria-label="AI commentary"
+													aria-live="polite"
+												>
+													{generationCommentary ? (
+														<GenerationCommentary
+															text={generationCommentary}
+														/>
+													) : (
+														<span
+															className={`transition-opacity duration-200 motion-reduce:transition-none ${isCommentaryStarting ? "opacity-0" : "opacity-100"}`}
+														>
+															<GenerationCommentary text="Refining artefact…" />
+														</span>
+													)}
+												</p>
+											) : (
+												<Input
+													aria-label="Refine artefact"
+													variant="secondary"
+													className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
+													value={followUp}
+													disabled={pastVersion !== undefined}
+													onChange={(event) =>
+														setFollowUp(event.target.value)
+													}
+													placeholder={
+														pastVersion
+															? "Return to the latest version to make changes"
+															: "Describe what to change"
+													}
+												/>
+											)}
 											<Button
 												aria-label={
 													isRevising
@@ -1590,27 +1606,6 @@ function ArtefactModal({
 												)}
 											</Button>
 										</form>
-										{isRevising && (
-											<p
-												className="absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap text-sm text-muted"
-												aria-label="AI commentary"
-												aria-live="off"
-											>
-												{generationCommentary ? (
-													<GenerationCommentary
-														text={
-															generationCommentary
-														}
-													/>
-												) : (
-													<span
-														className={`transition-opacity duration-200 motion-reduce:transition-none ${isCommentaryStarting ? "opacity-0" : "opacity-100"}`}
-													>
-														<GenerationCommentary text="Refining artefact…" />
-													</span>
-												)}
-											</p>
-										)}
 									</div>
 								</div>
 							)}
