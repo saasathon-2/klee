@@ -4,10 +4,12 @@ import type { Check } from "../../model";
 import { BlockSection } from "../page/BlockSection";
 import { checkStatuses } from "../page/checkStatus";
 import { editableFor } from "../page/editableFor";
+import { LiveIndicator, withLiveStatus } from "../page/liveStatus";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 export function CheckList({ node, context }: TemplateProps) {
-	const { title, checks } = node.data as { title: string; checks: Check[] };
+	const { title, checks: savedChecks } = node.data as { title: string; checks: Check[] };
+	const checks = savedChecks.map((check) => withLiveStatus(check, context));
 	const passed = checks.filter((check) => check.status === "passed").length;
 	const text = editableFor(node, context);
 	return (
@@ -48,10 +50,13 @@ export function CheckList({ node, context }: TemplateProps) {
 											{check.url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-accent-text" href={check.url} target="_blank" rel="noreferrer">{check.name}</a> : check.name}
 											</Table.Cell>
 											<Table.Cell>
-												<Chip size="sm" color={status.color}>
-													<Icon size={12} />
-													{status.label}
-												</Chip>
+												<span className="flex items-center gap-2">
+													<Chip size="sm" color={status.color}>
+														<Icon size={12} />
+														{status.label}
+													</Chip>
+													<LiveIndicator live={check.live} />
+												</span>
 											</Table.Cell>
 											<Table.Cell className="text-muted">
 												{check.detail}

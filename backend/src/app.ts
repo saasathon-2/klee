@@ -29,6 +29,7 @@ import {
 	validSnapshotToken,
 } from "./artefact-snapshot.ts";
 import { getArtefactPreview, putArtefactPreview } from "./r2.ts";
+import { liveCheckStatuses } from "./live-status.ts";
 import {
 	githubActionsClaims,
 	githubArtefactComment,
@@ -713,6 +714,38 @@ app.get("/api/artefacts/:id", async (req, res) => {
 		[req.params.id],
 	);
 	res.json({ ...artefact, revisions: revisions.rows });
+});
+
+/** Current GitHub status of the check runs an artefact links to, keyed by link. */
+async function artefactLiveStatus(artefactId: string) {
+	const { rows } = await pool.query(
+		`select artefact.content, coalesce(json_agg(json_build_object('installationId', installation.installation_id, 'accountLogin', installation.account_login))
+			filter (where installation.installation_id is not null), '[]') as installations
+		from artefact
+		left join github_installation installation
+			on installation.owner_id = artefact.owner_id or installation.installation_id = artefact.github_installation_id
+		where artefact.id = $1
+		group by artefact.id`,
+		[artefactId],
+	);
+	if (!rows[0]?.content) return {};
+	return liveCheckStatuses(rows[0].content, {
+		installations: rows[0].installations,
+		request: githubInstallationRequest,
+	});
+}
+
+app.get("/api/artefacts/:id/live-status", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	if (!(await accessibleArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	res.json(await artefactLiveStatus(req.params.id));
+});
+
+app.get("/api/shared/artefacts/:id/live-status", async (req, res) => {
+	const { rows } = await pool.query("select 1 from artefact where id = $1 and is_shared = true", [req.params.id]);
+	if (!rows[0]) return res.sendStatus(404);
+	res.json(await artefactLiveStatus(req.params.id));
 });
 
 async function sendArtefactPreview(artefactId: string, res: Response, cacheControl: string) {

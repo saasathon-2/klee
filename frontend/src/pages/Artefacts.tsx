@@ -47,6 +47,7 @@ import { signOut, useSession } from "../lib/auth-client";
 import { KleeIcon, KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
+import { useLiveStatus } from "../artefacts/templates/page/liveStatus";
 import {
 	fallbackDocument,
 	withEditedValue,
@@ -1590,12 +1591,20 @@ function ArtefactBody({
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
 }) {
+	const { data: session } = useSession();
 	const document =
 		override ??
 		artefact.content ??
 		fallbackDocument(artefact.prompt, artefactHeading(artefact));
+	// Past versions keep their saved statuses; only the latest is live.
+	const liveStatus = useLiveStatus(
+		artefact.id,
+		override ? undefined : artefact.content,
+		Boolean(session?.user),
+	);
 	return (
 		<ArtefactRenderer
+			liveStatus={liveStatus}
 			document={document}
 			createdAt={artefact.createdAt}
 			canInteract={canInteract && !isEditing}

@@ -34,6 +34,7 @@ export function ArtefactRenderer({
 	isEditing = false,
 	onAction,
 	onEdit,
+	liveStatus,
 	renderNode,
 }: {
 	document: ArtefactDocument;
@@ -49,6 +50,7 @@ export function ArtefactRenderer({
 	isEditing?: boolean;
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
+	liveStatus?: RenderContext["liveStatus"];
 	renderNode?: (node: ArtefactNode, rendered: ReactNode) => ReactNode;
 }) {
 	return (
@@ -64,6 +66,7 @@ export function ArtefactRenderer({
 				isEditing,
 				onAction,
 				onEdit,
+				liveStatus,
 			}}
 			renderNode={renderNode}
 		/>

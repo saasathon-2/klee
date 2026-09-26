@@ -5,6 +5,7 @@ import { BlockSection } from "../page/BlockSection";
 import { checkStatuses } from "../page/checkStatus";
 import { ExternalLink } from "../page/ExternalLink";
 import { editableFor } from "../page/editableFor";
+import { LiveIndicator, withLiveStatus } from "../page/liveStatus";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 const verdicts = {
@@ -26,7 +27,7 @@ function verdictFor(gates: ReadinessGate[], blockers: LinkedItem[]) {
 }
 
 export function DeliveryReadiness({ node, context }: TemplateProps) {
-	const { title, subject, summary, gates, signals, blockers } = node.data as {
+	const { title, subject, summary, gates: savedGates, signals, blockers } = node.data as {
 		title: string;
 		subject: string;
 		summary: string;
@@ -34,6 +35,7 @@ export function DeliveryReadiness({ node, context }: TemplateProps) {
 		signals: ReadinessSignal[];
 		blockers: LinkedItem[];
 	};
+	const gates = savedGates.map((gate) => withLiveStatus(gate, context));
 	const text = editableFor(node, context);
 	const verdict = verdictFor(gates, blockers);
 	const Verdict = verdict.icon;
@@ -100,6 +102,7 @@ export function DeliveryReadiness({ node, context }: TemplateProps) {
 												{text(["gates", index, "detail"], gate.detail, "Gate detail")}
 											</Paragraph>
 										</div>
+										<LiveIndicator live={gate.live} className="mt-2" />
 										<Chip size="sm" color={status.color} className="shrink-0">{status.label}</Chip>
 								</li>
 							);
