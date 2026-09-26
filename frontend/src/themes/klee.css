@@ -81,12 +81,15 @@
 	--brand: oklch(94.42% 0.1624 106.11);
 	--brand-foreground: oklch(24% 0.04 100);
 
-	/* Chart series: categorical identity, assigned in this fixed order and
-	 * never cycled. CVD-validated against --surface in each mode. */
+	/* Chart series, in fixed order (validated for colour-vision deficiency on
+	 * the light surface; slots 3-5 are under 3:1, so charts always carry
+	 * a legend, direct labels and a table view). */
 	--chart-1: #2a78d6;
 	--chart-2: #eb6834;
 	--chart-3: #1baf7a;
 	--chart-4: #eda100;
+	--chart-5: #e87ba4;
+	--chart-6: #008300;
 }
 
 /* 2. Semantic colours, dark mode ----------------------------------------- */
@@ -147,11 +150,13 @@
 	--brand: oklch(94.42% 0.1624 106.11);
 	--brand-foreground: oklch(20% 0.03 100);
 
-	/* Chart series */
+	/* Chart series, the same hues stepped for the dark surface */
 	--chart-1: #3987e5;
 	--chart-2: #d95926;
 	--chart-3: #199e70;
 	--chart-4: #c98500;
+	--chart-5: #d55181;
+	--chart-6: #008300;
 }
 
 /* 3. Mode-independent tokens --------------------------------------------- */
@@ -161,6 +166,14 @@
 	 * (xs 0.25x, sm 0.5x, md 0.75x, lg 1x, xl 1.5x, 2xl 2x, 3xl 3x, 4xl 4x),
 	 * so the whole app stays sharp-cornered. */
 	--radius: 0.125rem;
+
+	/* Risk levels, lowest to highest. A status scale, so it never stands in
+	 * for chart series and always ships with a text label. */
+	--risk-1: #0ca30c;
+	--risk-2: #8fbf1f;
+	--risk-3: #fab219;
+	--risk-4: #ec835a;
+	--risk-5: #d03b3b;
 	--field-radius: 0.25rem;
 
 	/*
@@ -224,6 +237,18 @@
 	--color-chart-2: var(--chart-2);
 	--color-chart-3: var(--chart-3);
 	--color-chart-4: var(--chart-4);
+
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+	--color-chart-6: var(--chart-6);
+	--color-risk-1: var(--risk-1);
+	--color-risk-2: var(--risk-2);
+	--color-risk-3: var(--risk-3);
+	--color-risk-4: var(--risk-4);
+	--color-risk-5: var(--risk-5);
 
 	--color-slack-canvas: var(--slack-canvas);
 	--color-slack-canvas-highlight: var(--slack-canvas-highlight);

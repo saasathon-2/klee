@@ -5,6 +5,8 @@ import { ChangeImpactMap } from "./blocks/ChangeImpactMap";
 import { CheckList } from "./blocks/CheckList";
 import { CodeDiff } from "./blocks/CodeDiff";
 import { CommitList } from "./blocks/CommitList";
+import { ComparisonTable } from "./blocks/ComparisonTable";
+import { CurveChart } from "./blocks/CurveChart";
 import { DecisionRecord } from "./blocks/DecisionRecord";
 import { DeliveryProgress } from "./blocks/DeliveryProgress";
 import { DeliveryReadiness } from "./blocks/DeliveryReadiness";
@@ -13,14 +15,21 @@ import { EvidenceTable } from "./blocks/EvidenceTable";
 import { GitGraph } from "./blocks/GitGraph";
 import { Glue } from "./blocks/Glue";
 import { HandoffBrief } from "./blocks/HandoffBrief";
+import { HazardRegister } from "./blocks/HazardRegister";
+import { HierarchyTree } from "./blocks/HierarchyTree";
 import { IncidentTimeline } from "./blocks/IncidentTimeline";
 import { MetricRow } from "./blocks/MetricRow";
 import { NextSteps } from "./blocks/NextSteps";
+import { Pinout } from "./blocks/Pinout";
 import { Prose } from "./blocks/Prose";
 import { ReleaseTimeline } from "./blocks/ReleaseTimeline";
 import { ReviewComments } from "./blocks/ReviewComments";
+import { RiskMatrix } from "./blocks/RiskMatrix";
 import { ServiceOwnership } from "./blocks/ServiceOwnership";
+import { SignOffGrid } from "./blocks/SignOffGrid";
 import { SoftwareDiagram } from "./blocks/SoftwareDiagram";
+import { SourceFigure } from "./blocks/SourceFigure";
+import { SpecTable } from "./blocks/SpecTable";
 import { SprintTimeline } from "./blocks/SprintTimeline";
 import { TaskList } from "./blocks/TaskList";
 import { TwoColumn } from "./blocks/TwoColumn";
@@ -78,6 +87,15 @@ export const templateDefinitions: Record<
 	"activity-trend": definition(ActivityTrend),
 	"handoff-brief": definition(HandoffBrief),
 	"two-column": definition(TwoColumn),
+	"risk-matrix": definition(RiskMatrix),
+	"hazard-register": definition(HazardRegister),
+	"hierarchy-tree": definition(HierarchyTree),
+	"sign-off-grid": definition(SignOffGrid),
+	"spec-table": definition(SpecTable),
+	pinout: definition(Pinout),
+	"curve-chart": definition(CurveChart),
+	"comparison-table": definition(ComparisonTable),
+	"source-figure": definition(SourceFigure),
 };
 
 function selectionInfo(definition: TemplateDefinition): TemplateSelectionInfo {

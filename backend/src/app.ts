@@ -22,13 +22,34 @@ import {
 	type PatchOp,
 	type VersionSource,
 } from "./artefact-versions.ts";
-import { ArtefactAgentError, generateArtefact } from "./artefact-agent.ts";
+import {
+	ArtefactAgentError,
+	generateArtefact,
+	type AgentFile,
+} from "./artefact-agent.ts";
+import {
+	AttachmentError,
+	cleanFilename,
+	figureKey,
+	inspectPdf,
+	maxAttachmentBytes,
+	maxAttachmentBytesPerArtefact,
+	maxAttachmentsPerArtefact,
+	parseCrop,
+	renderFigure,
+} from "./attachments.ts";
 import {
 	captureArtefactSnapshot,
 	snapshotUrl,
 	validSnapshotToken,
 } from "./artefact-snapshot.ts";
-import { getArtefactPreview, putArtefactPreview } from "./r2.ts";
+import {
+	deleteFile,
+	getArtefactPreview,
+	getFile,
+	putArtefactPreview,
+	putFile,
+} from "./r2.ts";
 import {
 	githubActionsClaims,
 	githubArtefactComment,
@@ -145,6 +166,7 @@ async function createGeneratedArtefact(
 		signal?: AbortSignal;
 		serviceTier?: "fast";
 		deferPreview?: boolean;
+		files?: AgentFile[];
 	} = {},
 	id?: string,
 	history: {
@@ -200,6 +222,11 @@ async function createGeneratedArtefact(
 			await client.query(
 				"insert into artefact (id, owner_id, share_id, is_shared, prompt, title, content, agent_session_id, github_installation_id) values ($1, $2, $1, $3, $4, $5, $6, $7, $8)",
 				values,
+			);
+		if (options.files?.length)
+			await client.query(
+				"update artefact_attachment set artefact_id = $1 where id = any($2) and owner_id = $3 and artefact_id is null",
+				[artefact.id, options.files.map((file) => file.id), ownerId],
 			);
 		await recordVersion(client, {
 			artefactId: artefact.id,
@@ -632,6 +659,211 @@ async function artefactPatches(artefactId: string) {
 	}[];
 }
 
+const attachmentKey = (ownerId: string, id: string) =>
+	`attachments/${ownerId}/${id}.pdf`;
+const unusedUploadAge = "1 day";
+
+type AttachmentRow = {
+	id: string;
+	filename: string;
+	pages: number;
+	sizeBytes: number;
+	storageKey: string;
+};
+
+const attachmentColumns = `id, filename, page_count as pages, size_bytes as "sizeBytes", storage_key as "storageKey"`;
+
+async function readAttachments(rows: AttachmentRow[]): Promise<AgentFile[]> {
+	return Promise.all(
+		rows.map(async (row) => {
+			const bytes = await getFile(row.storageKey);
+			if (!bytes)
+				throw new AttachmentError(
+					`${row.filename} is no longer available. Attach it again.`,
+				);
+			return { id: row.id, filename: row.filename, pages: row.pages, bytes };
+		}),
+	);
+}
+
+/** The user's not-yet-used uploads named in a request, in the order given. */
+async function requestedAttachments(ownerId: string, value: unknown) {
+	if (value === undefined || value === null) return [];
+	if (!Array.isArray(value) || value.some((id) => typeof id !== "string"))
+		throw new AttachmentError("attachmentIds must be a list of ids.");
+	const ids = [...new Set(value as string[])];
+	if (ids.length > maxAttachmentsPerArtefact)
+		throw new AttachmentError(
+			`Attach at most ${maxAttachmentsPerArtefact} PDFs.`,
+		);
+	if (!ids.length) return [];
+	const { rows } = await pool.query<AttachmentRow>(
+		`select ${attachmentColumns} from artefact_attachment
+        where owner_id = $1 and artefact_id is null and id = any($2)`,
+		[ownerId, ids],
+	);
+	const ordered = ids.map((id) => rows.find((row) => row.id === id));
+	if (ordered.some((row) => !row))
+		throw new AttachmentError(
+			"An attached PDF couldn't be found. Attach it again.",
+		);
+	const attached = ordered as AttachmentRow[];
+	const total = attached.reduce((sum, row) => sum + row.sizeBytes, 0);
+	if (total > maxAttachmentBytesPerArtefact)
+		throw new AttachmentError(
+			"The attached PDFs are too large together. Keep them under 30 MB in total.",
+		);
+	return readAttachments(attached);
+}
+
+/** The PDFs an artefact was generated from, in the order they were attached. */
+async function artefactAttachments(artefactId: string) {
+	const { rows } = await pool.query<AttachmentRow>(
+		`select ${attachmentColumns} from artefact_attachment
+        where artefact_id = $1 order by created_at, id`,
+		[artefactId],
+	);
+	return readAttachments(rows);
+}
+
+/** Deletes uploads the user never used in a generation. */
+async function removeUnusedUploads(ownerId: string) {
+	const { rows } = await pool.query<{ storageKey: string }>(
+		`delete from artefact_attachment
+        where owner_id = $1 and artefact_id is null and created_at < current_timestamp - interval '${unusedUploadAge}'
+        returning storage_key as "storageKey"`,
+		[ownerId],
+	);
+	await Promise.all(rows.map((row) => deleteFile(row.storageKey)));
+}
+
+/** Reads the attachment ids in a create request, answering 400 when they're unusable. */
+async function attachmentsOr400(ownerId: string, value: unknown, res: Response) {
+	try {
+		return await requestedAttachments(ownerId, value);
+	} catch (error) {
+		if (!(error instanceof AttachmentError)) throw error;
+		res.status(400).json({ error: error.message });
+	}
+}
+
+/** A request with only files still needs a prompt for the model and the record. */
+const promptOrDefault = (prompt: string, files: AgentFile[]) =>
+	prompt || (files.length ? "Turn the attached files into an artefact." : "");
+
+/** Signed-in users only; runs before the upload body is read. */
+async function requireUser(req: Request, res: Response, next: NextFunction) {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	res.locals.user = user;
+	next();
+}
+
+app.post(
+	"/api/uploads",
+	requireUser,
+	express.raw({ type: "application/pdf", limit: maxAttachmentBytes }),
+	async (req, res) => {
+		const user = res.locals.user as { id: string };
+		const bytes = Buffer.isBuffer(req.body) ? new Uint8Array(req.body) : undefined;
+		if (!bytes?.length)
+			return res
+				.status(400)
+				.json({ error: "Send the PDF as the request body." });
+		let filename: string;
+		try {
+			filename = cleanFilename(decodeURIComponent(req.get("X-Filename") ?? ""));
+		} catch {
+			filename = cleanFilename(undefined);
+		}
+		let pages: number;
+		try {
+			({ pages } = await inspectPdf(bytes));
+		} catch (error) {
+			if (!(error instanceof AttachmentError)) throw error;
+			return res.status(400).json({ error: error.message });
+		}
+		const id = randomUUID();
+		const storageKey = attachmentKey(user.id, id);
+		await putFile(storageKey, bytes, "application/pdf");
+		await pool.query(
+			`insert into artefact_attachment (id, owner_id, filename, content_type, size_bytes, page_count, storage_key)
+            values ($1, $2, $3, 'application/pdf', $4, $5, $6)`,
+			[id, user.id, filename, bytes.length, pages, storageKey],
+		);
+		void removeUnusedUploads(user.id).catch((error) =>
+			console.error("Unused upload cleanup failed", error),
+		);
+		res.status(201).json({ id, filename, sizeBytes: bytes.length, pages });
+	},
+);
+
+app.delete("/api/uploads/:id", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	const { rows } = await pool.query<{ storageKey: string }>(
+		`delete from artefact_attachment where id = $1 and owner_id = $2 and artefact_id is null
+        returning storage_key as "storageKey"`,
+		[req.params.id, user.id],
+	);
+	if (!rows[0]) return res.sendStatus(404);
+	await deleteFile(rows[0].storageKey);
+	res.sendStatus(204);
+});
+
+/** Figures are visible wherever the artefact is: preview token, shared link, or access. */
+async function canViewArtefact(req: Request, artefactId: string, token: string | undefined) {
+	if (validSnapshotToken(artefactId, token)) return true;
+	const shared = await pool.query(
+		"select 1 from artefact where id = $1 and is_shared = true",
+		[artefactId],
+	);
+	if (shared.rowCount) return true;
+	const session = await auth.api.getSession({
+		headers: fromNodeHeaders(req.headers),
+	});
+	return Boolean(
+		session?.user && (await accessibleArtefact(artefactId, session.user.id)),
+	);
+}
+
+/**
+ * A page, or a region of one, from a PDF the artefact was generated from.
+ * Rendered on first request and cached, so viewers get an image, never the PDF.
+ */
+app.get("/api/artefacts/:id/figures", async (req, res) => {
+	const attachmentId =
+		typeof req.query.attachment === "string" ? req.query.attachment : "";
+	const page = Number(req.query.page);
+	const crop = parseCrop(req.query.crop);
+	if (!attachmentId || !Number.isInteger(page) || page < 1)
+		return res.sendStatus(400);
+	const token =
+		typeof req.query.token === "string" ? req.query.token : undefined;
+	if (!(await canViewArtefact(req, req.params.id, token)))
+		return res.sendStatus(404);
+	const { rows } = await pool.query<{ pages: number; storageKey: string }>(
+		`select page_count as pages, storage_key as "storageKey" from artefact_attachment
+        where id = $1 and artefact_id = $2`,
+		[attachmentId, req.params.id],
+	);
+	const attachment = rows[0];
+	if (!attachment || page > attachment.pages) return res.sendStatus(404);
+	const key = figureKey(attachmentId, page, crop);
+	let image = await getFile(key);
+	if (!image) {
+		const pdf = await getFile(attachment.storageKey);
+		if (!pdf) return res.sendStatus(404);
+		image = await renderFigure(pdf, page, crop);
+		await putFile(key, image, "image/png");
+	}
+	res.set({
+		"Content-Type": "image/png",
+		"Cache-Control": "private, max-age=86400",
+	});
+	res.send(Buffer.from(image));
+});
+
 app.get("/api/artefacts", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
@@ -650,13 +882,18 @@ app.get("/api/artefacts", async (req, res) => {
 app.post("/api/artefacts", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
-	const prompt =
-		typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "";
+	const files = await attachmentsOr400(user.id, req.body?.attachmentIds, res);
+	if (!files) return;
+	const prompt = promptOrDefault(
+		typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "",
+		files,
+	);
 	if (!prompt) return res.status(400).json({ error: "prompt is required" });
 	let artefact;
 	try {
 		artefact = await createGeneratedArtefact(user.id, prompt, false, {
 			serviceTier: env.openAiServiceTier,
+			files,
 		});
 	} catch (error) {
 		if (!(error instanceof ArtefactAgentError)) throw error;
@@ -672,8 +909,12 @@ app.post("/api/artefacts", async (req, res) => {
 app.post("/api/artefacts/stream", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
-	const prompt =
-		typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "";
+	const files = await attachmentsOr400(user.id, req.body?.attachmentIds, res);
+	if (!files) return;
+	const prompt = promptOrDefault(
+		typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "",
+		files,
+	);
 	if (!prompt) return res.status(400).json({ error: "prompt is required" });
 
 	res.status(200).set({
@@ -695,6 +936,7 @@ app.post("/api/artefacts/stream", async (req, res) => {
 			onCommentary: (text) => send("commentary", { text }),
 			serviceTier: env.openAiServiceTier,
 			deferPreview: true,
+			files,
 		});
 		send("complete", { artefact });
 	} catch (error) {
@@ -1027,6 +1269,17 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
 	if (!content) return res.status(400).json({ error: "content is required" });
 	const artefact = await accessibleArtefact(req.params.id, user.id);
 	if (!artefact) return res.sendStatus(404);
+	// Load source PDFs before streaming, so a missing file can still answer 409.
+	let files: AgentFile[];
+	try {
+		files = await artefactAttachments(req.params.id);
+	} catch (error) {
+		if (!(error instanceof AttachmentError)) throw error;
+		return res.status(409).json({ error: error.message });
+	}
+	const figureNote = files.length
+		? " Source figures in the existing artefact name their file; cite that file's number from the attached file list."
+		: "";
 	res.status(200).set({
 		"Cache-Control": "no-cache",
 		Connection: "keep-alive",
@@ -1038,11 +1291,12 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
 	let generated;
 	try {
 		generated = await generateArtefact(
-			`Update the artefact below according to the requested change. Keep useful existing details unless the request replaces them.\n\nRequested change:\n${content}\n\nExisting artefact JSON:\n${JSON.stringify(artefact.content)}`,
+			`Update the artefact below according to the requested change. Keep useful existing details unless the request replaces them.${figureNote}\n\nRequested change:\n${content}\n\nExisting artefact JSON:\n${JSON.stringify(artefact.content)}`,
 			env.openAiApiKey,
 			env.openAiModel,
 			{
 				serviceTier: env.openAiServiceTier,
+				files,
 				onProgress: (message) => send("progress", { message }),
 				onCommentary: (text) => send("commentary", { text }),
 			},

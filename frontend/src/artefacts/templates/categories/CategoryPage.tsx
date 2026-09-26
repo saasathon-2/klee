@@ -3,6 +3,19 @@ import { EditableText } from "../page/EditableText";
 import { Scallop } from "../page/Scallop";
 import type { Template, TemplateProps, TemplateSelectionInfo } from "../types";
 
+/** Blocks for documents such as risk assessments and datasheets; any page allows them. */
+const documentBlocks = [
+	"risk-matrix",
+	"hazard-register",
+	"hierarchy-tree",
+	"sign-off-grid",
+	"spec-table",
+	"pinout",
+	"curve-chart",
+	"comparison-table",
+	"source-figure",
+] satisfies TemplateSelectionInfo["children"]["allowed"];
+
 const CategoryPage: Template = ({ node, children, context }) => {
 	const data = node.data as {
 		eyebrow: string;
@@ -126,6 +139,7 @@ DeveloperPage.children = {
 		"activity-trend",
 		"handoff-brief",
 		"two-column",
+		...documentBlocks,
 	],
 } satisfies TemplateSelectionInfo["children"];
 
@@ -149,5 +163,6 @@ GenericPage.children = {
 		"activity-trend",
 		"handoff-brief",
 		"two-column",
+		...documentBlocks,
 	],
 } satisfies TemplateSelectionInfo["children"];

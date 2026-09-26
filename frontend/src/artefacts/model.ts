@@ -181,6 +181,68 @@ export type DecisionOption = {
 export type EvidenceRow = { cells: string[]; url?: string | null };
 export type TrendPoint = { at: string; value: number };
 export type TrendSeries = { label: string; points: TrendPoint[] };
+/** One step of a risk axis, e.g. { value: 4, label: "Likely" }. */
+export type RiskLevel = { value: number; label: string };
+/** Scores from `min` to `max` inclusive; `level` 1 (lowest) to 5 picks the colour. */
+export type RiskBand = {
+	label: string;
+	min: number;
+	max: number;
+	level: number;
+	tolerance: string;
+};
+export type RiskHazard = {
+	id: string;
+	label: string;
+	likelihood: number;
+	impact: number;
+	residualLikelihood: number | null;
+	residualImpact: number | null;
+};
+export type RegisterHazard = {
+	id: string;
+	hazard: string;
+	likelihood: number;
+	impact: number;
+	controls: string;
+	owner: string | null;
+	residualLikelihood: number | null;
+	residualImpact: number | null;
+};
+export type TreeNode = {
+	id: string;
+	parentId: string | null;
+	label: string;
+	detail: string | null;
+};
+export type SignOffResponse = "yes" | "no" | "pending";
+export type SpecValue = {
+	min: number | null;
+	typ: number | null;
+	max: number | null;
+	note: string | null;
+};
+export type SpecRow = {
+	parameter: string;
+	conditions: string | null;
+	unit: string | null;
+	values: SpecValue[];
+};
+export type Pin = {
+	number: number;
+	name: string;
+	description: string;
+	side: "left" | "bottom" | "right" | "top";
+};
+export type PinPackage = { name: string; pins: Pin[] };
+export type ChartAxis = {
+	label: string;
+	unit: string | null;
+	scale: "linear" | "log";
+};
+export type ChartSeries = { name: string; points: { x: number; y: number }[] };
+/** Region of a page as fractions of its width and height, from the top left. */
+export type FigureCrop = { x: number; y: number; width: number; height: number };
 
 export type ArtefactNode = {
 	id: string;
@@ -213,7 +275,16 @@ export type ArtefactNode = {
 		| "evidence-table"
 		| "activity-trend"
 		| "handoff-brief"
-		| "two-column";
+		| "two-column"
+		| "risk-matrix"
+		| "hazard-register"
+		| "hierarchy-tree"
+		| "sign-off-grid"
+		| "spec-table"
+		| "pinout"
+		| "curve-chart"
+		| "comparison-table"
+		| "source-figure";
 	data: Record<string, unknown>;
 	children?: ArtefactNode[];
 };

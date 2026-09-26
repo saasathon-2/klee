@@ -15,9 +15,12 @@ export type ExamplePrompt = {
 		| "incident-review"
 		| "architecture-decision"
 		| "on-call-handoff"
-		| "two-column";
+		| "two-column"
+		| "electrical-god-prompt";
 	label: string;
 	prompt: string;
+	/** A PDF from `public/` attached alongside the prompt. */
+	attachment?: { url: string; filename: string };
 };
 
 export const developerExamplePrompts: ExamplePrompt[] = [
@@ -237,5 +240,12 @@ Failed deploys:
 2026-09-24 | auth-gateway 1.8.3 | 5xx spike in us-east | Rolled back
 2026-09-24 | billing-api 5.0.0 | Canary error budget | Halted
 2026-09-25 | key-store 2.4.1 | Disk pressure | Retried`,
+	},
+	{
+		id: "electrical-god-prompt",
+		label: "Electrical God Prompt",
+		prompt:
+			"Make a quick-reference artefact for the UC3843 from the attached datasheet: headline limits, key electrical specifications for both part grades, the pinout for every package, the oscillator and error amplifier curves, a comparison of the UC3842 to UC3845 variants, and the offline flyback application schematic.",
+		attachment: { url: "/examples/uc3843-datasheet.pdf", filename: "UC3843 datasheet.pdf" },
 	},
 ];

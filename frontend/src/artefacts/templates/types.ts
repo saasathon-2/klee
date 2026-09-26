@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ArtefactNode } from "../model";
+import type { ArtefactNode, FigureCrop } from "../model";
 
 export type TemplateName = ArtefactNode["template"];
 
@@ -13,6 +13,14 @@ export type RenderContext = {
 	isEditing: boolean;
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
+	/** URL of a figure cropped from one of the artefact's source PDFs. */
+	figureSrc?: (figure: FigureRequest) => string;
+};
+
+export type FigureRequest = {
+	attachmentId: string;
+	page: number;
+	crop: FigureCrop | null;
 };
 
 /** Path to a text field inside a node's `data`, e.g. ["tasks", 0, "title"]. */

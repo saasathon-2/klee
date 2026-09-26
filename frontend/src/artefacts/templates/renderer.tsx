@@ -34,6 +34,7 @@ export function ArtefactRenderer({
 	onAction,
 	onEdit,
 	renderNode,
+	figureSrc,
 }: {
 	document: ArtefactDocument;
 	createdAt: string;
@@ -47,6 +48,7 @@ export function ArtefactRenderer({
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
 	renderNode?: (node: ArtefactNode, rendered: ReactNode) => ReactNode;
+	figureSrc?: RenderContext["figureSrc"];
 }) {
 	return (
 		<RenderNode
@@ -60,6 +62,7 @@ export function ArtefactRenderer({
 				isEditing,
 				onAction,
 				onEdit,
+				figureSrc,
 			}}
 			renderNode={renderNode}
 		/>

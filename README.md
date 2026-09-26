@@ -36,6 +36,15 @@ This repository deploys as three Railway services:
 
 `PORT` is supplied by Railway. Do not set it manually. `CORS_ORIGIN` should be the exact web origin (no trailing slash). The API Dockerfile installs the Chromium runtime libraries needed for artefact screenshots.
 
+## PDF attachments
+
+Users can attach up to three PDFs (20 MB and 100 pages each, 30 MB together) to a prompt. The API sends them to the model with the request, so it reads both the text and the page images, and keeps them so revisions and source figures can use them again.
+
+- Files are stored in the R2 bucket used for previews (`R2_ENDPOINT`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`). Without R2, as in local development, they go to `backend/.data/`, which is git-ignored.
+- The API needs poppler (`pdfinfo` and `pdftoppm`) to check uploads and render figures. The API Dockerfile installs it; locally, install `poppler-utils` (or `poppler` on macOS and Arch).
+- Viewers never receive the PDF itself. `source-figure` blocks request a rendered, cached PNG of one page region, which is served to anyone who can see the artefact, including viewers of a shared link.
+- Uploads not used in a generation within a day are deleted the next time that user uploads.
+
 ## Migrations
 
 Create migrations with `pnpm --dir backend migrate:create -- <name>`. Migration files already present on `main` are immutable: never rename, edit, or delete them; add a new migration instead. Pull requests run a guard that enforces timestamp-style unique prefixes and rejects changes to existing migrations. Run it locally with `MIGRATIONS_BASE_REF=origin/main pnpm --dir backend migrations:check`.
