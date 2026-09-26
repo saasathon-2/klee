@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import hexagon from "../../assets/hexagon.svg";
 import { DiffLayoutContext } from "../../artefacts/templates/page/diffLayout";
 
 /** Landing-only scroll treatment for the sample code diff. */
@@ -51,7 +52,8 @@ export function LandingCodeDiffStory({ children }: { children: ReactNode }) {
 	return (
 		<div
 			ref={sectionRef}
-			className="h-[calc(300vh+6rem)] lg:-mx-72 lg:w-[calc(100%+36rem)]"
+			// Wider than the demo, so it passes the pointer through to the landing shapes beside it.
+			className="pointer-events-none h-[calc(300vh+6rem)] lg:-mx-72 lg:w-[calc(100%+36rem)]"
 		>
 			<div
 				ref={stageRef}
@@ -65,7 +67,7 @@ export function LandingCodeDiffStory({ children }: { children: ReactNode }) {
 				/>
 				{/* Split while the first note is up; unified once the notes swap. */}
 				<DiffLayoutContext value={step >= 2 ? "unified" : "split"}>
-					<div className="lg:col-start-2 lg:row-start-1">{children}</div>
+					<div className="pointer-events-auto lg:col-start-2 lg:row-start-1">{children}</div>
 				</DiffLayoutContext>
 				<StoryNote
 					placement="right"
@@ -95,10 +97,26 @@ function StoryNote({
 		>
 			<aside
 				aria-hidden={!visible}
-				className={`rounded-2xl border border-border bg-surface-secondary p-5 shadow-2xl transition-all duration-500 ease-out ${visible ? "translate-x-0 translate-y-0 opacity-100" : `pointer-events-none translate-y-3 opacity-0 ${placement === "left" ? "-translate-x-8" : "translate-x-8"}`}`}
+				className={`relative transition-all duration-500 ease-out ${visible ? "pointer-events-auto translate-x-0 translate-y-0 opacity-100" : `pointer-events-none translate-y-3 opacity-0 ${placement === "left" ? "-translate-x-8" : "translate-x-8"}`}`}
 			>
-				<p className="text-lg font-semibold leading-6">{title}</p>
-				<p className="mt-2 text-sm leading-6 text-muted">{body}</p>
+				{/* The note sits on a shape the size of the star at the top of the page: the red star on the left, the blue hexagon on the right. */}
+				{placement === "left" ? (
+					<div
+						aria-hidden
+						className="landing-note-star absolute top-1/2 left-1/2 w-[clamp(10rem,15vw,15rem)] -translate-x-1/2 -translate-y-1/2 -rotate-12 bg-[#fc6464]"
+					/>
+				) : (
+					<img
+						src={hexagon}
+						alt=""
+						draggable={false}
+						className="pointer-events-none absolute top-1/2 left-1/2 w-[clamp(10rem,15vw,15rem)] max-w-none -translate-x-1/2 -translate-y-1/2 rotate-6"
+					/>
+				)}
+				<div className="relative mx-auto max-w-[clamp(8rem,11.5vw,11.5rem)] text-center">
+					<p className="text-lg font-semibold leading-6 text-[#1e1e1e]">{title}</p>
+					<p className="mt-1.5 text-sm leading-5 text-[#1e1e1e]/85">{body}</p>
+				</div>
 			</aside>
 		</div>
 	);

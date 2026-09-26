@@ -83,6 +83,17 @@ body {
 	position: absolute;
 }
 
+/* The layer ignores the pointer, but each shape can be grabbed (useLiquidDrag). */
+.bauhaus-shapes > * {
+	pointer-events: auto;
+	cursor: grab;
+	user-select: none;
+}
+
+.bauhaus-shapes > [data-dragging] {
+	cursor: grabbing;
+}
+
 .bauhaus-shapes {
 	inset: 0;
 	z-index: 1;
@@ -99,7 +110,6 @@ body {
 	border-bottom: 0;
 	border-radius: 999px 999px 0 0;
 	transform: rotate(-12deg);
-	opacity: 0.9;
 }
 
 .bauhaus-bloom {
@@ -143,6 +153,18 @@ body {
 	box-shadow: -1rem 1rem 0 #f7ca3e;
 }
 
+/* The wavy star, recoloured by its background, behind the code diff notes. */
+.landing-note-star {
+	aspect-ratio: 1;
+	pointer-events: none;
+	-webkit-mask: url("./assets/star-2.png") center / contain no-repeat;
+	mask: url("./assets/star-2.png") center / contain no-repeat;
+}
+
+.bauhaus-drifter {
+	animation: bauhaus-float 8s ease-in-out infinite;
+}
+
 @keyframes bauhaus-bloom {
 	50% { transform: rotate(12deg) scale(1.06); }
 }
@@ -152,14 +174,15 @@ body {
 }
 
 @media (max-width: 640px) {
-	.bauhaus-arch { top: 0.75rem; left: -4.5rem; width: 14rem; opacity: 0.72; }
-	.bauhaus-bloom { right: -1rem; top: 4rem; opacity: 0.7; }
+	.bauhaus-arch { top: 0.75rem; left: -4.5rem; width: 14rem; }
+	.bauhaus-bloom { right: -1rem; top: 4rem; }
 	.bauhaus-star { right: -2rem; top: 24rem; width: 10rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.bauhaus-bloom,
-	.bauhaus-star { animation: none; }
+	.bauhaus-star,
+	.bauhaus-drifter { animation: none; }
 }
 
 /* Hero demo on the landing page: each artefact block rises in the first time
