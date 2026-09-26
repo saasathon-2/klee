@@ -2,7 +2,6 @@ import {
 	Alert,
 	AlertDialog,
 	Button,
-	Card,
 	Drawer,
 	Input,
 	Label,
@@ -30,7 +29,6 @@ import {
 	Plug,
 	Plus,
 	Share2,
-	UserRound,
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -39,7 +37,6 @@ import { useDrop } from "react-aria-components";
 import {
 	Navigate,
 	Link,
-	useLocation,
 	useNavigate,
 	useParams,
 	useSearchParams,
@@ -59,7 +56,6 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsModal } from "./Integrations";
 import { useMediaQuery } from "../lib/use-media-query";
 import { ArtefactSkeleton } from "./artefact/ArtefactSkeleton";
-import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 import { ArtefactIcon, ArtefactNav } from "./artefact/ArtefactNav";
 import { acceptArtefactDrop, droppedArtefactId } from "./artefact/artefactDrag";
 import { ProjectSelect } from "./artefact/ProjectSelect";
@@ -143,7 +139,6 @@ const api = (path: string, options?: RequestInit) =>
 
 export function Artefacts() {
 	const navigate = useNavigate();
-	const location = useLocation();
 	const { id: routeId, shareId } = useParams();
 	const [searchParams] = useSearchParams();
 	const id = routeId ?? searchParams.get("artefact") ?? undefined;
@@ -152,8 +147,8 @@ export function Artefacts() {
 	const { data: session, isPending } = useSession();
 	const viewerId = session?.user?.id;
 	const isShared = Boolean(shareId);
-	const isProfile = location.pathname === "/profile";
-	const isIntegrations = location.pathname === "/integrations";
+	const panel = searchParams.get("panel");
+	const isIntegrations = panel === "integrations";
 	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
 	const [loaded, setLoaded] = useState<{
 		path: string;
@@ -173,8 +168,6 @@ export function Artefacts() {
 		rename: renameFolder,
 		remove: removeFolder,
 	} = useFolders(Boolean(session?.user) && !isShared, setError);
-	const [hasGitHubInstallation, setHasGitHubInstallation] =
-		useState<boolean>();
 	const [copied, setCopied] = useState(false);
 	const [notShared, setNotShared] = useState(false);
 	const [sharedCommentsOpen, setSharedCommentsOpen] = useState(false);
@@ -214,9 +207,7 @@ export function Artefacts() {
 	useDocumentTitle(
 		current
 			? `${artefactHeading(current)} - Klee`
-			: isProfile
-				? "Profile - Klee"
-				: isIntegrations
+			: isIntegrations
 					? "Integrations - Klee"
 					: isShared
 						? "Shared artefact - Klee"
@@ -230,23 +221,14 @@ export function Artefacts() {
 			: undefined;
 
 	useEffect(() => {
-		if (isShared || !session?.user) return;
+		if (isShared || !viewerId) return;
 		api("/artefacts")
 			.then((response) =>
 				response.ok ? response.json() : Promise.reject(),
 			)
 			.then(setArtefacts)
 			.catch(() => setError("Could not load artefacts."));
-	}, [isShared, session?.user]);
-	useEffect(() => {
-		if (!isProfile || !session?.user) return;
-		api("/integrations/github")
-			.then((response) => (response.ok ? response.json() : []))
-			.then((installations: unknown[]) =>
-				setHasGitHubInstallation(installations.length > 0),
-			)
-			.catch(() => setHasGitHubInstallation(false));
-	}, [isProfile, session?.user]);
+	}, [isShared, viewerId]);
 	useEffect(() => {
 		if (!artefactPath || loaded?.path === artefactPath) return;
 		api(artefactPath)
@@ -638,10 +620,9 @@ export function Artefacts() {
 			selectedId={id}
 			user={user}
 			isIntegrations={isIntegrations}
-			onIntegrations={() => go("/integrations")}
+			onIntegrations={() => go("/?panel=integrations")}
 			onCreate={() => go("/")}
 			onOpenArtefact={(artefactId) => go(`/?artefact=${artefactId}`)}
-			onProfile={() => go("/profile")}
 			onSignOut={leave}
 		/>
 	);
@@ -691,76 +672,8 @@ export function Artefacts() {
 							<PanelLeftOpen size={19} />
 						)}
 					</Button>
-					{isProfile && (
-						<h1 className="text-2xl font-semibold tracking-tight">
-							Profile
-						</h1>
-					)}
 					<ThemeToggle className="ml-auto" />
 				</header>
-				{isProfile ? (
-					<div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20">
-						<Card className="w-full">
-							<Card.Header className="flex items-center gap-4">
-								<UserAvatar
-									image={user.image}
-									name={user.name || user.email}
-									size="lg"
-								/>
-								<div>
-									<Card.Title>
-										{user.name || "Unnamed"}
-									</Card.Title>
-									<Card.Description>
-										{user.email}
-									</Card.Description>
-								</div>
-							</Card.Header>
-							<Card.Content>
-								<dl className="divide-y divide-border text-sm">
-									<div className="flex items-center justify-between py-3">
-										<dt className="text-muted">
-											Email verified
-										</dt>
-										<dd>
-											{user.emailVerified ? "Yes" : "No"}
-										</dd>
-									</div>
-									<div className="flex items-center justify-between py-3">
-										<dt className="text-muted">
-											Member since
-										</dt>
-										<dd>
-											{new Date(
-												user.createdAt,
-											).toLocaleDateString()}
-										</dd>
-									</div>
-								</dl>
-								<div className="mt-5">
-									{hasGitHubInstallation === false && (
-										<Button
-											onPress={() =>
-												window.location.assign(
-													"/api/integrations/github/install",
-												)
-											}
-										>
-											Connect GitHub
-										</Button>
-									)}
-									{searchParams.get("github") ===
-										"connected" && (
-										<p className="mt-2 text-sm text-success">
-											GitHub connected.
-										</p>
-									)}
-									<GitHubAccountLink />
-								</div>
-							</Card.Content>
-						</Card>
-					</div>
-				) : (
 					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 						<div className="mx-auto w-full max-w-2xl">
 							<div className="mb-8 text-center">
@@ -812,7 +725,7 @@ export function Artefacts() {
 								<Button
 									variant="ghost"
 									className="h-auto max-w-full rounded-xl justify-center border border-border bg-surface px-4 py-3 hover:bg-surface-secondary"
-									onPress={() => navigate("/integrations")}
+									onPress={() => navigate("/?panel=integrations")}
 								>
 									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
 										<Plug size={16} />
@@ -848,7 +761,6 @@ export function Artefacts() {
 							</div>
 						</div>
 					</div>
-				)}
 				{error && (
 					<p className="absolute bottom-8 left-8 text-sm text-danger">
 						{error}
@@ -901,7 +813,6 @@ function WorkspaceSidebar({
 	onIntegrations,
 	onCreate,
 	onOpenArtefact,
-	onProfile,
 	onSignOut,
 }: {
 	/** Fills the phone drawer instead of sitting beside the page. */
@@ -918,7 +829,6 @@ function WorkspaceSidebar({
 	onIntegrations: () => void;
 	onCreate: () => void;
 	onOpenArtefact: (id: string) => void;
-	onProfile: () => void;
 	onSignOut: () => void;
 }) {
 	const displayName = user.name || user.email;
@@ -1008,14 +918,6 @@ function WorkspaceSidebar({
 							</span>
 						</div>
 						<Separator className="my-1" />
-						<Button
-							variant="ghost"
-							className="w-full justify-start"
-							onPress={onProfile}
-						>
-							<UserRound size={16} />
-							Profile
-						</Button>
 						<Button
 							variant="ghost"
 							className="w-full justify-start text-danger"

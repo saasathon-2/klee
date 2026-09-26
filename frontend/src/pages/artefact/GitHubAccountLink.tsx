@@ -7,7 +7,7 @@ import { authClient, linkGitHub } from "../../lib/auth-client";
  * become visible and editable. Separate from installing the GitHub App.
  */
 export function GitHubAccountLink({
-	returnTo = "/profile",
+	returnTo = "/?panel=integrations",
 }: {
 	/** Where GitHub sends the user back to after linking. */
 	returnTo?: string;
