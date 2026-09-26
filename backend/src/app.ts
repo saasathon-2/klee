@@ -565,6 +565,18 @@ async function accessibleArtefact(artefactId: string, userId: string) {
 	return rows[0];
 }
 
+async function commentableArtefact(artefactId: string, userId: string) {
+	await refreshAccess(userId);
+	const artefact = await accessibleArtefact(artefactId, userId);
+	if (artefact) return artefact;
+	// Testing mode: any signed-in user can comment on a shared artefact.
+	const { rows } = await pool.query(
+		'select false as "isOwner" from artefact where id = $1 and is_shared = true',
+		[artefactId],
+	);
+	return rows[0];
+}
+
 async function artefactPatches(artefactId: string) {
 	const { rows } = await pool.query(
 		`select version.version, version.source, version.patch, version.created_at as "createdAt",
@@ -736,16 +748,14 @@ async function readArtefactComments(artefactId: string, userId: string | null) {
 app.get("/api/artefacts/:id/comments", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
-	await refreshAccess(user.id);
-	if (!(await accessibleArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	if (!(await commentableArtefact(req.params.id, user.id))) return res.sendStatus(404);
 	res.json(await readArtefactComments(req.params.id, user.id));
 });
 
 app.patch("/api/artefacts/:id/comments/:commentId", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
-	await refreshAccess(user.id);
-	const artefact = await accessibleArtefact(req.params.id, user.id);
+	const artefact = await commentableArtefact(req.params.id, user.id);
 	if (!artefact) return res.sendStatus(404);
 	const anchor = req.body?.anchor;
 	if (!validCommentAnchor(anchor)) return res.status(400).json({ error: "Select a valid area of the artefact." });
@@ -770,8 +780,7 @@ app.get("/api/shared/artefacts/:id/comments", async (req, res) => {
 app.post("/api/artefacts/:id/comments", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
-	await refreshAccess(user.id);
-	if (!(await accessibleArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	if (!(await commentableArtefact(req.params.id, user.id))) return res.sendStatus(404);
 	const body = typeof req.body?.body === "string" ? req.body.body.trim() : "";
 	const parentId = typeof req.body?.parentId === "string" ? req.body.parentId : null;
 	const anchor = req.body?.anchor;
@@ -852,8 +861,7 @@ app.post("/api/artefacts/:id/comments/ai-reply", async (req, res) => {
 app.post("/api/artefacts/:id/comments/:commentId/reactions", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
-	await refreshAccess(user.id);
-	if (!(await accessibleArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	if (!(await commentableArtefact(req.params.id, user.id))) return res.sendStatus(404);
 	const emoji = req.body?.emoji;
 	if (!commentReactions.includes(emoji)) return res.sendStatus(400);
 	const existing = await pool.query(
