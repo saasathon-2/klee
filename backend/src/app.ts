@@ -124,8 +124,10 @@ async function createGeneratedArtefact(
 	isShared = false,
 	options: {
 		onProgress?: (message: string) => void;
+		onCommentary?: (text: string) => void;
 		signal?: AbortSignal;
 		serviceTier?: "fast";
+		deferPreview?: boolean;
 	} = {},
 	id?: string,
 	history: {
@@ -144,6 +146,7 @@ async function createGeneratedArtefact(
 		env.openAiModel,
 		options,
 	);
+	options.onProgress?.("Saving your artefact…");
 	const artefact = {
 		id: id ?? randomUUID(),
 		isShared,
@@ -194,6 +197,11 @@ async function createGeneratedArtefact(
 		blocks: content.root.children?.[0]?.children?.length ?? 0,
 		totalMs: Math.round(performance.now() - startedAt),
 	});
+	if (options.deferPreview) {
+		void uploadArtefactSnapshot(artefact.id, isShared);
+		return { ...artefact, previewReady: false };
+	}
+	options.onProgress?.("Preparing the preview…");
 	const previewReady = await uploadArtefactSnapshot(artefact.id, isShared);
 	return { ...artefact, previewReady };
 }
@@ -638,7 +646,9 @@ app.post("/api/artefacts/stream", async (req, res) => {
 		const artefact = await createGeneratedArtefact(user.id, prompt, false, {
 			signal: controller.signal,
 			onProgress: (message) => send("progress", { message }),
+			onCommentary: (text) => send("commentary", { text }),
 			serviceTier: env.openAiServiceTier,
+			deferPreview: true,
 		});
 		send("complete", { artefact });
 	} catch (error) {

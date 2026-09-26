@@ -132,6 +132,7 @@ export function Artefacts() {
 	const [prompt, setPrompt] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
+	const [generationCommentary, setGenerationCommentary] = useState("");
 	const [followUp, setFollowUp] = useState("");
 	const [isRevising, setIsRevising] = useState(false);
 	const [error, setError] = useState("");
@@ -218,6 +219,7 @@ export function Artefacts() {
 		generationAbort.current = controller;
 		setIsCreating(true);
 		setGenerationStatus("Starting your brief…");
+		setGenerationCommentary("");
 		setError("");
 		try {
 			const response = await api("/artefacts/stream", {
@@ -245,9 +247,12 @@ export function Artefacts() {
 						message?: string;
 						artefact?: Artefact;
 						error?: string;
+						text?: string;
 					};
 					if (eventName === "progress" && payload.message)
 						setGenerationStatus(payload.message);
+					if (eventName === "commentary" && payload.text)
+						setGenerationCommentary(payload.text);
 					if (eventName === "error") throw new Error(payload.error);
 					if (eventName === "complete" && payload.artefact)
 						artefact = payload.artefact;
@@ -664,6 +669,7 @@ export function Artefacts() {
 					artefact={current}
 					isCreating={isCreating}
 					generationStatus={generationStatus}
+					generationCommentary={generationCommentary}
 					isFullscreen={isFullscreen}
 					onClose={current ? close : cancelGeneration}
 					onFullscreen={() => setFullscreen(!isFullscreen)}
@@ -822,6 +828,7 @@ function ArtefactModal({
 	artefact,
 	isCreating,
 	generationStatus,
+	generationCommentary,
 	isFullscreen,
 	onClose,
 	onFullscreen,
@@ -841,6 +848,7 @@ function ArtefactModal({
 	artefact?: Artefact;
 	isCreating: boolean;
 	generationStatus: string;
+	generationCommentary: string;
 	isFullscreen: boolean;
 	onClose: () => void;
 	onFullscreen: () => void;
@@ -859,6 +867,19 @@ function ArtefactModal({
 	onFolderChange: (folderId: string | null) => void;
 	onError: (message: string) => void;
 }) {
+	const [generationStartedAt] = useState(() => Date.now());
+	const [generationSeconds, setGenerationSeconds] = useState(0);
+	useEffect(() => {
+		if (!isCreating) return;
+		const timer = window.setInterval(
+			() =>
+				setGenerationSeconds(
+					Math.floor((Date.now() - generationStartedAt) / 1000),
+				),
+			1000,
+		);
+		return () => window.clearInterval(timer);
+	}, [generationStartedAt, isCreating]);
 	// Edit mode keeps a draft copy; `undefined` means not editing.
 	const [draft, setDraft] = useState<ArtefactDocument>();
 	const [isSaving, setIsSaving] = useState(false);
@@ -1090,16 +1111,44 @@ function ArtefactModal({
 									}
 								/>
 							) : (
-								<div
-									className="grid min-h-96 place-items-center p-8"
-									role="status"
-								>
-									<div className="w-full max-w-xl space-y-5">
-										<p className="text-center text-sm text-muted">
-											{generationStatus ||
-												"Starting your artefact…"}
-										</p>
-										<Skeleton className="h-8 w-2/3 rounded" />
+				<div
+					className="grid min-h-96 place-items-center p-8"
+				>
+					<div className="w-full max-w-xl space-y-5">
+						<p className="text-center text-sm text-muted" role="status">
+							{generationStatus ||
+								"Starting your artefact…"}
+						</p>
+						<p
+							className="text-center text-xs text-muted"
+							aria-hidden="true"
+						>
+							Elapsed {Math.floor(generationSeconds / 60)}:
+							{String(generationSeconds % 60).padStart(2, "0")}
+						</p>
+						<p
+							className="mx-auto w-fit max-w-full text-center text-sm text-muted"
+							aria-label="AI commentary"
+							aria-live="off"
+						>
+							{generationCommentary &&
+								generationCommentary
+									.replace(/\*\*/g, "")
+									.trim()
+									.split(/\s+/)
+									.filter(Boolean)
+									.map((word, index) => (
+										<span
+											key={index}
+											className="generation-commentary-word"
+											style={{ animationDelay: `${index * 20}ms` }}
+										>
+											{index > 0 && " "}
+											{word}
+										</span>
+									))}
+						</p>
+						<Skeleton className="h-8 w-2/3 rounded" />
 										<Skeleton className="h-4 w-full rounded" />
 										<Skeleton className="h-4 w-5/6 rounded" />
 										<Skeleton className="h-32 rounded-xl" />

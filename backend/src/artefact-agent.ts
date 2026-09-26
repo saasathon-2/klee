@@ -355,6 +355,7 @@ export async function generateArtefact(
 	model: string,
 	options: {
 		onProgress?: Progress;
+		onCommentary?: (text: string) => void;
 		signal?: AbortSignal;
 		serviceTier?: "fast";
 	} = {},
@@ -378,7 +379,7 @@ export async function generateArtefact(
 					? { service_tier: options.serviceTier }
 					: {}),
 				instructions,
-				reasoning: { effort: reasoningEffort },
+				reasoning: { effort: reasoningEffort, summary: "concise" },
 				text: {
 					verbosity: "low",
 					format: {
@@ -453,6 +454,9 @@ export async function generateArtefact(
 		switch (event.type) {
 			case "response.created":
 				options.onProgress?.("Shaping the artefact…");
+				break;
+			case "response.reasoning_summary_text.done":
+				if (event.text) options.onCommentary?.(event.text);
 				break;
 			case "response.output_text.delta":
 				output += event.delta ?? "";
