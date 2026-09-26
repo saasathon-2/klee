@@ -680,7 +680,7 @@ app.get("/api/artefacts/:id", async (req, res) => {
 	res.json({ ...artefact, revisions: revisions.rows });
 });
 
-const commentReactions = ["👍", "❤️", "🎉", "👀"] as const;
+const commentReactions = ["❤️"] as const;
 type CommentAnchor = { x: number; y: number; width: number; height: number };
 
 function validCommentAnchor(value: unknown): value is CommentAnchor {
