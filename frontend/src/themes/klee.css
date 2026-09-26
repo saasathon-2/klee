@@ -80,6 +80,13 @@
 	/* Artefact bands (header band and scallop edge on artefact pages) */
 	--brand: oklch(94.42% 0.1624 106.11);
 	--brand-foreground: oklch(24% 0.04 100);
+
+	/* Chart series: categorical identity, assigned in this fixed order and
+	 * never cycled. CVD-validated against --surface in each mode. */
+	--chart-1: #2a78d6;
+	--chart-2: #eb6834;
+	--chart-3: #1baf7a;
+	--chart-4: #eda100;
 }
 
 /* 2. Semantic colours, dark mode ----------------------------------------- */
@@ -139,6 +146,12 @@
 	/* Artefact bands */
 	--brand: oklch(94.42% 0.1624 106.11);
 	--brand-foreground: oklch(20% 0.03 100);
+
+	/* Chart series */
+	--chart-1: #3987e5;
+	--chart-2: #d95926;
+	--chart-3: #199e70;
+	--chart-4: #c98500;
 }
 
 /* 3. Mode-independent tokens --------------------------------------------- */
@@ -207,6 +220,10 @@
 	--color-brand: var(--brand);
 	--color-brand-foreground: var(--brand-foreground);
 	--color-accent-text: var(--accent-text);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
 
 	--color-slack-canvas: var(--slack-canvas);
 	--color-slack-canvas-highlight: var(--slack-canvas-highlight);

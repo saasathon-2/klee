@@ -1,15 +1,29 @@
 import type { ArtefactNode } from "../model";
+import { ActivityTrend } from "./blocks/ActivityTrend";
 import { ArchitectureFlow } from "./blocks/ArchitectureFlow";
+import { ChangeImpactMap } from "./blocks/ChangeImpactMap";
 import { CheckList } from "./blocks/CheckList";
 import { CodeDiff } from "./blocks/CodeDiff";
 import { CommitList } from "./blocks/CommitList";
+import { DecisionRecord } from "./blocks/DecisionRecord";
+import { DeliveryProgress } from "./blocks/DeliveryProgress";
+import { DeliveryReadiness } from "./blocks/DeliveryReadiness";
+import { DependencyRiskRegister } from "./blocks/DependencyRiskRegister";
+import { EvidenceTable } from "./blocks/EvidenceTable";
+import { GitGraph } from "./blocks/GitGraph";
 import { Glue } from "./blocks/Glue";
+import { HandoffBrief } from "./blocks/HandoffBrief";
+import { IncidentTimeline } from "./blocks/IncidentTimeline";
 import { MetricRow } from "./blocks/MetricRow";
 import { NextSteps } from "./blocks/NextSteps";
 import { Prose } from "./blocks/Prose";
+import { ReleaseTimeline } from "./blocks/ReleaseTimeline";
 import { ReviewComments } from "./blocks/ReviewComments";
+import { ServiceOwnership } from "./blocks/ServiceOwnership";
 import { SoftwareDiagram } from "./blocks/SoftwareDiagram";
+import { SprintTimeline } from "./blocks/SprintTimeline";
 import { TaskList } from "./blocks/TaskList";
+import { WorkItemBoard } from "./blocks/WorkItemBoard";
 import { DeveloperPage, GenericPage } from "./categories/CategoryPage";
 import { ArtefactPage } from "./page/ArtefactPage";
 import type {
@@ -48,6 +62,20 @@ export const templateDefinitions: Record<
 	"review-comments": definition(ReviewComments),
 	"commit-list": definition(CommitList),
 	"check-list": definition(CheckList),
+	"sprint-timeline": definition(SprintTimeline),
+	"delivery-progress": definition(DeliveryProgress),
+	"work-item-board": definition(WorkItemBoard),
+	"git-graph": definition(GitGraph),
+	"change-impact-map": definition(ChangeImpactMap),
+	"release-timeline": definition(ReleaseTimeline),
+	"incident-timeline": definition(IncidentTimeline),
+	"delivery-readiness": definition(DeliveryReadiness),
+	"dependency-risk-register": definition(DependencyRiskRegister),
+	"service-ownership": definition(ServiceOwnership),
+	"decision-record": definition(DecisionRecord),
+	"evidence-table": definition(EvidenceTable),
+	"activity-trend": definition(ActivityTrend),
+	"handoff-brief": definition(HandoffBrief),
 };
 
 function selectionInfo(definition: TemplateDefinition): TemplateSelectionInfo {

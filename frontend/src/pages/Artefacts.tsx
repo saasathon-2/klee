@@ -118,8 +118,18 @@ function artefactIcon(artefact: Artefact) {
 	return typeof icon === "string" ? icon : undefined;
 }
 
-const godPrompt = developerExamplePrompts.find(
-	(template) => template.id === "god-prompt",
+/** Starter prompts offered as buttons under the prompt box. */
+const starterPromptIds = new Set([
+	"god-prompt",
+	"sprint-status",
+	"branch-history",
+	"release-readiness",
+	"incident-review",
+	"architecture-decision",
+	"on-call-handoff",
+]);
+const starterPrompts = developerExamplePrompts.filter((template) =>
+	starterPromptIds.has(template.id),
 );
 
 const api = (path: string, options?: RequestInit) =>
@@ -806,21 +816,24 @@ export function Artefacts() {
 									</Toolbar>
 								</Surface>
 							</form>
-							{godPrompt && (
-								<div className="mt-4 flex justify-center">
+							<div className="mt-4 flex flex-wrap justify-center gap-2">
+								{starterPrompts.map((template) => (
 									<Button
+										key={template.id}
 										size="sm"
 										variant="outline"
 										className="rounded-full"
 										onPress={() =>
-											setPrompt(godPrompt.prompt)
+											setPrompt(template.prompt)
 										}
 									>
-										<BrainCog size={15} />
-										{godPrompt.label}
+										{template.id === "god-prompt" && (
+											<BrainCog size={15} />
+										)}
+										{template.label}
 									</Button>
-								</div>
-							)}
+								))}
+							</div>
 						</div>
 					</div>
 				)}

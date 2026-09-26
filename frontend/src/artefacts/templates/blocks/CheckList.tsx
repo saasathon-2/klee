@@ -1,16 +1,10 @@
 import { Card, Chip, Separator, Table } from "@heroui/react";
-import { CircleCheck, CircleDashed, CircleX } from "lucide-react";
 import { Fragment } from "react";
 import type { Check } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { checkStatuses } from "../page/checkStatus";
 import { editableFor } from "../page/editableFor";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
-
-const statuses = {
-	passed: { color: "success", label: "Passed", icon: CircleCheck },
-	failed: { color: "danger", label: "Failed", icon: CircleX },
-	pending: { color: "warning", label: "Pending", icon: CircleDashed },
-} as const;
 
 export function CheckList({ node, context }: TemplateProps) {
 	const { title, checks } = node.data as { title: string; checks: Check[] };
@@ -46,7 +40,7 @@ export function CheckList({ node, context }: TemplateProps) {
 							</Table.Header>
 							<Table.Body>
 								{checks.map((check) => {
-									const status = statuses[check.status] ?? statuses.pending;
+									const status = checkStatuses[check.status] ?? checkStatuses.pending;
 									const Icon = status.icon;
 									return (
 										<Table.Row key={check.name} id={check.name}>

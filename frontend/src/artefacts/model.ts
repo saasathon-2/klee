@@ -55,6 +55,128 @@ export type Check = {
 	detail: string;
 };
 
+/*
+ * Delivery and operations records. These are normalised, source-agnostic
+ * shapes: integrations translate Jira, GitHub, Linear, PagerDuty and similar
+ * payloads into them before a model selects and hydrates blocks, and pasted
+ * prompt data is described in the same terms. Dates are ISO 8601 strings
+ * ("2026-09-26" or "2026-09-26T14:05:00Z"); a missing link is `null`.
+ */
+
+/** Shared work state for sprint items, board columns and progress segments. */
+export type WorkStatus = "planned" | "active" | "blocked" | "done";
+export type Level = "high" | "medium" | "low";
+
+export type Milestone = { label: string; date: string };
+export type WorkItem = {
+	id: string;
+	title: string;
+	status: WorkStatus;
+	start?: string | null;
+	end?: string | null;
+	estimate?: string | null;
+	url?: string | null;
+};
+export type ScopeChange = { added: number; removed: number; detail: string };
+export type BoardItem = {
+	key: string;
+	title: string;
+	owner?: string | null;
+	priority?: "urgent" | Level | null;
+	meta?: string | null;
+	url?: string | null;
+};
+export type BoardColumn = {
+	id: WorkStatus;
+	label: string;
+	/** Items in the source column, when more exist than were supplied. */
+	total?: number | null;
+	items: BoardItem[];
+};
+export type GraphBranch = { id: string; name: string; url?: string | null };
+export type GraphCommit = {
+	sha: string;
+	message: string;
+	author: string;
+	date: string;
+	/** Parent SHAs; the first is the mainline parent. */
+	parents: string[];
+	branchIds: string[];
+	url?: string | null;
+};
+export type ChangeState = "added" | "modified" | "at-risk" | "unchanged";
+export type ImpactNode = SoftwareDiagramNode & {
+	change: ChangeState;
+	owner?: string | null;
+	url?: string | null;
+};
+export type ReleaseEvent = {
+	time: string;
+	label: string;
+	kind: "build" | "deploy" | "gate" | "rollout" | "rollback" | "note";
+	environment?: string | null;
+	status: "succeeded" | "failed" | "in-progress" | "pending" | "skipped";
+	detail: string;
+	url?: string | null;
+};
+export type Causality = "confirmed" | "suspected";
+export type IncidentEvent = {
+	time: string;
+	type: "alert" | "deploy" | "log" | "update" | "mitigation" | "resolution";
+	severity: "critical" | "major" | "minor" | "info";
+	/** Whether the event's causal role is established; null for plain observations. */
+	status: Causality | null;
+	summary: string;
+	evidence?: string | null;
+	url?: string | null;
+};
+export type LinkedItem = {
+	title: string;
+	detail?: string | null;
+	owner?: string | null;
+	url?: string | null;
+};
+export type ReadinessGate = {
+	name: string;
+	status: Check["status"];
+	detail: string;
+	url?: string | null;
+};
+export type ReadinessSignal = {
+	label: string;
+	detail: string;
+	tone: "positive" | "caution";
+};
+export type RiskItem = {
+	title: string;
+	type: "dependency" | "assumption" | "risk";
+	impact: Level;
+	likelihood: Level;
+	owner?: string | null;
+	mitigation: string;
+	status: "open" | "mitigating" | "accepted" | "closed";
+	url?: string | null;
+};
+export type ServiceRecord = {
+	name: string;
+	owner?: string | null;
+	repository?: string | null;
+	runbook?: string | null;
+	onCall?: string | null;
+	environment?: string | null;
+	health?: "healthy" | "degraded" | "down" | "unknown" | null;
+	url?: string | null;
+};
+export type DecisionOption = {
+	label: string;
+	pros: string[];
+	cons: string[];
+	selected: boolean;
+};
+export type EvidenceRow = { cells: string[]; url?: string | null };
+export type TrendPoint = { at: string; value: number };
+export type TrendSeries = { label: string; points: TrendPoint[] };
+
 export type ArtefactNode = {
 	id: string;
 	template:
@@ -71,7 +193,21 @@ export type ArtefactNode = {
 		| "prose"
 		| "review-comments"
 		| "commit-list"
-		| "check-list";
+		| "check-list"
+		| "sprint-timeline"
+		| "delivery-progress"
+		| "work-item-board"
+		| "git-graph"
+		| "change-impact-map"
+		| "release-timeline"
+		| "incident-timeline"
+		| "delivery-readiness"
+		| "dependency-risk-register"
+		| "service-ownership"
+		| "decision-record"
+		| "evidence-table"
+		| "activity-trend"
+		| "handoff-brief";
 	data: Record<string, unknown>;
 	children?: ArtefactNode[];
 };

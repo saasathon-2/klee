@@ -111,6 +111,20 @@ DeveloperPage.children = {
 		"review-comments",
 		"commit-list",
 		"check-list",
+		"sprint-timeline",
+		"delivery-progress",
+		"work-item-board",
+		"git-graph",
+		"change-impact-map",
+		"release-timeline",
+		"incident-timeline",
+		"delivery-readiness",
+		"dependency-risk-register",
+		"service-ownership",
+		"decision-record",
+		"evidence-table",
+		"activity-trend",
+		"handoff-brief",
 	],
 } satisfies TemplateSelectionInfo["children"];
 
@@ -124,5 +138,14 @@ GenericPage.info =
 GenericPage.children = {
 	min: 1,
 	max: 8,
-	allowed: ["prose", "metric-row", "glue", "next-steps"],
+	allowed: [
+		"prose",
+		"metric-row",
+		"glue",
+		"next-steps",
+		"decision-record",
+		"evidence-table",
+		"activity-trend",
+		"handoff-brief",
+	],
 } satisfies TemplateSelectionInfo["children"];

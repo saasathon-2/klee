@@ -51,6 +51,110 @@ assert.equal(
 	1,
 );
 
+// Structured outputs cap strict schemas at 5,000 properties and 10 levels of nesting.
+function schemaStats(value: unknown, depth = 0): { properties: number; depth: number } {
+	if (!value || typeof value !== "object") return { properties: 0, depth };
+	const record = value as Record<string, unknown>;
+	const own = record.properties && typeof record.properties === "object"
+		? Object.keys(record.properties).length
+		: 0;
+	const nested = record.type === "object" ? depth + 1 : depth;
+	return Object.values(record)
+		.map((child) => schemaStats(child, nested))
+		.reduce(
+			(total, child) => ({ properties: total.properties + child.properties, depth: Math.max(total.depth, child.depth) }),
+			{ properties: own, depth: nested },
+		);
+}
+const stats = schemaStats(jsonSchema);
+assert.ok(stats.properties <= 5000, `schema has ${stats.properties} properties`);
+assert.ok(stats.depth <= 10, `schema nests ${stats.depth} levels`);
+
+const blocksOf = (blocks: unknown[], category: "developer-page" | "generic-page" = "developer-page") =>
+	toDocument({
+		title: "Delivery brief",
+		icon: "calendar-check",
+		category,
+		eyebrow: "Delivery",
+		summary: "A delivery brief",
+		tags: ["Delivery"],
+		blocks: blocks as never,
+	}).root.children?.[0]?.children ?? [];
+
+const commit = (sha: string, parents: string[]) => ({
+	sha,
+	message: `Commit ${sha}`,
+	author: "sam",
+	date: "2026-09-20",
+	parents,
+	branchIds: ["main"],
+	url: null,
+});
+const graph = (commits: unknown[]) => ({
+	template: "git-graph",
+	data: {
+		title: "History",
+		description: "Branch history",
+		branches: [{ id: "main", name: "main", url: null }],
+		commits,
+	},
+});
+assert.equal(blocksOf([graph([commit("b", ["a"]), commit("a", [])])])[0]?.template, "git-graph");
+const flattened = blocksOf([graph([commit("b", ["x"]), commit("a", ["y"])])])[0];
+assert.equal(flattened?.template, "commit-list");
+assert.equal((flattened?.data.commits as { detail: string }[])[0]?.detail, "2026-09-20");
+assert.throws(() => blocksOf([graph([{ ...commit("b", ["a"]), branchIds: ["release"] }, commit("a", [])])]));
+
+const table = blocksOf([
+	{
+		template: "evidence-table",
+		data: {
+			title: "Evidence",
+			description: "Linked records",
+			columns: ["Record", "Source", "State"],
+			rows: [{ cells: ["INC-12", "Pager", "Open", "extra"], url: null }, { cells: ["PR #4"], url: null }],
+		},
+	},
+])[0];
+assert.deepEqual(
+	(table?.data.rows as { cells: string[] }[]).map((row) => row.cells.length),
+	[3, 3],
+);
+
+const impactNode = (id: string) => ({ id, label: id, detail: `${id} service`, change: "modified", owner: null, url: null });
+assert.throws(() =>
+	blocksOf([
+		{
+			template: "change-impact-map",
+			data: {
+				title: "Impact",
+				description: "Affected systems",
+				nodes: [impactNode("api"), impactNode("db")],
+				edges: [{ source: "api", target: "cache", label: null }],
+			},
+		},
+	]),
+);
+assert.throws(() =>
+	blocksOf([
+		{
+			template: "sprint-timeline",
+			data: { title: "Sprint", start: "2026-10-10", end: "2026-10-01", today: null, milestones: [], items: [] },
+		},
+	]),
+);
+assert.equal(
+	blocksOf([{ template: "delivery-progress", data: { title: "Progress", unit: null, completed: 0, inProgress: 0, blocked: 0, notStarted: 0, forecast: null, scopeChange: null, summary: "Nothing yet." } }, { template: "prose", data: { title: "Note", body: "Kept." } }]).length,
+	1,
+);
+assert.equal(
+	blocksOf([{ template: "handoff-brief", data: { title: "Handoff", from: "Ana", to: null, status: "on-track", completed: [], active: [], risks: [], nextActions: [{ title: "Ship", detail: null, owner: null, url: null }] } }], "generic-page")[0]?.template,
+	"handoff-brief",
+);
+assert.throws(() =>
+	blocksOf([{ template: "work-item-board", data: { title: "Board", description: "Work", columns: [] } }], "generic-page"),
+);
+
 const originalFetch = globalThis.fetch;
 let requestBody: Record<string, unknown> | undefined;
 const output = JSON.stringify({

@@ -98,6 +98,120 @@ const checkSchema = z
 	})
 	.strict();
 
+/*
+ * Delivery and operations records. Every shape is source-agnostic: the
+ * integration layer (or the user's pasted prompt) supplies normalised records
+ * such as { title, status, dates, owner, url }, never Jira- or GitHub-shaped
+ * payloads. Dates are ISO 8601 strings; a missing optional value is null.
+ */
+const isoDate = z.string().trim().min(1).max(40);
+const link = z.string().nullable();
+const optionalText = shortText.nullable();
+const workStatus = z.enum(["planned", "active", "blocked", "done"]);
+const level = z.enum(["high", "medium", "low"]);
+const count = z.number().int().min(0);
+const linkedItemSchema = z
+	.object({ title: shortText, detail: optionalText, owner: optionalText, url: link })
+	.strict();
+
+const sprintItemSchema = z
+	.object({
+		id: shortText,
+		title: shortText,
+		status: workStatus,
+		start: isoDate.nullable(),
+		end: isoDate.nullable(),
+		estimate: optionalText,
+		url: link,
+	})
+	.strict();
+const boardItemSchema = z
+	.object({
+		key: shortText,
+		title: shortText,
+		owner: optionalText,
+		priority: z.enum(["urgent", "high", "medium", "low"]).nullable(),
+		meta: optionalText,
+		url: link,
+	})
+	.strict();
+const graphCommitSchema = z
+	.object({
+		sha: shortText,
+		message: shortText,
+		author: shortText,
+		date: isoDate,
+		parents: z.array(shortText).max(4),
+		branchIds: z.array(shortText).min(1).max(4),
+		url: link,
+	})
+	.strict();
+const impactNodeSchema = z
+	.object({
+		id: shortText,
+		label: shortText,
+		detail: detailText,
+		change: z.enum(["added", "modified", "at-risk", "unchanged"]),
+		owner: optionalText,
+		url: link,
+	})
+	.strict();
+const releaseEventSchema = z
+	.object({
+		time: isoDate,
+		label: shortText,
+		kind: z.enum(["build", "deploy", "gate", "rollout", "rollback", "note"]),
+		environment: optionalText,
+		status: z.enum(["succeeded", "failed", "in-progress", "pending", "skipped"]),
+		detail: z.string().trim().max(280),
+		url: link,
+	})
+	.strict();
+const incidentEventSchema = z
+	.object({
+		time: isoDate,
+		type: z.enum(["alert", "deploy", "log", "update", "mitigation", "resolution"]),
+		severity: z.enum(["critical", "major", "minor", "info"]),
+		status: z.enum(["confirmed", "suspected"]).nullable(),
+		summary: detailText,
+		evidence: detailText.nullable(),
+		url: link,
+	})
+	.strict();
+const riskSchema = z
+	.object({
+		title: shortText,
+		type: z.enum(["dependency", "assumption", "risk"]),
+		impact: level,
+		likelihood: level,
+		owner: optionalText,
+		mitigation: detailText,
+		status: z.enum(["open", "mitigating", "accepted", "closed"]),
+		url: link,
+	})
+	.strict();
+const serviceSchema = z
+	.object({
+		name: shortText,
+		owner: optionalText,
+		repository: z.string().trim().max(280).nullable(),
+		runbook: link,
+		onCall: optionalText,
+		environment: optionalText,
+		health: z.enum(["healthy", "degraded", "down", "unknown"]).nullable(),
+		url: link,
+	})
+	.strict();
+const trendSeriesSchema = z
+	.object({
+		label: shortText,
+		points: z
+			.array(z.object({ at: isoDate, value: z.number() }).strict())
+			.min(2)
+			.max(60),
+	})
+	.strict();
+
 const blockSchemas = [
 	z
 		.object({
@@ -213,6 +327,272 @@ const blockSchemas = [
 				.strict(),
 		})
 		.strict(),
+	z
+		.object({
+			template: z.literal("sprint-timeline"),
+			data: z
+				.object({
+					title: shortText,
+					start: isoDate,
+					end: isoDate,
+					today: isoDate.nullable(),
+					milestones: z
+						.array(z.object({ label: shortText, date: isoDate }).strict())
+						.max(6),
+					items: z.array(sprintItemSchema).min(1).max(12),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("delivery-progress"),
+			data: z
+				.object({
+					title: shortText,
+					unit: optionalText,
+					completed: count,
+					inProgress: count,
+					blocked: count,
+					notStarted: count,
+					forecast: isoDate.nullable(),
+					scopeChange: z
+						.object({ added: count, removed: count, detail: detailText })
+						.strict()
+						.nullable(),
+					summary: detailText,
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("work-item-board"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					columns: z
+						.array(
+							z
+								.object({
+									id: workStatus,
+									label: shortText,
+									total: count.nullable(),
+									items: z.array(boardItemSchema).max(8),
+								})
+								.strict(),
+						)
+						.min(3)
+						.max(4),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("git-graph"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					branches: z
+						.array(z.object({ id: shortText, name: shortText, url: link }).strict())
+						.min(1)
+						.max(6),
+					commits: z.array(graphCommitSchema).min(2).max(24),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("change-impact-map"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					nodes: z.array(impactNodeSchema).min(2).max(12),
+					edges: z.array(softwareDiagramEdgeSchema).min(1).max(20),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("release-timeline"),
+			data: z
+				.object({
+					title: shortText,
+					release: optionalText,
+					currentStage: optionalText,
+					nextGate: optionalText,
+					events: z.array(releaseEventSchema).min(1).max(16),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("incident-timeline"),
+			data: z
+				.object({
+					title: shortText,
+					startedAt: isoDate,
+					resolvedAt: isoDate.nullable(),
+					impact: detailText,
+					events: z.array(incidentEventSchema).min(1).max(20),
+					rootCause: z
+						.object({ summary: detailText, status: z.enum(["confirmed", "suspected"]) })
+						.strict()
+						.nullable(),
+					followUps: z.array(linkedItemSchema).max(8),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("delivery-readiness"),
+			data: z
+				.object({
+					title: shortText,
+					subject: shortText,
+					summary: detailText,
+					gates: z
+						.array(
+							z
+								.object({
+									name: shortText,
+									status: z.enum(["passed", "failed", "pending"]),
+									detail: shortText,
+									url: link,
+								})
+								.strict(),
+						)
+						.min(1)
+						.max(12),
+					signals: z
+						.array(
+							z
+								.object({
+									label: shortText,
+									detail: shortText,
+									tone: z.enum(["positive", "caution"]),
+								})
+								.strict(),
+						)
+						.max(6),
+					blockers: z.array(linkedItemSchema).max(6),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("dependency-risk-register"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					items: z.array(riskSchema).min(1).max(12),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("service-ownership"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					services: z.array(serviceSchema).min(1).max(12),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("decision-record"),
+			data: z
+				.object({
+					title: shortText,
+					question: detailText,
+					decision: detailText,
+					status: z.enum(["proposed", "accepted", "rejected", "superseded"]),
+					options: z
+						.array(
+							z
+								.object({
+									label: shortText,
+									pros: z.array(shortText).max(4),
+									cons: z.array(shortText).max(4),
+									selected: z.boolean(),
+								})
+								.strict(),
+						)
+						.min(2)
+						.max(4),
+					rationale: detailText,
+					consequences: z.array(detailText).max(5),
+					reviewDate: isoDate.nullable(),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("evidence-table"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					columns: z.array(shortText).min(2).max(6),
+					rows: z
+						.array(
+							z
+								.object({ cells: z.array(z.string().trim().max(280)).min(1).max(6), url: link })
+								.strict(),
+						)
+						.min(1)
+						.max(20),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("activity-trend"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					unit: shortText,
+					chart: z.enum(["line", "bar"]),
+					series: z.array(trendSeriesSchema).min(1).max(4),
+					annotation: z.object({ at: isoDate, label: shortText }).strict().nullable(),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("handoff-brief"),
+			data: z
+				.object({
+					title: shortText,
+					from: shortText,
+					to: optionalText,
+					status: z.enum(["on-track", "at-risk", "blocked"]),
+					completed: z.array(linkedItemSchema).max(6),
+					active: z.array(linkedItemSchema).max(6),
+					risks: z.array(linkedItemSchema).max(6),
+					nextActions: z.array(linkedItemSchema).min(1).max(6),
+				})
+				.strict(),
+		})
+		.strict(),
 ] as const;
 
 const generationSchema = z
@@ -266,6 +646,52 @@ export class ArtefactAgentError extends Error {
 
 type Generation = z.infer<typeof generationSchema>;
 
+type Block = Generation["blocks"][number];
+
+/**
+ * Repairs recoverable shapes before validation: a git graph without any
+ * in-slice parent relationships becomes a commit list, and evidence rows are
+ * padded or trimmed to their column count.
+ */
+function normaliseBlock(block: Block): Block {
+	if (block.template === "git-graph") {
+		const shas = new Set(block.data.commits.map((commit) => commit.sha));
+		const linked = block.data.commits.some((commit) =>
+			commit.parents.some((parent) => shas.has(parent)),
+		);
+		if (linked) return block;
+		return {
+			template: "commit-list",
+			data: {
+				title: block.data.title,
+				description: block.data.description,
+				commits: block.data.commits.map((commit) => ({
+					sha: commit.sha,
+					message: commit.message,
+					author: commit.author,
+					avatarUrl: null,
+					url: commit.url,
+					detail: commit.date,
+				})),
+			},
+		};
+	}
+	if (block.template === "evidence-table") {
+		const width = block.data.columns.length;
+		return {
+			...block,
+			data: {
+				...block.data,
+				rows: block.data.rows.map((row) => ({
+					...row,
+					cells: Array.from({ length: width }, (_, index) => row.cells[index] ?? ""),
+				})),
+			},
+		};
+	}
+	return block;
+}
+
 export function toDocument(generation: Generation): ArtefactDocument {
 	if (generation.blocks.length === 0 || generation.tags.length === 0) {
 		throw new Error("The generated artefact is incomplete");
@@ -284,12 +710,35 @@ export function toDocument(generation: Generation): ArtefactDocument {
 					"review-comments",
 					"commit-list",
 					"check-list",
+					"sprint-timeline",
+					"delivery-progress",
+					"work-item-board",
+					"git-graph",
+					"change-impact-map",
+					"release-timeline",
+					"incident-timeline",
+					"delivery-readiness",
+					"dependency-risk-register",
+					"service-ownership",
+					"decision-record",
+					"evidence-table",
+					"activity-trend",
+					"handoff-brief",
 				])
-			: new Set(["prose", "metric-row", "glue", "next-steps"]);
+			: new Set([
+					"prose",
+					"metric-row",
+					"glue",
+					"next-steps",
+					"decision-record",
+					"evidence-table",
+					"activity-trend",
+					"handoff-brief",
+				]);
 	if (generation.blocks.some((block) => !allowed.has(block.template))) {
 		throw new Error("The generated artefact contains an unsupported block");
 	}
-	const blocks = generation.blocks.filter((block) => {
+	const blocks = generation.blocks.map(normaliseBlock).filter((block) => {
 		if (block.template === "task-list") return block.data.tasks.length > 0;
 		if (block.template === "next-steps")
 			return block.data.actions.length > 0;
@@ -301,6 +750,10 @@ export function toDocument(generation: Generation): ArtefactDocument {
 			return block.data.commits.length > 0;
 		if (block.template === "check-list")
 			return block.data.checks.length > 0;
+		if (block.template === "work-item-board")
+			return block.data.columns.some((column) => column.items.length > 0);
+		if (block.template === "delivery-progress")
+			return block.data.completed + block.data.inProgress + block.data.blocked + block.data.notStarted > 0;
 		return true;
 	});
 	if (blocks.length === 0)
@@ -320,6 +773,23 @@ export function toDocument(generation: Generation): ArtefactDocument {
 			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
 				throw new Error("Software diagram edges must reference existing nodes");
 		}
+		if (block.template === "change-impact-map") {
+			const ids = new Set(block.data.nodes.map((node) => node.id));
+			if (ids.size !== block.data.nodes.length)
+				throw new Error("Change impact map node IDs must be unique");
+			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
+				throw new Error("Change impact map edges must reference existing nodes");
+		}
+		if (block.template === "git-graph") {
+			const branches = new Set(block.data.branches.map((branch) => branch.id));
+			if (block.data.commits.some((commit) => !commit.branchIds.every((id) => branches.has(id))))
+				throw new Error("Git graph commits must reference existing branches");
+		}
+		if (
+			block.template === "sprint-timeline" &&
+			!(Date.parse(block.data.end) > Date.parse(block.data.start))
+		)
+			throw new Error("Sprint timelines need a start before their end");
 	}
 	if (
 		blocks.filter((block) => block.template !== "glue").length >= 3 &&
