@@ -3,15 +3,13 @@ import {
 	Button,
 	Card,
 	Chip,
-	Code,
-	Disclosure,
+	Link,
 	Modal,
 	Paragraph,
-	Separator,
 	Skeleton,
 } from "@heroui/react";
-import { ExternalLink, FileText, Plus, PlugZap } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { ExternalLink, FileText, PlugZap } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { GitHubIcon, JiraIcon, SlackIcon } from "../components/BrandIcons";
@@ -66,25 +64,24 @@ function IntegrationCard({
 	summary,
 	status,
 	action,
-	setup,
-	children,
+	connected = false,
 }: {
 	icon: ReactNode;
 	name: string;
 	summary: string;
 	status?: ReactNode;
 	action?: ReactNode;
-	/** Numbered setup steps, shown behind a disclosure. */
-	setup: ReactNode[];
-	children?: ReactNode;
+	connected?: boolean;
 }) {
 	return (
-		<Card variant="secondary" className="gap-0 p-0">
-			<div className="flex items-center gap-3 p-4">
-				<div className="grid size-10 shrink-0 place-items-center rounded-lg bg-surface">
+		<Card variant="secondary" className="h-full gap-0 p-0">
+			<div className="flex h-full flex-col items-start p-4">
+				<div
+					className={`grid size-10 shrink-0 place-items-center rounded-lg ${connected ? "bg-success-soft text-success" : "bg-surface"}`}
+				>
 					{icon}
 				</div>
-				<div className="min-w-0 flex-1">
+				<div className="mt-4 min-w-0">
 					<div className="flex flex-wrap items-center gap-2">
 						<Paragraph weight="medium">{name}</Paragraph>
 						{status}
@@ -93,93 +90,9 @@ function IntegrationCard({
 						{summary}
 					</Paragraph>
 				</div>
-				{action && <div className="shrink-0">{action}</div>}
+				{action && <div className="mt-auto w-full pt-5">{action}</div>}
 			</div>
-			{children && (
-				<>
-					<Separator />
-					<div className="px-4 py-3">{children}</div>
-				</>
-			)}
-			<Separator />
-			<Disclosure className="px-4">
-				<Disclosure.Heading>
-					<Disclosure.Trigger className="flex w-full items-center justify-between py-3 text-sm font-medium">
-						How to set up
-						<Disclosure.Indicator />
-					</Disclosure.Trigger>
-				</Disclosure.Heading>
-				<Disclosure.Content>
-					<Disclosure.Body className="pb-4">
-						<ol className="flex flex-col gap-2">
-							{setup.map((step, index) => (
-								<li key={index} className="flex gap-3 text-sm">
-									<span className="grid size-5 shrink-0 place-items-center rounded-full bg-surface text-xs font-medium tabular-nums">
-										{index + 1}
-									</span>
-									<span className="text-muted">{step}</span>
-								</li>
-							))}
-						</ol>
-					</Disclosure.Body>
-				</Disclosure.Content>
-			</Disclosure>
 		</Card>
-	);
-}
-
-function InstallationRow({
-	installation,
-	isRevoking,
-	onRevoke,
-}: {
-	installation: GitHubInstallation;
-	isRevoking: boolean;
-	onRevoke: () => void;
-}) {
-	const [isConfirming, setIsConfirming] = useState(false);
-	return (
-		<div className="flex items-center gap-3 py-2">
-			<div className="min-w-0 flex-1">
-				<Paragraph size="sm" weight="medium" className="truncate">
-					{installation.accountLogin}
-				</Paragraph>
-				<Paragraph size="xs" color="muted">
-					{installation.accountType === "Organization"
-						? "Organisation"
-						: "Personal account"}
-				</Paragraph>
-			</div>
-			{isConfirming ? (
-				<div className="flex gap-1">
-					<Button
-						size="sm"
-						variant="ghost"
-						onPress={() => setIsConfirming(false)}
-					>
-						Keep
-					</Button>
-					<Button
-						size="sm"
-						variant="danger"
-						isPending={isRevoking}
-						onPress={onRevoke}
-						aria-label={`Revoke access for ${installation.accountLogin}`}
-					>
-						Revoke
-					</Button>
-				</div>
-			) : (
-				<Button
-					size="sm"
-					variant="ghost"
-					onPress={() => setIsConfirming(true)}
-					aria-label={`Revoke access for ${installation.accountLogin}`}
-				>
-					Revoke
-				</Button>
-			)}
-		</div>
 	);
 }
 
@@ -192,11 +105,12 @@ export function IntegrationsModal({
 }) {
 	const [searchParams] = useSearchParams();
 	const [installations, setInstallations] = useState<GitHubInstallation[]>();
-	const [revoking, setRevoking] = useState<string>();
+	const [disconnecting, setDisconnecting] = useState<"github" | "google">();
 	const [error, setError] = useState("");
 	const [googleConnected, setGoogleConnected] = useState(false);
 	const [googleLoading, setGoogleLoading] = useState(true);
 	const [googleOAuthConfigured, setGoogleOAuthConfigured] = useState(false);
+	const isSelectingGoogleFiles = searchParams.get("select") === "google";
 
 	useEffect(() => {
 		fetch("/api/integrations/github", { credentials: "include" })
@@ -213,9 +127,7 @@ export function IntegrationsModal({
 			});
 		fetch("/api/integrations/google", { credentials: "include" })
 			.then((response) =>
-				response.ok
-					? response.json()
-					: { connected: false },
+				response.ok ? response.json() : { connected: false },
 			)
 			.then((data: { connected: boolean }) => {
 				setGoogleConnected(data.connected);
@@ -237,22 +149,25 @@ export function IntegrationsModal({
 		if (oauthError) setError(authErrorMessage(oauthError));
 	}, [searchParams]);
 
-	async function revokeGitHub(installationId: string) {
-		setRevoking(installationId);
+	async function disconnectGitHub() {
+		if (!installations?.length) return;
+		setDisconnecting("github");
 		setError("");
-		const response = await fetch(
-			`/api/integrations/github/${installationId}`,
-			{
-				method: "DELETE",
-				credentials: "include",
-			},
-		).catch(() => undefined);
-		if (response?.ok)
-			setInstallations((apps) =>
-				apps?.filter((app) => app.installationId !== installationId),
-			);
-		else setError("Couldn't revoke GitHub access. Try again.");
-		setRevoking(undefined);
+		const disconnected = await Promise.all(
+			installations.map(async (installation) => {
+				const response = await fetch(
+					`/api/integrations/github/${installation.installationId}`,
+					{ method: "DELETE", credentials: "include" },
+				).catch(() => undefined);
+				return response?.ok;
+			}),
+		);
+		setInstallations((apps) =>
+			apps?.filter((_, index) => !disconnected[index]),
+		);
+		if (disconnected.some((result) => !result))
+			setError("Couldn't disconnect all GitHub accounts. Try again.");
+		setDisconnecting(undefined);
 	}
 
 	const connectGitHub = () =>
@@ -266,6 +181,18 @@ export function IntegrationsModal({
 		);
 		if (linkError)
 			setError(linkError.message ?? "Couldn't connect Google.");
+	}
+
+	async function disconnectGoogle() {
+		setDisconnecting("google");
+		setError("");
+		const response = await fetch("/api/integrations/google", {
+			method: "DELETE",
+			credentials: "include",
+		}).catch(() => undefined);
+		if (response?.ok) setGoogleConnected(false);
+		else setError("Couldn't disconnect Google. Try again.");
+		setDisconnecting(undefined);
 	}
 
 	async function selectGoogleFiles() {
@@ -302,7 +229,9 @@ export function IntegrationsModal({
 			const picker = new window.google!.picker.PickerBuilder()
 				.addView(window.google!.picker.ViewId.DOCUMENTS)
 				.addView(window.google!.picker.ViewId.SPREADSHEETS)
-				.enableFeature(window.google!.picker.Feature.MULTISELECT_ENABLED)
+				.enableFeature(
+					window.google!.picker.Feature.MULTISELECT_ENABLED,
+				)
 				.setMaxItems(5)
 				.setOAuthToken(accessToken)
 				.setDeveloperKey(apiKey)
@@ -339,7 +268,7 @@ export function IntegrationsModal({
 				onOpenChange={(open) => !open && onClose()}
 				variant="blur"
 			>
-				<Modal.Container placement="center" scroll="inside" size="md">
+				<Modal.Container placement="center" scroll="inside" size="lg">
 					<Modal.Dialog aria-label="Apps and integrations">
 						<Modal.CloseTrigger aria-label="Close apps and integrations" />
 						<Modal.Header className="flex-row items-center gap-3">
@@ -367,201 +296,158 @@ export function IntegrationsModal({
 									</Alert.Content>
 								</Alert>
 							)}
-							<IntegrationCard
-								icon={<FileText size={20} />}
-								name="Google Docs & Sheets"
-								summary={
-									googleConnected
-										? "Add context to your next artefact."
-										: "Use selected development notes to explain code changes."
-								}
-								status={
-									googleLoading ? (
-										<Skeleton
-											animationType="pulse"
-											className="h-5 w-16 rounded"
-										/>
-									) : googleConnected ? (
-										<Chip size="sm" color="success">
-											Connected
-										</Chip>
-									) : null
-								}
-								action={
-									googleLoading || !googleOAuthConfigured ? null : googleConnected ? (
+							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+								<IntegrationCard
+									icon={<FileText size={20} />}
+									name="Google Docs & Sheets"
+									summary={
+										googleConnected
+											? "Add context to your next artefact."
+											: "Use selected development notes to explain code changes."
+									}
+									status={
+										googleLoading ? (
+											<Skeleton
+												animationType="pulse"
+												className="h-5 w-16 rounded"
+											/>
+										) : googleConnected ? (
+											<Chip size="sm" color="success">
+												Connected
+											</Chip>
+										) : null
+									}
+									connected={googleConnected}
+									action={
+										googleLoading ||
+										!googleOAuthConfigured ? null : googleConnected ? (
+											isSelectingGoogleFiles ? (
+												<Button
+													fullWidth
+													onPress={() =>
+														void selectGoogleFiles()
+													}
+												>
+													Select files
+												</Button>
+											) : (
+												<Button
+													fullWidth
+													variant="danger"
+													isPending={
+														disconnecting ===
+														"google"
+													}
+													onPress={() =>
+														void disconnectGoogle()
+													}
+												>
+													Disconnect app
+												</Button>
+											)
+										) : (
+											<Button
+												fullWidth
+												onPress={() =>
+													void connectGoogle()
+												}
+											>
+												Connect app
+											</Button>
+										)
+									}
+								/>
+								<IntegrationCard
+									icon={<GitHubIcon size={20} />}
+									name="GitHub"
+									summary="Generate an artefact for every pull request."
+									status={
+										installations === undefined ? (
+											<Skeleton
+												animationType="pulse"
+												className="h-5 w-16 rounded"
+											/>
+										) : isConnected ? (
+											<Chip size="sm" color="success">
+												Connected
+											</Chip>
+										) : null
+									}
+									connected={isConnected}
+									action={
+										installations ===
+										undefined ? null : isConnected ? (
+											<Button
+												fullWidth
+												variant="danger"
+												isPending={
+													disconnecting === "github"
+												}
+												onPress={() =>
+													void disconnectGitHub()
+												}
+											>
+												Disconnect app
+											</Button>
+										) : (
+											<Button
+												fullWidth
+												onPress={connectGitHub}
+											>
+												Connect app
+											</Button>
+										)
+									}
+								/>
+								<IntegrationCard
+									icon={<SlackIcon size={20} />}
+									name="Slack"
+									summary="Preview artefacts in channels and threads."
+									action={
 										<Button
-											size="sm"
-											variant="secondary"
-											onPress={() => void selectGoogleFiles()}
+											fullWidth
+											onPress={() =>
+												openExternal(slackInstallUrl)
+											}
 										>
-											Select files
+											Connect app
+											<ExternalLink size={14} />
 										</Button>
-									) : (
-										<Button size="sm" onPress={() => void connectGoogle()}>
-											Connect
-										</Button>
-									)
-								}
-								setup={[
-									"Connect the Google account that owns your development notes.",
-									"Choose up to five Google Docs or Sheets for your next artefact.",
-									"Klee reads those files only while generating that artefact.",
-								]}
-							>
-								<Paragraph size="sm" color="muted">
-									Select up to five Docs or Sheets. Klee uses them for the next
-									artefact only, then discards the selection.
-								</Paragraph>
-								{!googleLoading && !googleOAuthConfigured && (
-									<Paragraph size="sm" color="muted" className="mt-2">
-										Google OAuth isn’t configured. Set GOOGLE_CLIENT_ID and
-										GOOGLE_CLIENT_SECRET on the API service, then reload
-										Integrations.
-									</Paragraph>
-								)}
-							</IntegrationCard>
-							<IntegrationCard
-								icon={<GitHubIcon size={20} />}
-								name="GitHub"
-								summary="Generate an artefact for every pull request."
-								status={
-									installations === undefined ? (
-										<Skeleton
-											animationType="pulse"
-											className="h-5 w-16 rounded"
-										/>
-									) : isConnected ? (
-										<Chip size="sm" color="success">
-											Connected
-										</Chip>
-									) : null
-								}
-								action={
-									installations ===
-									undefined ? null : isConnected ? (
+									}
+								/>
+								<IntegrationCard
+									icon={<JiraIcon size={20} />}
+									name="Jira"
+									summary="Show linked artefacts on Jira issues."
+									action={
 										<Button
-											size="sm"
-											variant="secondary"
-											onPress={connectGitHub}
+											fullWidth
+											onPress={() =>
+												openExternal(jiraInstallUrl)
+											}
 										>
-											<Plus size={14} />
-											Add account
+											Connect app
+											<ExternalLink size={14} />
 										</Button>
-									) : (
-										<Button
-											size="sm"
-											onPress={connectGitHub}
-										>
-											Connect
-										</Button>
-									)
-								}
-								setup={[
-									"Connect GitHub and choose the repositories Klee can read.",
-									"Add the Klee GitHub Actions workflow to each repository.",
-									"Open or update a pull request; Klee comments with its artefact.",
-								]}
-							>
-								{isConnected && (
-									<>
-										<div className="-my-2">
-											{installations!.map(
-												(installation, index) => (
-													<Fragment
-														key={
-															installation.installationId
-														}
-													>
-														{index > 0 && (
-															<Separator />
-														)}
-														<InstallationRow
-															installation={
-																installation
-															}
-															isRevoking={
-																revoking ===
-																installation.installationId
-															}
-															onRevoke={() =>
-																void revokeGitHub(
-																	installation.installationId,
-																)
-															}
-														/>
-													</Fragment>
-												),
-											)}
-										</div>
-										<div className="mt-3 border-t border-separator pt-1">
-											<GitHubAccountLink />
-										</div>
-									</>
-								)}
-							</IntegrationCard>
-							<IntegrationCard
-								icon={<SlackIcon size={20} />}
-								name="Slack"
-								summary="Preview artefacts in channels and threads."
-								action={
-									<Button
-										size="sm"
-										variant="secondary"
-										onPress={() =>
-											openExternal(slackInstallUrl)
-										}
-									>
-										Install
-										<ExternalLink size={14} />
-									</Button>
-								}
-								setup={[
-									"Install the Klee app to your Slack workspace.",
-									"Paste a shared artefact link to unfurl a preview.",
-									<>
-										Or run{" "}
-										<Code className="text-xs">
-											/artefact &lt;link or ID&gt;
-										</Code>{" "}
-										in any channel.
-									</>,
-								]}
-							/>
-							<IntegrationCard
-								icon={<JiraIcon size={20} />}
-								name="Jira"
-								summary="Show linked artefacts on Jira issues."
-								action={
-									<Button
-										size="sm"
-										variant="secondary"
-										onPress={() =>
-											openExternal(jiraInstallUrl)
-										}
-									>
-										Install
-										<ExternalLink size={14} />
-									</Button>
-								}
-								setup={[
-									"Install the Klee app from the Atlassian Marketplace.",
-									"Paste a shared artefact link into an issue description or comment.",
-									"Open the Klee panel on the issue to see the artefact.",
-								]}
-							/>
-						</Modal.Body>
-						<Modal.Footer>
+									}
+								/>
+							</div>
+							{isConnected && (
+								<div className="rounded-xl border border-border px-4 py-1">
+									<GitHubAccountLink />
+								</div>
+							)}
 							<Paragraph
-								size="xs"
+								size="sm"
 								color="muted"
-								className="mr-auto"
+								className="px-1 pt-1"
 							>
-								You can revoke GitHub access at any time.
+								Need help connecting an app?{" "}
+								<Link href="/docs" onPress={onClose}>
+									See the docs for additional help.
+								</Link>
 							</Paragraph>
-							<Button variant="secondary" onPress={onClose}>
-								Done
-							</Button>
-						</Modal.Footer>
+						</Modal.Body>
 					</Modal.Dialog>
 				</Modal.Container>
 			</Modal.Backdrop>

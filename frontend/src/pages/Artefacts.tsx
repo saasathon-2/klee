@@ -944,7 +944,7 @@ export function Artefacts() {
 											size="sm"
 											variant="ghost"
 											onPress={() =>
-												navigate("/?panel=integrations")
+												navigate("/?panel=integrations&select=google")
 											}
 										>
 											<FileText size={15} />

@@ -30,7 +30,7 @@ import {
 } from "./artefact-snapshot.ts";
 import { getArtefactPreview, putArtefactPreview } from "./r2.ts";
 import { liveCheckStatuses } from "./live-status.ts";
-import { addNoteEvidence, googleDevelopmentNotes, googleDriveAccessToken } from "./google-docs.ts";
+import { addNoteEvidence, disconnectGoogleDrive, googleDevelopmentNotes, googleDriveAccessToken } from "./google-docs.ts";
 import {
 	githubActionsClaims,
 	githubArtefactComment,
@@ -511,6 +511,13 @@ app.get("/api/integrations/google", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
 	res.json({ connected: Boolean(await googleDriveAccessToken(user.id)) });
+});
+
+app.delete("/api/integrations/google", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	await disconnectGoogleDrive(user.id);
+	res.sendStatus(204);
 });
 
 app.get("/api/integrations/google/access-token", async (req, res) => {

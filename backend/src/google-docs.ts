@@ -26,6 +26,24 @@ async function driveAccount(userId: string) {
 	);
 }
 
+/** Remove Klee's Drive grant without unlinking the user's Google sign-in. */
+export async function disconnectGoogleDrive(userId: string) {
+	const account = await driveAccount(userId);
+	if (!account) return;
+	const scope = String(account.scope ?? "")
+		.split(/[\s,]+/)
+		.filter((value) => value && value !== driveFileScope)
+		.join(" ");
+	await pool.query(
+		`update account
+		set "accessToken" = null, "refreshToken" = null,
+			"accessTokenExpiresAt" = null, "refreshTokenExpiresAt" = null,
+			"scope" = $1, "updatedAt" = current_timestamp
+		where id = $2`,
+		[scope, account.id],
+	);
+}
+
 export async function googleDriveAccessToken(userId: string) {
 	const account = await driveAccount(userId);
 	if (!account) return undefined;
