@@ -503,7 +503,15 @@ export function Artefacts() {
 					</p>
 				)}
 				{current && (
-					<>
+					isPreview ? (
+						<ArtefactBody
+							artefact={current}
+							canInteract={false}
+							edgeToEdge
+							compactHeader
+						/>
+					) : (
+						<>
 						<div className="flex justify-end px-4 py-2">
 							<Button
 								aria-label={`Comments, ${sharedCommentCount}`}
@@ -533,7 +541,8 @@ export function Artefacts() {
 								compactHeader={isPreview}
 							/>
 						</ArtefactComments>
-					</>
+						</>
+					)
 				)}
 			</main>
 		);
