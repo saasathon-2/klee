@@ -62,13 +62,6 @@ function visibleAnchor(anchor: Anchor, width: number, height: number): Anchor {
 	return { ...anchor, y: anchor.y * scale, height: anchor.height * scale };
 }
 
-function previewPosition(anchor: Anchor, side: "left" | "right", surfaceWidth: number) {
-	const boxLeft = anchor.x * surfaceWidth;
-	const boxRight = (anchor.x + anchor.width) * surfaceWidth;
-	const width = Math.max(0, Math.min(256, side === "left" ? boxLeft : surfaceWidth - boxRight));
-	return { left: side === "left" ? -width : boxRight - boxLeft, width };
-}
-
 function regionStyle(anchor: Anchor, color: string, highlighted = false) {
 	return {
 		...regionBounds(anchor),
@@ -111,7 +104,6 @@ export function ArtefactComments({
 	const [adjustingAnchor, setAdjustingAnchor] = useState<{ id: string; anchor: Anchor }>();
 	const [savingCommentId, setSavingCommentId] = useState<string>();
 	const [hoveredCommentId, setHoveredCommentId] = useState<string>();
-	const [hoverPreviewSide, setHoverPreviewSide] = useState<"left" | "right">("left");
 	const [threadId, setThreadId] = useState<string>();
 	const [body, setBody] = useState("");
 	const [error, setError] = useState("");
@@ -122,11 +114,6 @@ export function ArtefactComments({
 	function showCommentHover(id: string) {
 		window.clearTimeout(hoverTimeout.current);
 		hoverTimeout.current = undefined;
-		const comment = comments.find((item) => item.id === id);
-		const width = surfaceRef.current?.clientWidth ?? 0;
-		const leftSpace = (comment?.anchor?.x ?? 0) * width;
-		const rightSpace = comment?.anchor ? (1 - comment.anchor.x - comment.anchor.width) * width : 0;
-		setHoverPreviewSide(leftSpace >= rightSpace ? "left" : "right");
 		setHoveredCommentId(id);
 	}
 
@@ -486,13 +473,12 @@ export function ArtefactComments({
 						const color = userColor(comment.author.id);
 						const anchor = visibleAnchor(adjustingAnchor?.id === comment.id ? adjustingAnchor.anchor : comment.anchor!, surfaceSize.width, surfaceSize.height);
 						const highlighted = hoveredCommentId === comment.id;
-						const previewStyle = previewPosition(anchor, hoverPreviewSide, surfaceSize.width);
 						const { left, top, width, height, ...boxStyle } = regionStyle(anchor, color, highlighted);
 						return (
 							<div
 								key={comment.id}
 								data-comment-region={comment.id}
-								className="pointer-events-none absolute z-[5]"
+								className="pointer-events-none absolute z-[60]"
 								style={{ left, top, width, height }}
 							>
 								<button
@@ -540,8 +526,8 @@ export function ArtefactComments({
 								{hoveredCommentId === comment.id && (
 									<div
 										data-comment-ui
-										className="pointer-events-auto absolute top-0 z-20 max-h-64 overflow-y-auto"
-										style={previewStyle}
+										className="pointer-events-auto absolute z-[70] max-h-64 overflow-y-auto"
+										style={{ left: 0, top: "calc(100% + 0.5rem)", width: "min(20rem, calc(100vw - 2rem))" }}
 										onMouseEnter={() => showCommentHover(comment.id)}
 										onMouseLeave={hideCommentHover}
 									>
@@ -562,7 +548,7 @@ export function ArtefactComments({
 					{(draftAnchor || dragAnchor) && (
 						<div
 							aria-hidden="true"
-							className="pointer-events-none absolute z-[6] rounded-lg border-2 border-dashed border-accent-text bg-accent/15"
+							className="pointer-events-none absolute z-[60] rounded-lg border-2 border-dashed border-accent-text bg-accent/15"
 							style={regionStyle(draftDisplayAnchor ?? dragAnchor!, userColor(userId))}
 						/>
 					)}
@@ -570,7 +556,7 @@ export function ArtefactComments({
 						<form
 							data-comment-ui
 							onSubmit={post}
-							className="absolute z-[8] rounded-xl border border-border bg-surface p-3 shadow-xl"
+							className="absolute z-[70] rounded-xl border border-border bg-surface p-3 shadow-xl"
 							style={{
 								left: `max(8px, min(${(draftDisplayAnchor ?? draftAnchor).x * 100}%, calc(100% - 328px)))`,
 								top: `${((draftDisplayAnchor ?? draftAnchor).y + (draftDisplayAnchor ?? draftAnchor).height) * 100}%`,
