@@ -75,6 +75,9 @@ Preview deploy: pending, queued behind 2 other builds`,
 @priya_k (commented): The registered state still renders the old badge colour on the profile page.
 @tom_w (approved): Happy to merge once the key rotation follow-up is ticketed.
 
+System relationships confirmed by the PR:
+The auth client sends requests to the API gateway. The gateway validates session keys using the encrypted key store. The login handler creates session keys and writes the user ID and expiry to the key store. Include a component/dependency diagram showing these relationships.
+
 Show this change to src/auth/session.ts as a code diff and explain what it does.
 
 @@ -12,10 +12,12 @@ export async function createSession(user: User) {

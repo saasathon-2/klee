@@ -15,6 +15,16 @@ const metricSchema = z
 const flowNodeSchema = z
 	.object({ label: shortText, detail: shortText })
 	.strict();
+const softwareDiagramNodeSchema = z
+	.object({ id: shortText, label: shortText, detail: detailText })
+	.strict();
+const softwareDiagramEdgeSchema = z
+	.object({
+		source: shortText,
+		target: shortText,
+		label: z.string().trim().max(120).nullable(),
+	})
+	.strict();
 const taskSchema = z
 	.object({
 		id: shortText,
@@ -99,6 +109,19 @@ const blockSchemas = [
 					title: shortText,
 					description: shortText,
 					nodes: z.array(flowNodeSchema).min(2).max(3),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("software-diagram"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					nodes: z.array(softwareDiagramNodeSchema).min(2).max(10),
+					edges: z.array(softwareDiagramEdgeSchema).min(1).max(16),
 				})
 				.strict(),
 		})
@@ -240,6 +263,7 @@ export function toDocument(generation: Generation): ArtefactDocument {
 					"prose",
 					"metric-row",
 					"architecture-flow",
+					"software-diagram",
 					"glue",
 					"task-list",
 					"next-steps",
@@ -276,6 +300,13 @@ export function toDocument(generation: Generation): ArtefactDocument {
 			block.data.nodes.length < 2
 		)
 			throw new Error("Architecture flows need at least two nodes");
+		if (block.template === "software-diagram") {
+			const ids = new Set(block.data.nodes.map((node) => node.id));
+			if (ids.size !== block.data.nodes.length)
+				throw new Error("Software diagram node IDs must be unique");
+			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
+				throw new Error("Software diagram edges must reference existing nodes");
+		}
 	}
 	if (
 		blocks.filter((block) => block.template !== "glue").length >= 3 &&

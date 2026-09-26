@@ -91,6 +91,7 @@ DeveloperPage.children = {
 	allowed: [
 		"metric-row",
 		"architecture-flow",
+		"software-diagram",
 		"glue",
 		"task-list",
 		"next-steps",

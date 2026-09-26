@@ -69,3 +69,21 @@ body {
 .home-section {
 	padding-top: 0px;
 }
+
+.software-diagram-canvas .react-flow__controls {
+	border: 1px solid var(--border);
+	border-radius: 0.75rem;
+	box-shadow: none;
+	overflow: hidden;
+}
+
+.software-diagram-canvas .react-flow__controls-button {
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--foreground);
+	fill: var(--foreground);
+}
+
+.software-diagram-canvas .react-flow__controls-button:hover {
+	background: var(--surface-secondary);
+}
