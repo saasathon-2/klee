@@ -8,9 +8,12 @@ export type ExamplePrompt = {
 		| "review-comments"
 		| "commit-list"
 		| "check-list"
-		| "god-prompt";
+		| "god-prompt"
+		| "electrical-god-prompt";
 	label: string;
 	prompt: string;
+	/** A PDF from `public/` attached alongside the prompt. */
+	attachment?: { url: string; filename: string };
 };
 
 export const developerExamplePrompts: ExamplePrompt[] = [
@@ -108,5 +111,12 @@ Lint: failed, 2 errors in src/auth/session.ts (unused import, missing return typ
 Type check: passed
 Security scan: passed, no new vulnerabilities
 Preview deploy: pending, queued behind 2 other builds`,
+	},
+	{
+		id: "electrical-god-prompt",
+		label: "Electrical God Prompt",
+		prompt:
+			"Make a quick-reference artefact for the UC3843 from the attached datasheet: headline limits, key electrical specifications for both part grades, the pinout for every package, the oscillator and error amplifier curves, a comparison of the UC3842 to UC3845 variants, and the offline flyback application schematic.",
+		attachment: { url: "/examples/uc3843-datasheet.pdf", filename: "UC3843 datasheet.pdf" },
 	},
 ];

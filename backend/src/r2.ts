@@ -1,4 +1,11 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import {
+	DeleteObjectCommand,
+	GetObjectCommand,
+	PutObjectCommand,
+	S3Client,
+} from "@aws-sdk/client-s3";
 import { env } from "./env.ts";
 
 let client: S3Client | undefined;
@@ -35,4 +42,56 @@ export async function getArtefactPreview(artefactId: string) {
 	if (!storage || !env.r2Bucket) return;
 	const object = await storage.send(new GetObjectCommand({ Bucket: env.r2Bucket, Key: previewKey(artefactId) }));
 	return object.Body?.transformToByteArray();
+}
+
+/*
+ * Private files (uploaded PDFs and the figures cropped from them). They live in
+ * R2 when it is configured; local development without R2 keeps them on disk.
+ */
+const localRoot = new URL("../.data/files/", import.meta.url).pathname;
+const localPath = (key: string) => join(localRoot, ...key.split("/"));
+
+export async function putFile(key: string, body: Uint8Array, contentType: string) {
+	const storage = r2();
+	if (storage && env.r2Bucket) {
+		await storage.send(new PutObjectCommand({
+			Bucket: env.r2Bucket,
+			Key: key,
+			Body: body,
+			ContentType: contentType,
+		}));
+		return;
+	}
+	await mkdir(dirname(localPath(key)), { recursive: true });
+	await writeFile(localPath(key), body);
+}
+
+/** The file's bytes, or undefined when it doesn't exist. */
+export async function getFile(key: string): Promise<Uint8Array | undefined> {
+	const storage = r2();
+	if (storage && env.r2Bucket) {
+		try {
+			const object = await storage.send(new GetObjectCommand({ Bucket: env.r2Bucket, Key: key }));
+			return object.Body?.transformToByteArray();
+		} catch (error) {
+			if ((error as { name?: string }).name === "NoSuchKey") return;
+			throw error;
+		}
+	}
+	return readFile(localPath(key)).then(
+		(buffer) => new Uint8Array(buffer),
+		(error: NodeJS.ErrnoException) => {
+			if (error.code === "ENOENT") return undefined;
+			throw error;
+		},
+	);
+}
+
+export async function deleteFile(key: string) {
+	const storage = r2();
+	if (storage && env.r2Bucket) {
+		await storage.send(new DeleteObjectCommand({ Bucket: env.r2Bucket, Key: key }));
+		return;
+	}
+	await rm(localPath(key), { force: true });
 }

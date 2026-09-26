@@ -19,6 +19,7 @@ import {
 import {
 	ArrowUp,
 	BrainCog,
+	CircuitBoard,
 	Check,
 	History,
 	LogOut,
@@ -26,6 +27,7 @@ import {
 	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
+	Paperclip,
 	Pencil,
 	Plug,
 	Plus,
@@ -35,7 +37,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { useDrop } from "react-aria-components";
+import { isFileDropItem, useDrop, type DragTypes } from "react-aria-components";
 import {
 	Navigate,
 	useLocation,
@@ -52,7 +54,7 @@ import {
 	withEditedText,
 	type ArtefactDocument,
 } from "../artefacts/model";
-import type { EditPath } from "../artefacts/templates/types";
+import type { EditPath, FigureRequest } from "../artefacts/templates/types";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsModal } from "./Integrations";
@@ -60,6 +62,8 @@ import { useMediaQuery } from "../lib/use-media-query";
 import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 import { ArtefactNav } from "./artefact/ArtefactNav";
 import { acceptArtefactDrop, droppedArtefactId } from "./artefact/artefactDrag";
+import { AttachmentChips } from "./artefact/AttachmentChips";
+import { maxAttachments, usePdfAttachments } from "./artefact/usePdfAttachments";
 import { FolderSelect } from "./artefact/FolderSelect";
 import { ProjectSelect } from "./artefact/ProjectSelect";
 import { useFolders, type Folder } from "./artefact/useFolders";
@@ -102,8 +106,9 @@ function artefactHeading(artefact: Artefact) {
 		: "Working brief";
 }
 
-const godPrompt = developerExamplePrompts.find(
-	(template) => template.id === "god-prompt",
+const godPrompts = developerExamplePrompts.filter(
+	(template) =>
+		template.id === "god-prompt" || template.id === "electrical-god-prompt",
 );
 
 const api = (path: string, options?: RequestInit) =>
@@ -130,6 +135,8 @@ export function Artefacts() {
 		artefact: Artefact;
 	}>();
 	const [prompt, setPrompt] = useState("");
+	const pdfs = usePdfAttachments();
+	const fileInput = useRef<HTMLInputElement>(null);
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
 	const [generationCommentary, setGenerationCommentary] = useState("");
@@ -153,13 +160,31 @@ export function Artefacts() {
 		() => window.matchMedia(desktopQuery).matches,
 	);
 	const generationAbort = useRef<AbortController | undefined>(undefined);
-	// Dropping a sidebar artefact onto the main view opens it.
+	// Dropping a sidebar artefact onto the main view opens it; dropping PDFs
+	// attaches them to the prompt.
 	const mainRef = useRef<HTMLElement>(null);
+	const [dropKind, setDropKind] = useState<"artefact" | "file">("artefact");
 	const { dropProps: mainDropProps, isDropTarget: isMainDropTarget } =
 		useDrop({
 			ref: mainRef,
-			getDropOperation: acceptArtefactDrop,
+			getDropOperation: (types: DragTypes) => {
+				if (types.has("application/pdf")) {
+					if (dropKind !== "file") setDropKind("file");
+					return "copy";
+				}
+				if (dropKind !== "artefact") setDropKind("artefact");
+				return acceptArtefactDrop(types);
+			},
 			onDrop: async ({ items }) => {
+				const files = await Promise.all(
+					items.filter(isFileDropItem).map((item) => item.getFile()),
+				);
+				if (files.length) {
+					const rejected = pdfs.add(files);
+					setError(rejected ?? "");
+					if (isProfile || isIntegrations) navigate("/");
+					return;
+				}
 				const artefactId = await droppedArtefactId(items);
 				if (artefactId) navigate(`/?artefact=${artefactId}`);
 			},
@@ -214,7 +239,8 @@ export function Artefacts() {
 
 	async function create(event: FormEvent) {
 		event.preventDefault();
-		if (!prompt.trim() || isCreating) return;
+		if ((!prompt.trim() && !pdfs.readyIds.length) || pdfs.isUploading || isCreating)
+			return;
 		const controller = new AbortController();
 		generationAbort.current = controller;
 		setIsCreating(true);
@@ -224,11 +250,13 @@ export function Artefacts() {
 		try {
 			const response = await api("/artefacts/stream", {
 				method: "POST",
-				body: JSON.stringify({ prompt }),
+				body: JSON.stringify({ prompt, attachmentIds: pdfs.readyIds }),
 				signal: controller.signal,
 			});
-			if (!response.ok || !response.body)
-				throw new Error("create failed");
+			if (!response.ok || !response.body) {
+				const body = (await response.json().catch(() => ({}))) as { error?: string };
+				throw new Error(body.error ?? "Could not create artefact.");
+			}
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
 			let buffer = "";
@@ -263,6 +291,7 @@ export function Artefacts() {
 			setArtefacts((currentArtefacts) => [artefact, ...currentArtefacts]);
 			setLoaded({ path, artefact });
 			setPrompt("");
+			pdfs.clear();
 			navigate(`/?artefact=${artefact.id}`);
 		} catch (error) {
 			if (!controller.signal.aborted)
@@ -275,6 +304,26 @@ export function Artefacts() {
 			generationAbort.current = undefined;
 			setIsCreating(false);
 			setGenerationStatus("");
+		}
+	}
+	/** Fills the prompt and attaches the example's PDF, unless it's already attached. */
+	async function applyExample(example: (typeof godPrompts)[number]) {
+		setPrompt(example.prompt);
+		const attachment = example.attachment;
+		if (
+			!attachment ||
+			pdfs.attachments.some((item) => item.filename === attachment.filename)
+		)
+			return;
+		try {
+			const response = await fetch(attachment.url);
+			if (!response.ok) throw new Error();
+			const file = new File([await response.blob()], attachment.filename, {
+				type: "application/pdf",
+			});
+			setError(pdfs.add([file]) ?? "");
+		} catch {
+			setError("Couldn't load the example PDF.");
 		}
 	}
 	function cancelGeneration() {
@@ -425,6 +474,7 @@ export function Artefacts() {
 						artefact={current}
 						canInteract={false}
 						edgeToEdge
+						figureToken={snapshotToken}
 					/>
 				)}
 			</main>
@@ -482,7 +532,7 @@ export function Artefacts() {
 				{isMainDropTarget && (
 					<div className="pointer-events-none absolute inset-4 z-20 grid place-items-center rounded-2xl border-2 border-dashed border-accent-text bg-accent-soft">
 						<span className="rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-surface-foreground">
-							Drop to open
+							{dropKind === "file" ? "Drop to attach" : "Drop to open"}
 						</span>
 					</div>
 				)}
@@ -603,6 +653,10 @@ export function Artefacts() {
 							</div>
 							<form onSubmit={create} className="w-full">
 								<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
+									<AttachmentChips
+										attachments={pdfs.attachments}
+										onRemove={pdfs.remove}
+									/>
 									<TextArea
 										aria-label="Artefact prompt"
 										variant="secondary"
@@ -611,23 +665,54 @@ export function Artefacts() {
 										onChange={(event) =>
 											setPrompt(event.target.value)
 										}
-										placeholder="What would you like to make? Paste a PR, issue, or a question…"
+										placeholder="What would you like to make? Paste a PR, issue, or a question, or attach a PDF…"
 										className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
 									/>
 									<Toolbar
 										aria-label="Create artefact controls"
-										className="flex w-full justify-end px-1 pt-1"
+										className="flex w-full items-center justify-between px-1 pt-1"
 									>
+										<Button
+											aria-label="Attach PDF"
+											variant="ghost"
+											className="size-9 min-w-9 rounded-full p-0"
+											isDisabled={
+												pdfs.attachments.length >= maxAttachments ||
+												isCreating
+											}
+											onPress={() => fileInput.current?.click()}
+										>
+											<Paperclip size={17} />
+										</Button>
+										<input
+											ref={fileInput}
+											type="file"
+											accept="application/pdf,.pdf"
+											multiple
+											hidden
+											onChange={(event) => {
+												const rejected = pdfs.add([
+													...(event.target.files ?? []),
+												]);
+												setError(rejected ?? "");
+												event.target.value = "";
+											}}
+										/>
 										<Button
 											aria-label={
 												isCreating
 													? "Generating artefact"
-													: "Create artefact"
+													: pdfs.isUploading
+														? "Waiting for uploads"
+														: "Create artefact"
 											}
 											type="submit"
 											className="size-9 min-w-9 rounded-full p-0"
 											isDisabled={
-												!prompt.trim() || isCreating
+												(!prompt.trim() &&
+													!pdfs.readyIds.length) ||
+												pdfs.isUploading ||
+												isCreating
 											}
 										>
 											{isCreating ? (
@@ -639,19 +724,25 @@ export function Artefacts() {
 									</Toolbar>
 								</Surface>
 							</form>
-							{godPrompt && (
-								<div className="mt-4 flex justify-center">
-									<Button
-										size="sm"
-										variant="outline"
-										className="rounded-full"
-										onPress={() =>
-											setPrompt(godPrompt.prompt)
-										}
-									>
-										<BrainCog size={15} />
-										{godPrompt.label}
-									</Button>
+							{godPrompts.length > 0 && (
+								<div className="mt-4 flex flex-wrap justify-center gap-2">
+									{godPrompts.map((example) => (
+										<Button
+											key={example.id}
+											size="sm"
+											variant="outline"
+											className="rounded-full"
+											isDisabled={isCreating}
+											onPress={() => void applyExample(example)}
+										>
+											{example.attachment ? (
+												<CircuitBoard size={15} />
+											) : (
+												<BrainCog size={15} />
+											)}
+											{example.label}
+										</Button>
+									))}
 								</div>
 							)}
 						</div>
@@ -1300,6 +1391,20 @@ function ArtefactModal({
 	);
 }
 
+/** Where a source figure is served; the preview token lets the screenshot browser in. */
+function figureUrl(artefactId: string, figure: FigureRequest, token?: string | null) {
+	const params = new URLSearchParams({
+		attachment: figure.attachmentId,
+		page: String(figure.page),
+	});
+	if (figure.crop) {
+		const { x, y, width, height } = figure.crop;
+		params.set("crop", [x, y, width, height].join(","));
+	}
+	if (token) params.set("token", token);
+	return `/api/artefacts/${encodeURIComponent(artefactId)}/figures?${params}`;
+}
+
 function ArtefactBody({
 	artefact,
 	document: override,
@@ -1308,8 +1413,11 @@ function ArtefactBody({
 	isEditing = false,
 	onAction,
 	onEdit,
+	figureToken,
 }: {
 	artefact: Artefact;
+	/** Preview token when rendering for the screenshot browser. */
+	figureToken?: string | null;
 	/** Shown instead of the saved content, e.g. an edit draft or a past version. */
 	document?: ArtefactDocument;
 	canInteract: boolean;
@@ -1331,6 +1439,7 @@ function ArtefactBody({
 			isEditing={isEditing}
 			onAction={onAction}
 			onEdit={onEdit}
+			figureSrc={(figure) => figureUrl(artefact.id, figure, figureToken)}
 		/>
 	);
 }
