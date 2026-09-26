@@ -180,6 +180,7 @@ export function Artefacts() {
 	const [shareOpen, setShareOpen] = useState(false);
 	const [notShared, setNotShared] = useState(false);
 	const [sharedCommentsOpen, setSharedCommentsOpen] = useState(false);
+	const [isSharedCommenting, setSharedCommenting] = useState(false);
 	const [sharedCommentCount, setSharedCommentCount] = useState(0);
 	const [copiedSharedLinkId, setCopiedSharedLinkId] = useState<string>();
 	const [sharedAccess, setSharedAccess] = useState<{
@@ -622,18 +623,23 @@ export function Artefacts() {
 									</Button>
 									<Button
 										aria-label={`Comments, ${sharedCommentCount}`}
+										aria-pressed={sharedCommentsOpen || isSharedCommenting}
 										variant={
-											sharedCommentsOpen
+											sharedCommentsOpen || isSharedCommenting
 												? "secondary"
 												: "ghost"
 										}
 										size="sm"
 										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-										onPress={() =>
-											setSharedCommentsOpen(
-												!sharedCommentsOpen,
-											)
-										}
+										onPress={() => {
+											const next = !(sharedCommentsOpen || isSharedCommenting);
+											setSharedCommentsOpen(next);
+											setSharedCommenting(
+												next &&
+													(currentSharedAccess?.permission === "comment" ||
+														currentSharedAccess?.permission === "edit"),
+											);
+										}}
 									>
 										<MessageCircle size={15} />
 										Comments
@@ -665,6 +671,8 @@ export function Artefacts() {
 							}
 							isOpen={sharedCommentsOpen}
 							onOpenChange={setSharedCommentsOpen}
+							isCommenting={isSharedCommenting}
+							onCommentingChange={setSharedCommenting}
 							onCountChange={setSharedCommentCount}
 						>
 							<ArtefactBody
@@ -1107,6 +1115,7 @@ function ArtefactModal({
 	const [isDiscarding, setIsDiscarding] = useState(false);
 	const [showHistory, setShowHistory] = useState(false);
 	const [commentsOpen, setCommentsOpen] = useState(false);
+	const [isCommenting, setCommenting] = useState(false);
 	const [commentCount, setCommentCount] = useState(0);
 	// A past version picked on the history slider; `undefined` shows the latest.
 	const [pastVersion, setPastVersion] = useState<ArtefactDocument>();
@@ -1263,13 +1272,18 @@ function ArtefactModal({
 								{artefact && !isEditing && !historyOpen && (
 									<Button
 										aria-label={`Comments, ${commentCount}`}
+										aria-pressed={commentsOpen || isCommenting}
 										variant={
-											commentsOpen ? "secondary" : "ghost"
+											commentsOpen || isCommenting
+												? "secondary"
+												: "ghost"
 										}
 										size="sm"
-										onPress={() =>
-											setCommentsOpen(!commentsOpen)
-										}
+										onPress={() => {
+											const next = !(commentsOpen || isCommenting);
+											setCommentsOpen(next);
+											setCommenting(next && canComment);
+										}}
 									>
 										<MessageCircle size={15} />
 										<span className="hidden sm:inline">
@@ -1344,6 +1358,8 @@ function ArtefactModal({
 									canComment={canComment}
 									isOpen={commentsOpen}
 									onOpenChange={setCommentsOpen}
+									isCommenting={isCommenting}
+									onCommentingChange={setCommenting}
 									onCountChange={setCommentCount}
 								>
 									{renderedArtefact}
@@ -1457,7 +1473,8 @@ function ArtefactModal({
 							!isCreating &&
 							!isEditing &&
 							canEdit &&
-							!commentsOpen && (
+							!commentsOpen &&
+							!isCommenting && (
 								<div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 px-4 sm:px-6">
 									<div className="pointer-events-auto relative mx-auto w-[70%] max-sm:w-full">
 										<form

@@ -1,5 +1,5 @@
-import { Button, TextArea } from "@heroui/react";
-import { ArrowLeft, Heart, MessageCircle, Pencil, Reply, Send, Sparkles, X } from "lucide-react";
+import { Button, Chip, TextArea } from "@heroui/react";
+import { ArrowLeft, Heart, MessageCircle, MessageCirclePlus, Pencil, Reply, Send, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, PointerEvent, ReactNode } from "react";
 import { UserAvatar } from "../../components/UserAvatar";
@@ -79,6 +79,8 @@ export function ArtefactComments({
 	canComment = true,
 	isOpen,
 	onOpenChange,
+	isCommenting = false,
+	onCommentingChange,
 	onCountChange,
 	children,
 }: {
@@ -89,6 +91,9 @@ export function ArtefactComments({
 	canComment?: boolean;
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
+	/** Comment mode: dragging across the artefact starts a comment. Off, the page selects text as usual. */
+	isCommenting?: boolean;
+	onCommentingChange?: (commenting: boolean) => void;
 	onCountChange: (count: number) => void;
 	children: ReactNode;
 }) {
@@ -196,8 +201,21 @@ export function ArtefactComments({
 		};
 	}
 
+	const canDraw = canComment && isCommenting;
+
+	useEffect(() => {
+		if (!isCommenting) return;
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== "Escape" || (event.target as HTMLElement).closest("textarea,input")) return;
+			setDraftAnchor(undefined);
+			onCommentingChange?.(false);
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [isCommenting, onCommentingChange]);
+
 	function startSelection(event: PointerEvent<HTMLDivElement>) {
-		if (!canComment || event.button !== 0 || !surfaceRef.current) return;
+		if (!canDraw || event.button !== 0 || !surfaceRef.current) return;
 		const target = event.target as HTMLElement;
 		if (target.closest("a,button,input,textarea,[contenteditable=true],.react-flow,[data-comment-ui]")) return;
 		event.preventDefault();
@@ -460,9 +478,17 @@ export function ArtefactComments({
 	return (
 		<div className="relative flex min-h-0 flex-1 overflow-hidden">
 			<div className="relative min-w-0 flex-1 overflow-auto">
+				{canDraw && (
+					<div className="pointer-events-none sticky top-3 z-[65] flex h-0 justify-center">
+						<Chip size="sm" variant="primary" className="h-7 shadow-lg">
+							<MessageCirclePlus size={14} />
+							Drag across the artefact to comment · Esc to finish
+						</Chip>
+					</div>
+				)}
 				<div
 					ref={surfaceRef}
-					className="relative"
+					className={`relative ${canDraw ? "cursor-crosshair select-none" : ""}`}
 					onPointerDown={startSelection}
 					onPointerMove={moveSelection}
 					onPointerUp={finishSelection}
@@ -608,7 +634,10 @@ export function ArtefactComments({
 							aria-label="Collapse comments"
 							variant="ghost"
 							className="size-8 min-w-8 p-0"
-							onPress={() => onOpenChange(false)}
+							onPress={() => {
+								onOpenChange(false);
+								onCommentingChange?.(false);
+							}}
 						>
 							<X size={16} />
 						</Button>
@@ -673,9 +702,11 @@ export function ArtefactComments({
 							})
 						) : (
 							<p className="py-6 text-center text-sm text-muted">
-								{canComment
+								{canDraw
 									? "Drag across an area of the artefact to start a comment."
-									: "No comments on this artefact yet."}
+									: canComment
+										? "No comments yet. Turn on Comment mode to add one."
+										: "No comments on this artefact yet."}
 							</p>
 						)}
 					</div>
