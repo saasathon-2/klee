@@ -181,6 +181,7 @@ export function ArtefactComments({
 		const commentId = window.location.hash.match(/^#comment-(.+)$/)?.[1];
 		if (!commentId || !comments.some((comment) => comment.id === commentId)) return;
 		setThreadId(commentId);
+		setHoveredCommentId(commentId);
 		setDraftAnchor(undefined);
 		onOpenChange(true);
 		const frame = window.requestAnimationFrame(() =>
