@@ -2,10 +2,7 @@ import { Button, Chip, Paragraph } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { authClient, linkGitHub } from "../../lib/auth-client";
 
-/**
- * Links a GitHub login to the current user so artefacts in their GitHub orgs
- * become visible and editable. Separate from installing the GitHub App.
- */
+/** Enables organisation access after the GitHub App is connected. */
 export function GitHubAccountLink({
 	returnTo = "/?panel=integrations",
 }: {
@@ -19,7 +16,13 @@ export function GitHubAccountLink({
 		authClient
 			.listAccounts()
 			.then(({ data }) =>
-				setIsLinked(Boolean(data?.some((account) => account.providerId === "github"))),
+				setIsLinked(
+					Boolean(
+						data?.some(
+							(account) => account.providerId === "github",
+						),
+					),
+				),
 			)
 			.catch(() => setIsLinked(false));
 	}, []);
@@ -35,15 +38,16 @@ export function GitHubAccountLink({
 		<div className="mt-3">
 			{isLinked ? (
 				<Chip size="sm" color="success">
-					GitHub account linked
+					Organisation sharing enabled
 				</Chip>
 			) : (
 				<Button variant="secondary" onPress={() => void link()}>
-					Link GitHub account
+					Enable organisation sharing
 				</Button>
 			)}
 			<Paragraph size="xs" color="muted" className="mt-2">
-				Members of your GitHub orgs can view and edit artefacts in those projects.
+				Optional: link your GitHub identity so Klee can verify your
+				organisation membership for team-shared artefacts.
 			</Paragraph>
 			{error && (
 				<Paragraph size="xs" className="mt-1 text-danger">
