@@ -122,6 +122,7 @@ export function Artefacts() {
 	const [searchParams] = useSearchParams();
 	const id = routeId ?? searchParams.get("artefact") ?? undefined;
 	const snapshotToken = searchParams.get("snapshot");
+	const isPreview = searchParams.get("preview") === "1";
 	const { data: session, isPending } = useSession();
 	const isShared = Boolean(shareId);
 	const isProfile = location.pathname === "/profile";
@@ -497,6 +498,7 @@ export function Artefacts() {
 								artefact={current}
 								canInteract={false}
 								edgeToEdge
+								compactHeader={isPreview}
 							/>
 						</ArtefactComments>
 					</>
@@ -1406,6 +1408,7 @@ function ArtefactBody({
 	document: override,
 	canInteract,
 	edgeToEdge = false,
+	compactHeader = false,
 	isEditing = false,
 	onAction,
 	onEdit,
@@ -1415,6 +1418,7 @@ function ArtefactBody({
 	document?: ArtefactDocument;
 	canInteract: boolean;
 	edgeToEdge?: boolean;
+	compactHeader?: boolean;
 	isEditing?: boolean;
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
@@ -1429,6 +1433,7 @@ function ArtefactBody({
 			createdAt={artefact.createdAt}
 			canInteract={canInteract && !isEditing}
 			edgeToEdge={edgeToEdge}
+			compactHeader={compactHeader}
 			isEditing={isEditing}
 			onAction={onAction}
 			onEdit={onEdit}

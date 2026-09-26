@@ -14,8 +14,16 @@ const CategoryPage: Template = ({ node, children, context }) => {
 	return (
 		<>
 			<header className="text-brand-foreground">
-				<div className="relative bg-brand pt-10 pb-5">
-					<div className="mx-auto flex w-full max-w-[1000px] flex-col items-start gap-3 px-6 text-left sm:px-10">
+				<div
+					className={
+						context.compactHeader
+							? "relative bg-brand pb-2 pt-5"
+							: "relative bg-brand pb-5 pt-10"
+					}
+				>
+					<div
+						className={`mx-auto flex w-full max-w-[1000px] flex-col items-start px-6 text-left sm:px-10 ${context.compactHeader ? "gap-1" : "gap-3"}`}
+					>
 						<Heading
 							level={1}
 							align="start"
@@ -29,27 +37,31 @@ const CategoryPage: Template = ({ node, children, context }) => {
 								label="Artefact title"
 							/>
 						</Heading>
-						<Paragraph
-							align="start"
-							className="w-full max-w-2xl text-inherit opacity-80"
-						>
-							<EditableText
-								node={node}
-								context={context}
-								path={["summary"]}
-								value={data.summary}
-								label="Summary"
-								multiline
-							/>
-						</Paragraph>
+						{!context.compactHeader && (
+							<Paragraph
+								align="start"
+								className="w-full max-w-2xl text-inherit opacity-80"
+							>
+								<EditableText
+									node={node}
+									context={context}
+									path={["summary"]}
+									value={data.summary}
+									label="Summary"
+									multiline
+								/>
+							</Paragraph>
+						)}
 						<div className="inline-flex flex-wrap justify-between gap-2 w-full">
-							<div className="inline-flex flex-wrap gap-2">
-								{data.tags.map((tag) => (
-									<Chip key={tag} size="sm">
-										{tag}
-									</Chip>
-								))}
-							</div>
+							{!context.compactHeader && (
+								<div className="inline-flex flex-wrap gap-2">
+									{data.tags.map((tag) => (
+										<Chip key={tag} size="sm">
+											{tag}
+										</Chip>
+									))}
+								</div>
+							)}
 							<Paragraph
 								size="xs"
 								className="text-inherit opacity-70"

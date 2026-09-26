@@ -387,7 +387,7 @@ export function ArtefactComments({
 									openThread(comment.id);
 								}}
 							>
-								<span className="absolute -right-2 -top-3 rounded-2xl border-2 border-surface bg-surface shadow-sm">
+								<span className="absolute -right-2 -top-3 leading-none rounded-2xl border-2 border-surface bg-surface shadow-sm">
 									<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
 								</span>
 								{canAdjustAnchor(comment) && <span data-comment-resize className="absolute -bottom-1.5 -right-1.5 size-3.5 cursor-se-resize rounded-sm border-2 border-surface bg-current" style={{ color }} />}
