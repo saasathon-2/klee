@@ -1,9 +1,10 @@
 import { Button, Description, Dropdown, Label, Link } from "@heroui/react";
 import { ChevronDown, Menu } from "lucide-react";
 import { type ComponentProps, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "../lib/auth-client";
-import { navMenus, pricingPath } from "../pages/landing/links";
+import { navMenus, pricingPath, repositoryUrl } from "../pages/landing/links";
+import { GitHubIcon } from "./BrandIcons";
 import { KleeIcon } from "./KleeLogo";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -15,6 +16,8 @@ const mobileLinks = [
 export function Navbar() {
 	const { data: session, isPending } = useSession();
 	const navigate = useNavigate();
+	// The docs link to the source instead of the dashboard.
+	const isDocs = useLocation().pathname === "/docs" || window.location.hostname === "docs.klee.work";
 	const [scrolled, setScrolled] = useState(false);
 	useEffect(() => {
 		const onScroll = (event: Event) => {
@@ -121,15 +124,24 @@ export function Navbar() {
 							</Dropdown.Menu>
 						</Dropdown.Popover>
 					</Dropdown>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="hidden md:flex"
-						onPress={() => navigate("/docs")}
-					>
-						Docs
-					</Button>
-					{isPending ? null : session?.user ? (
+					{isDocs ? (
+						<Button
+							isIconOnly
+							aria-label="Klee on GitHub"
+							variant="ghost"
+							size="sm"
+							render={(props) => (
+								<a
+									{...(props as unknown as ComponentProps<"a">)}
+									href={repositoryUrl}
+									target="_blank"
+									rel="noreferrer"
+								/>
+							)}
+						>
+							<GitHubIcon aria-hidden className="size-5" />
+						</Button>
+					) : isPending ? null : session?.user ? (
 						<Button size="sm" onPress={() => navigate("/")}>
 							Dashboard
 						</Button>

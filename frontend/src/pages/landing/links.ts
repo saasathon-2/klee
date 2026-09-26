@@ -16,6 +16,7 @@ export const navMenus: { label: string; links: LandingLink[] }[] = [
 			{ label: "For developers", description: "Blocks for engineering work", to: "/developers" },
 			{ label: "Templates", description: "Example artefacts", to: "/developer-templates" },
 			{ label: "Integrations", description: "GitHub, Slack, and Jira", to: "/developer-integrations" },
+			{ label: "Docs", description: "Setup guides and reference", to: "/docs" },
 		],
 	},
 	{
@@ -29,3 +30,5 @@ export const navMenus: { label: string; links: LandingLink[] }[] = [
 ];
 
 export const pricingPath = "/pricing";
+
+export const repositoryUrl = "https://github.com/saasathon-2/app";
