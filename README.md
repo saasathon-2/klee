@@ -4,7 +4,7 @@ This repository deploys as three Railway services:
 
 | Service    | Source root              | Build / start                                                            |
 | ---------- | ------------------------ | ------------------------------------------------------------------------ |
-| `api`      | `/backend`               | build: `pnpm typecheck`; start: `pnpm start`; pre-deploy: `pnpm migrate` |
+| `api`      | `/backend`               | Dockerfile; pre-deploy: `pnpm migrate` |
 | `web`      | `/frontend`              | uses the included Dockerfile (builds Vite and serves it with Caddy)      |
 | `Postgres` | Railway Postgres service | no source repository                                                     |
 
@@ -34,7 +34,7 @@ This repository deploys as three Railway services:
 
 5. Deploy. The API migration runs before each API release; if it fails, the release does not go live.
 
-`PORT` is supplied by Railway. Do not set it manually. `CORS_ORIGIN` should be the exact web origin (no trailing slash). The API's `nixpacks.toml` installs the Chromium runtime libraries needed for artefact screenshots.
+`PORT` is supplied by Railway. Do not set it manually. `CORS_ORIGIN` should be the exact web origin (no trailing slash). The API Dockerfile installs the Chromium runtime libraries needed for artefact screenshots.
 
 ## Migrations
 
