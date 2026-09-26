@@ -244,7 +244,7 @@ export function GitHubPullRequestStory() {
 										pop(replyVisible)
 									}
 								>
-									<div className="overflow-hidden rounded-md border border-github-border bg-preview-surface font-sans text-preview-foreground shadow-sm">
+									<div className="overflow-hidden rounded-md border border-github-border bg-preview-surface text-preview-foreground shadow-sm">
 										<header className="bg-preview-brand px-4 py-5 text-center sm:px-10 sm:py-8">
 											<h3 className="text-lg font-bold sm:text-2xl">
 												PR #42: GitHub Context Fixtures

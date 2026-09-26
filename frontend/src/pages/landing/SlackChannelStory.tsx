@@ -82,7 +82,7 @@ export function SlackChannelStory() {
 				</Heading>
 				<section
 					aria-label="Slack channel preview"
-					className="flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slack-border bg-slack-canvas font-slack text-slack-foreground shadow-xl"
+					className="flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slack-border bg-slack-canvas text-slack-foreground shadow-xl"
 				>
 					<header className="flex h-16 shrink-0 items-center gap-4 px-5 sm:px-8">
 						<Star
@@ -186,7 +186,7 @@ export function SlackChannelStory() {
 									className={`relative mt-5 max-w-5xl ${pop(artefactVisible)}`}
 								>
 									<div
-										className="overflow-hidden rounded-md border border-github-border bg-preview-surface font-sans text-preview-foreground shadow-sm"
+										className="overflow-hidden rounded-md border border-github-border bg-preview-surface text-preview-foreground shadow-sm"
 									>
 										<header className="bg-preview-brand px-4 py-5 text-center sm:px-10 sm:py-8">
 											<h3 className="text-lg font-bold sm:text-2xl">
