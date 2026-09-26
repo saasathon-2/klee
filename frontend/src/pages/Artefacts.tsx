@@ -135,6 +135,7 @@ export function Artefacts() {
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
 	const [generationCommentary, setGenerationCommentary] = useState("");
+	const [isCommentaryStarting, setIsCommentaryStarting] = useState(false);
 	const [followUp, setFollowUp] = useState("");
 	const [isRevising, setIsRevising] = useState(false);
 	const [error, setError] = useState("");
@@ -286,17 +287,58 @@ export function Artefacts() {
 		event.preventDefault();
 		if (!current || !followUp.trim() || isRevising) return;
 		setIsRevising(true);
+		setGenerationCommentary("");
+		setIsCommentaryStarting(false);
 		setError("");
+		let commentaryTimer: number | undefined;
+		let commentaryReveal = Promise.resolve();
 		try {
 			const response = await api(`/artefacts/${current.id}/revisions`, {
 				method: "POST",
 				body: JSON.stringify({ content: followUp }),
 			});
-			if (!response.ok) throw new Error("Could not revise artefact.");
-			const result = (await response.json()) as {
+			if (!response.ok || !response.body)
+				throw new Error("Could not revise artefact.");
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let buffer = "";
+			let result: {
 				revision: Revision;
 				artefact: Pick<Artefact, "title" | "content">;
-			};
+			} | undefined;
+			while (!result) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				buffer += decoder.decode(value, { stream: true });
+				const frames = buffer.split(/\r?\n\r?\n/);
+				buffer = frames.pop() ?? "";
+				for (const frame of frames) {
+					const eventName = frame.match(/^event: (.+)$/m)?.[1];
+					const data = frame.match(/^data: (.+)$/m)?.[1];
+					if (!eventName || !data) continue;
+					const payload = JSON.parse(data) as {
+						text?: string;
+						error?: string;
+						revision?: Revision;
+						artefact?: Pick<Artefact, "title" | "content">;
+					};
+					if (eventName === "commentary" && payload.text && commentaryTimer === undefined) {
+						setIsCommentaryStarting(true);
+						commentaryReveal = new Promise((resolve) => {
+							commentaryTimer = window.setTimeout(() => {
+								setGenerationCommentary(payload.text!);
+								setIsCommentaryStarting(false);
+								resolve();
+							}, 180);
+						});
+					}
+					if (eventName === "error") throw new Error(payload.error);
+					if (eventName === "complete" && payload.revision && payload.artefact)
+						result = { revision: payload.revision, artefact: payload.artefact };
+				}
+			}
+			await commentaryReveal;
+			if (!result) throw new Error("Could not revise artefact.");
 			setLoaded({
 				path: artefactPath!,
 				artefact: {
@@ -320,6 +362,9 @@ export function Artefacts() {
 					: "Could not revise artefact.",
 			);
 		} finally {
+			if (commentaryTimer !== undefined)
+				window.clearTimeout(commentaryTimer);
+			setIsCommentaryStarting(false);
 			setIsRevising(false);
 		}
 	}
@@ -672,6 +717,7 @@ export function Artefacts() {
 					isCreating={isCreating}
 					generationStatus={generationStatus}
 					generationCommentary={generationCommentary}
+					isCommentaryStarting={isCommentaryStarting}
 					isFullscreen={isFullscreen}
 					userId={user.id}
 					onClose={current ? close : cancelGeneration}
@@ -832,6 +878,7 @@ function ArtefactModal({
 	isCreating,
 	generationStatus,
 	generationCommentary,
+	isCommentaryStarting,
 	isFullscreen,
 	userId,
 	onClose,
@@ -853,6 +900,7 @@ function ArtefactModal({
 	isCreating: boolean;
 	generationStatus: string;
 	generationCommentary: string;
+	isCommentaryStarting: boolean;
 	isFullscreen: boolean;
 	userId: string;
 	onClose: () => void;
@@ -1154,27 +1202,12 @@ function ArtefactModal({
 							Elapsed {Math.floor(generationSeconds / 60)}:
 							{String(generationSeconds % 60).padStart(2, "0")}
 						</p>
-						<p
-							className="mx-auto w-fit max-w-full text-center text-sm text-muted"
+		<p
+							className="mx-auto w-fit max-w-full overflow-hidden whitespace-nowrap text-center text-sm text-muted"
 							aria-label="AI commentary"
 							aria-live="off"
 						>
-							{generationCommentary &&
-								generationCommentary
-									.replace(/\*\*/g, "")
-									.trim()
-									.split(/\s+/)
-									.filter(Boolean)
-									.map((word, index) => (
-										<span
-											key={index}
-											className="generation-commentary-word"
-											style={{ animationDelay: `${index * 20}ms` }}
-										>
-											{index > 0 && " "}
-											{word}
-										</span>
-									))}
+							<GenerationCommentary text={generationCommentary} />
 						</p>
 						<Skeleton className="h-8 w-2/3 rounded" />
 										<Skeleton className="h-4 w-full rounded" />
@@ -1243,11 +1276,12 @@ function ArtefactModal({
 								</Toolbar>
 							</Modal.Footer>
 						)}
-						{artefact && !isCreating && !isEditing && (
-							<Modal.Footer className="z-10 m-0 shrink-0 border-t border-border bg-surface px-4 py-3 sm:px-6">
-								<form
-									onSubmit={onSubmit}
-									className="flex w-full items-center gap-2 rounded-full border border-border bg-field p-1.5 pl-4"
+				{artefact && !isCreating && !isEditing && (
+						<Modal.Footer className="z-10 m-0 shrink-0 border-t border-border bg-surface px-4 py-3 sm:px-6">
+							<div className="relative w-full">
+							<form
+								onSubmit={onSubmit}
+								className={`flex w-full items-center gap-2 rounded-full border border-border bg-field p-1.5 pl-4 transition-opacity duration-300 ${isRevising ? "opacity-0" : "opacity-100"}`}
 								>
 									<Input
 										aria-label="Refine artefact"
@@ -1283,9 +1317,21 @@ function ArtefactModal({
 										) : (
 											<ArrowUp size={17} />
 										)}
-									</Button>
-								</form>
-							</Modal.Footer>
+								</Button>
+							</form>
+								{isRevising && (
+									<p className="absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap text-sm text-muted" aria-label="AI commentary" aria-live="off">
+										{generationCommentary ? (
+											<GenerationCommentary text={generationCommentary} />
+										) : (
+											<span className={`transition-opacity duration-200 motion-reduce:transition-none ${isCommentaryStarting ? "opacity-0" : "opacity-100"}`}>
+												<GenerationCommentary text="Refining artefact…" />
+											</span>
+										)}
+									</p>
+								)}
+							</div>
+						</Modal.Footer>
 						)}
 					</Modal.Dialog>
 				</Modal.Container>
@@ -1361,4 +1407,20 @@ function ArtefactBody({
 			onEdit={onEdit}
 		/>
 	);
+}
+
+function GenerationCommentary({ text }: { text: string }) {
+	const cleanText = text.replace(/\*\*/g, "").trim();
+	const words = cleanText.split(/\s+/).filter(Boolean);
+	const period = cleanText.indexOf(".");
+	const displayText = words.length > 20
+		? period >= 0
+			? cleanText.slice(0, period + 1)
+			: words.slice(0, 20).join(" ")
+		: cleanText;
+	return <span className="generation-commentary whitespace-nowrap">{displayText.split(/\s+/).filter(Boolean).map((word, index) => (
+		<span key={index} className="generation-commentary-word" style={{ animationDelay: `${index * 20}ms` }}>
+			{index > 0 && " "}{word}
+		</span>
+	))}</span>;
 }

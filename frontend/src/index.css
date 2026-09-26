@@ -20,7 +20,17 @@ body {
 
 .generation-commentary-word {
 	opacity: 0;
-	animation: generation-commentary-word-in 160ms ease-out forwards;
+	animation: generation-commentary-word-in 260ms ease-out forwards;
+}
+
+.generation-commentary {
+	animation: generation-commentary-breathe 2s ease-in-out infinite;
+}
+
+@keyframes generation-commentary-breathe {
+	50% {
+		opacity: 0.55;
+	}
 }
 
 /* Scalloped band edge used by artefact pages: one even semicircle per tile,
@@ -64,6 +74,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
 	.generation-commentary-word {
 		opacity: 1;
+		animation: none;
+	}
+	.generation-commentary {
 		animation: none;
 	}
 	.hero-demo [data-slot="artefact-blocks"] > * {
