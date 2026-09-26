@@ -9,6 +9,22 @@ body {
 	font-family: var(--font-sans);
 }
 
+/* Edit affordances use chart blue rather than brand yellow, which can vanish
+ * against artefact header and transition bands. */
+.artefact-editable {
+	border-color: var(--chart-1);
+	background-color: color-mix(in oklab, var(--chart-1) 12%, transparent);
+}
+
+.artefact-editable:hover,
+.artefact-editable:focus {
+	background-color: color-mix(in oklab, var(--chart-1) 18%, transparent);
+}
+
+.artefact-editable:focus {
+	box-shadow: 0 0 0 1px var(--chart-1);
+}
+
 @keyframes generation-commentary-word-in {
 	from {
 		opacity: 0;

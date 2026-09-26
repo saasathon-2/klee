@@ -59,7 +59,7 @@ export function EditableText({
 					event.currentTarget.blur();
 				}
 			}}
-			className={`inline-block min-w-[1ch] rounded-sm px-0.5 -mx-0.5 outline-none transition-colors hover:bg-foreground/5 focus:bg-foreground/5 focus:ring-1 focus:ring-brand/40 ${multiline ? "w-full whitespace-pre-wrap" : ""} ${className ?? ""}`}
+			className={`artefact-editable inline-block min-w-[1ch] rounded-sm border border-dashed px-0.5 -mx-0.5 outline-none transition-colors ${multiline ? "w-full whitespace-pre-wrap" : ""} ${className ?? ""}`}
 		/>
 	);
 }

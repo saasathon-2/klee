@@ -7,7 +7,6 @@ import {
 	Pencil,
 	Reply,
 	Send,
-	Sparkles,
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -100,7 +99,6 @@ function regionStyle(anchor: Anchor, color: string, highlighted = false) {
 
 export function ArtefactComments({
 	artefactId,
-	isOwner,
 	userId,
 	isShared = false,
 	canComment = true,
@@ -112,7 +110,6 @@ export function ArtefactComments({
 	children,
 }: {
 	artefactId: string;
-	isOwner: boolean;
 	userId: string;
 	isShared?: boolean;
 	canComment?: boolean;
@@ -142,8 +139,6 @@ export function ArtefactComments({
 	const [threadId, setThreadId] = useState<string>();
 	const [body, setBody] = useState("");
 	const [error, setError] = useState("");
-	const [isDrafting, setDrafting] = useState(false);
-	const [isGeneralDraft, setGeneralDraft] = useState(false);
 	const hoverTimeout = useRef<number | undefined>(undefined);
 	const pendingReactions = useRef(new Set<string>());
 
@@ -179,7 +174,7 @@ export function ArtefactComments({
 	}, []);
 
 	useEffect(() => {
-		if (!draftAnchor && !isGeneralDraft) return;
+		if (!draftAnchor) return;
 		const frame = window.requestAnimationFrame(() => {
 			draftInputRef.current?.focus();
 			draftInputRef.current?.form?.scrollIntoView({
@@ -188,7 +183,7 @@ export function ArtefactComments({
 			});
 		});
 		return () => window.cancelAnimationFrame(frame);
-	}, [draftAnchor, isGeneralDraft]);
+	}, [draftAnchor]);
 
 	useEffect(() => {
 		let current = true;
@@ -254,22 +249,7 @@ export function ArtefactComments({
 		};
 	}
 
-	const canDraw = canComment && isCommenting;
-
-	useEffect(() => {
-		if (!isCommenting) return;
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (
-				event.key !== "Escape" ||
-				(event.target as HTMLElement).closest("textarea,input")
-			)
-				return;
-			setDraftAnchor(undefined);
-			onCommentingChange?.(false);
-		};
-		window.addEventListener("keydown", onKeyDown);
-		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [isCommenting, onCommentingChange]);
+	const canDraw = canComment && isCommenting && isOpen;
 
 	function startSelection(event: PointerEvent<HTMLDivElement>) {
 		if (!canDraw || event.button !== 0 || !surfaceRef.current) return;
@@ -282,10 +262,10 @@ export function ArtefactComments({
 			return;
 		event.preventDefault();
 		dragStart.current = point(event);
+		onOpenChange(false);
 		setDraftAnchor(undefined);
 		setDragAnchor(undefined);
 		setThreadId(undefined);
-		setGeneralDraft(false);
 		setBody("");
 		setError("");
 		event.currentTarget.setPointerCapture(event.pointerId);
@@ -311,19 +291,20 @@ export function ArtefactComments({
 		if (
 			selection.width * surfaceRef.current!.clientWidth < 12 ||
 			selection.height * surfaceRef.current!.clientHeight < 12
-		)
+		) {
+			onOpenChange(true);
 			return;
+		}
 		setDraftAnchor(selection);
 		setThreadId(undefined);
-		setGeneralDraft(false);
 		setBody("");
 		setError("");
-		onOpenChange(false);
 	}
 
 	function cancelSelection() {
 		dragStart.current = undefined;
 		setDragAnchor(undefined);
+		onOpenChange(true);
 	}
 
 	function canAdjustAnchor(comment: Comment) {
@@ -537,7 +518,6 @@ export function ArtefactComments({
 		setComments((current) => [...current, pending]);
 		setBody("");
 		setDraftAnchor(undefined);
-		setGeneralDraft(false);
 		if (!parentId) setThreadId(pendingId);
 		setError("");
 		void commentApi(
@@ -564,6 +544,7 @@ export function ArtefactComments({
 					),
 				);
 				if (!parentId) setThreadId(comment.id);
+				if (anchor) onOpenChange(true);
 			})
 			.catch((error) => {
 				setComments((current) =>
@@ -572,7 +553,6 @@ export function ArtefactComments({
 				setBody(nextBody);
 				if (parentId) setThreadId(parentId);
 				else if (anchor) setDraftAnchor(anchor);
-				else setGeneralDraft(true);
 				setError(
 					error instanceof Error
 						? error.message
@@ -646,33 +626,9 @@ export function ArtefactComments({
 		}
 	}
 
-	async function draftReply() {
-		if (!canComment || !threadId || isDrafting) return;
-		setDrafting(true);
-		setError("");
-		try {
-			const response = await commentApi(artefactId, "/ai-reply", {
-				method: "POST",
-				body: JSON.stringify({ parentId: threadId }),
-			});
-			if (!response.ok) throw new Error("Could not draft an AI reply.");
-			const result = (await response.json()) as { text: string };
-			setBody(result.text);
-		} catch (error) {
-			setError(
-				error instanceof Error
-					? error.message
-					: "Could not draft an AI reply.",
-			);
-		} finally {
-			setDrafting(false);
-		}
-	}
-
 	function openThread(id: string) {
 		setThreadId(id);
 		setDraftAnchor(undefined);
-		setGeneralDraft(false);
 		setError("");
 		onOpenChange(true);
 		surfaceRef.current
@@ -688,36 +644,27 @@ export function ArtefactComments({
 			)
 		: [];
 	const selected = comments.find((comment) => comment.id === threadId);
-	const compose = Boolean(selected) || isGeneralDraft;
-
-	function startGeneralComment() {
-		setDraftAnchor(undefined);
-		setThreadId(undefined);
-		setBody("");
-		setError("");
-		setGeneralDraft(true);
-		onOpenChange(true);
-	}
+	const compose = Boolean(selected) || canComment;
 	const draftDisplayAnchor =
 		draftAnchor &&
 		visibleAnchor(draftAnchor, surfaceSize.width, surfaceSize.height);
 
 	return (
 		<div className="relative flex min-h-0 flex-1 overflow-hidden">
+			{canDraw && (
+				<div className="pointer-events-none absolute inset-x-0 top-3 z-[65] flex justify-center">
+					<Chip
+						size="sm"
+						variant="primary"
+						className="h-7 shadow-lg"
+					>
+						<MessageCirclePlus size={14} />
+						Drag across the artefact to comment
+					</Chip>
+				</div>
+			)}
 			{/* Brand-coloured so overscrolling past the header or footer shows yellow, not a white gap. */}
 			<div className="relative min-w-0 flex-1 overflow-auto bg-brand">
-				{canDraw && (
-					<div className="pointer-events-none sticky top-3 z-[65] flex h-0 justify-center">
-						<Chip
-							size="sm"
-							variant="primary"
-							className="h-7 shadow-lg"
-						>
-							<MessageCirclePlus size={14} />
-							Drag across the artefact to comment · Esc to finish
-						</Chip>
-					</div>
-				)}
 				<div
 					ref={surfaceRef}
 					className={`relative ${canDraw ? "cursor-crosshair select-none" : ""}`}
@@ -947,6 +894,7 @@ export function ArtefactComments({
 										setDraftAnchor(undefined);
 										setBody("");
 										setError("");
+										onOpenChange(true);
 									}}
 								>
 									<X size={15} />
@@ -999,16 +947,6 @@ export function ArtefactComments({
 								View only
 							</span>
 						)}
-						{canComment && !compose && (
-							<Button
-								size="sm"
-								variant="ghost"
-								onPress={startGeneralComment}
-							>
-								<MessageCirclePlus size={15} />
-								Add comment
-							</Button>
-						)}
 						<Button
 							aria-label="Collapse comments"
 							variant="ghost"
@@ -1037,7 +975,7 @@ export function ArtefactComments({
 								</Button>
 							</div>
 						)}
-						{compose ? (
+						{selected ? (
 							<>
 								<CommentCard
 									comment={selected!}
@@ -1140,7 +1078,7 @@ export function ArtefactComments({
 								{canDraw
 									? "Drag across an area of the artefact to start a comment."
 									: canComment
-										? "No comments yet. Add a page comment or turn on Comment mode to select an area."
+										? "No comments yet. Write a page comment below or turn on Comment mode to select an area."
 										: "No comments on this artefact yet."}
 							</p>
 						)}
@@ -1151,7 +1089,6 @@ export function ArtefactComments({
 							className="shrink-0 space-y-2 border-t border-border p-3"
 						>
 							<TextArea
-								ref={isGeneralDraft ? draftInputRef : undefined}
 								aria-label={selected ? "Reply" : "Comment"}
 								rows={3}
 								value={body}
@@ -1170,27 +1107,7 @@ export function ArtefactComments({
 									{error}
 								</p>
 							)}
-							<div className="flex items-center justify-between gap-2">
-								{selected && isOwner ? (
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										isDisabled={isDrafting}
-										onPress={() => void draftReply()}
-									>
-										{isDrafting ? (
-											"Drafting…"
-										) : (
-											<>
-												<Sparkles size={14} /> Draft
-												with AI
-											</>
-										)}
-									</Button>
-								) : (
-									<span />
-								)}
+							<div className="flex justify-end">
 								<Button
 									type="submit"
 									size="sm"

@@ -700,7 +700,6 @@ export function Artefacts() {
 						<ArtefactComments
 							key={current.id}
 							artefactId={current.id}
-							isOwner={currentSharedAccess?.isOwner ?? false}
 							userId={session?.user?.id ?? ""}
 							isShared
 							canComment={

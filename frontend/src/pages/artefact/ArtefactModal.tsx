@@ -359,7 +359,6 @@ export function ArtefactModal({
 							{artefact ? (
 								<ArtefactComments
 									artefactId={artefact.id}
-									isOwner={artefact.isOwner ?? false}
 									userId={userId}
 									canComment={canComment}
 									isOpen={commentsOpen}
