@@ -852,7 +852,7 @@ function WorkspaceSidebar({
 				aria-label="Klee home"
 				className="mb-5 flex h-10 items-center gap-2 px-2 text-left"
 			>
-				<KleeIcon className="size-8" />
+				<KleeIcon className="size-10" />
 				<img
 					src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
 					alt="Klee"
