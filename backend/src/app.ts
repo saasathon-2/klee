@@ -802,7 +802,7 @@ async function readArtefactComments(artefactId: string, userId: string | null) {
 		where comment.artefact_id = $1
 		group by comment.id, author.id
 		order by comment.created_at`,
-		[artefactId],
+		[artefactId, userId],
 	);
 	return rows.map((row) => ({
 		...row,
