@@ -118,6 +118,23 @@ async function sessionUser(req: Request, res: Response) {
 	return session.user;
 }
 
+function requestTiming() {
+	const entries: string[] = [];
+	return {
+		async measure<T>(name: string, work: () => Promise<T>) {
+			const startedAt = performance.now();
+			try {
+				return await work();
+			} finally {
+				entries.push(`${name};dur=${(performance.now() - startedAt).toFixed(1)}`);
+			}
+		},
+		apply(res: Response) {
+			if (entries.length) res.set("Server-Timing", entries.join(", "));
+		},
+	};
+}
+
 async function createGeneratedArtefact(
 	ownerId: string,
 	prompt: string,
@@ -755,41 +772,35 @@ async function readArtefactComments(artefactId: string, userId: string | null) {
 	const { rows } = await pool.query(
 		`select comment.id, comment.parent_id as "parentId", comment.body,
 			comment.anchor, comment.created_at as "createdAt", author.id as "authorId",
-			author.name as "authorName", author.image as "authorImage"
+			author.name as "authorName", author.image as "authorImage",
+			coalesce(jsonb_agg(jsonb_build_object('emoji', reaction.emoji, 'count', reaction.count, 'reacted', reaction.reacted)) filter (where reaction.emoji is not null), '[]'::jsonb) as reactions
 		from artefact_comment comment
 		join "user" author on author.id = comment.author_id
+		left join lateral (
+			select emoji, count(*)::int as count, coalesce(bool_or(user_id = $2), false) as reacted
+			from artefact_comment_reaction
+			where comment_id = comment.id
+			group by emoji
+		) reaction on true
 		where comment.artefact_id = $1
+		group by comment.id, author.id
 		order by comment.created_at`,
 		[artefactId],
 	);
-	const reactions = rows.length
-		? await pool.query(
-				`select comment_id as "commentId", emoji, count(*)::int as count,
-					coalesce(bool_or(user_id = $2), false) as "reacted"
-				from artefact_comment_reaction
-				where comment_id = any($1::text[])
-				group by comment_id, emoji`,
-				[rows.map((row) => row.id), userId],
-			)
-		: { rows: [] };
-	const byComment = new Map<string, unknown[]>();
-	for (const reaction of reactions.rows) {
-		const current = byComment.get(reaction.commentId) ?? [];
-		current.push({ emoji: reaction.emoji, count: reaction.count, reacted: reaction.reacted });
-		byComment.set(reaction.commentId, current);
-	}
 	return rows.map((row) => ({
 		...row,
 		author: { id: row.authorId, name: row.authorName, image: row.authorImage },
-		reactions: byComment.get(row.id) ?? [],
 	}));
 }
 
 app.get("/api/artefacts/:id/comments", async (req, res) => {
-	const user = await sessionUser(req, res);
+	const timing = requestTiming();
+	const user = await timing.measure("auth", () => sessionUser(req, res));
 	if (!user) return;
-	if (!(await commentableArtefact(req.params.id, user.id))) return res.sendStatus(404);
-	res.json(await readArtefactComments(req.params.id, user.id));
+	if (!(await timing.measure("access", () => commentableArtefact(req.params.id, user.id)))) return res.sendStatus(404);
+	const comments = await timing.measure("comments", () => readArtefactComments(req.params.id, user.id));
+	timing.apply(res);
+	res.json(comments);
 });
 
 app.patch("/api/artefacts/:id/comments/:commentId", async (req, res) => {
@@ -808,13 +819,16 @@ app.patch("/api/artefacts/:id/comments/:commentId", async (req, res) => {
 });
 
 app.get("/api/shared/artefacts/:id/comments", async (req, res) => {
-	const { rows } = await pool.query(
+	const timing = requestTiming();
+	const { rows } = await timing.measure("share", () => pool.query(
 		"select is_shared as \"isShared\" from artefact where id = $1",
 		[req.params.id],
-	);
+	));
 	if (!rows[0]) return res.sendStatus(404);
 	if (!rows[0].isShared) return res.sendStatus(403);
-	res.json(await readArtefactComments(req.params.id, null));
+	const comments = await timing.measure("comments", () => readArtefactComments(req.params.id, null));
+	timing.apply(res);
+	res.json(comments);
 });
 
 app.post("/api/artefacts/:id/comments", async (req, res) => {
@@ -899,26 +913,30 @@ app.post("/api/artefacts/:id/comments/ai-reply", async (req, res) => {
 });
 
 app.post("/api/artefacts/:id/comments/:commentId/reactions", async (req, res) => {
-	const user = await sessionUser(req, res);
+	const timing = requestTiming();
+	const user = await timing.measure("auth", () => sessionUser(req, res));
 	if (!user) return;
-	if (!(await commentableArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	if (!(await timing.measure("access", () => commentableArtefact(req.params.id, user.id)))) return res.sendStatus(404);
 	const emoji = req.body?.emoji;
 	if (!commentReactions.includes(emoji)) return res.sendStatus(400);
-	const existing = await pool.query(
-		"delete from artefact_comment_reaction where comment_id = $1 and user_id = $2 and emoji = $3 and exists (select 1 from artefact_comment where id = $1 and artefact_id = $4) returning comment_id",
-		[req.params.commentId, user.id, emoji, req.params.id],
-	);
-	if (!existing.rows[0]) {
-		const comment = await pool.query(
-			"select id from artefact_comment where id = $1 and artefact_id = $2",
-			[req.params.commentId, req.params.id],
-		);
-		if (!comment.rows[0]) return res.sendStatus(404);
-		await pool.query(
-			"insert into artefact_comment_reaction (comment_id, user_id, emoji) values ($1, $2, $3) on conflict do nothing",
-			[req.params.commentId, user.id, emoji],
-		);
-	}
+	const { rows } = await timing.measure("reaction", () => pool.query(
+		`with target as (
+			select id from artefact_comment where id = $1 and artefact_id = $2
+		), removed as (
+			delete from artefact_comment_reaction
+			where comment_id = $1 and user_id = $3 and emoji = $4 and exists (select 1 from target)
+			returning comment_id
+		), added as (
+			insert into artefact_comment_reaction (comment_id, user_id, emoji)
+			select id, $3, $4 from target where not exists (select 1 from removed)
+			on conflict do nothing
+			returning comment_id
+		)
+		select exists (select 1 from target) as exists`,
+		[req.params.commentId, req.params.id, user.id, emoji],
+	));
+	if (!rows[0]?.exists) return res.sendStatus(404);
+	timing.apply(res);
 	res.sendStatus(204);
 });
 
