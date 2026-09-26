@@ -21,6 +21,7 @@ export function snapshotUrl(
 	isShared: boolean,
 ) {
 	const url = new URL(`/artefacts/shared/${artefactId}`, origin);
+	url.searchParams.set("preview", "1");
 	if (isShared) return url.toString();
 	const expiresAt = Math.floor(Date.now() / 1000) + snapshotTokenTtlSeconds;
 	url.searchParams.set(
