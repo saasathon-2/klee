@@ -77,7 +77,7 @@ This repository deploys as three Railway services:
     VITE_GOOGLE_CLOUD_PROJECT_NUMBER=<google-cloud-project-number>
     ```
 
-    `VITE_API_URL` is compiled into the browser bundle, so redeploy `web` whenever it changes.
+    All `VITE_*` values are compiled into the browser bundle, so redeploy `web` whenever any of them changes.
 
 5. Deploy. The API migration runs before each API release; if it fails, the release does not go live.
 
