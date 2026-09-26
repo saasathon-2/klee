@@ -1,8 +1,6 @@
 import {
 	ChevronDown,
-	ExternalLink,
 	MessageSquare,
-	Plus,
 	Star,
 } from "lucide-react";
 import { Heading } from "@heroui/react";
@@ -83,6 +81,7 @@ export function SlackChannelStory() {
 				</Heading>
 				<section
 					aria-label="Slack channel preview"
+					inert
 					className="flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slack-border bg-slack-canvas text-slack-foreground shadow-xl"
 				>
 					<header className="flex h-16 shrink-0 items-center gap-4 px-5 sm:px-8">
@@ -99,20 +98,14 @@ export function SlackChannelStory() {
 						aria-label="Channel tabs"
 						className="flex h-[3.25rem] shrink-0 items-stretch gap-2 border-b border-slack-border px-5 sm:px-8"
 					>
-						<button className="flex items-center gap-2 border-b-2 border-slack-tab-active px-3 font-semibold text-slack-foreground-bright">
+						<span className="flex items-center gap-2 border-b-2 border-slack-tab-active px-3 font-semibold text-slack-foreground-bright">
 							<MessageSquare
 								aria-hidden
 								size={19}
 								fill="currentColor"
 							/>
 							Messages
-						</button>
-						<button
-							aria-label="Add channel tab"
-							className="grid size-10 place-items-center self-center text-slack-muted"
-						>
-							<Plus aria-hidden size={23} />
-						</button>
+						</span>
 					</nav>
 
 					<div className="min-h-0 overflow-hidden">
@@ -139,14 +132,9 @@ export function SlackChannelStory() {
 										9:41 AM
 									</time>
 								</div>
-								<a
-									className="mt-1 block break-all text-base text-slack-link hover:underline sm:text-xl lg:text-2xl"
-									href={shareUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-								>
+								<p className="mt-1 break-all text-base text-slack-link sm:text-xl lg:text-2xl">
 									{shareUrl}
-								</a>
+								</p>
 							</div>
 						</div>
 
@@ -171,14 +159,14 @@ export function SlackChannelStory() {
 										9:41 AM
 									</time>
 								</div>
-								<button className="mt-2 flex items-center gap-1 text-sm text-slack-muted sm:text-base">
+								<p className="mt-2 flex items-center gap-1 text-sm text-slack-muted sm:text-base">
 									(95 kB)
 									<ChevronDown
 										aria-hidden
 										size={16}
 										className="text-slack-link"
 									/>
-								</button>
+								</p>
 
 								<div
 									aria-hidden={!artefactVisible}
@@ -284,19 +272,6 @@ export function SlackChannelStory() {
 											</div>
 										</div>
 									</div>
-									<a
-										className="mt-8 inline-flex items-center rounded-md border border-slack-border-strong px-4 py-2 text-base font-semibold text-slack-foreground-strong hover:bg-slack-hover"
-										href={shareUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-									>
-										Open in browser{" "}
-										<ExternalLink
-											aria-hidden
-											size={17}
-											className="ml-2"
-										/>
-									</a>
 								</div>
 							</div>
 						</div>
