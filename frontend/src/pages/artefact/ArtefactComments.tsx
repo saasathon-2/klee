@@ -180,16 +180,13 @@ export function ArtefactComments({
 	useEffect(() => {
 		const commentId = window.location.hash.match(/^#comment-(.+)$/)?.[1];
 		if (!commentId || !comments.some((comment) => comment.id === commentId)) return;
-		setThreadId(commentId);
 		setHoveredCommentId(commentId);
-		setDraftAnchor(undefined);
-		onOpenChange(true);
 		const frame = window.requestAnimationFrame(() =>
 			surfaceRef.current?.querySelector(`[data-comment-id="${commentId}"]`)
 				?.scrollIntoView({ block: "center" }),
 		);
 		return () => window.cancelAnimationFrame(frame);
-	}, [comments, onOpenChange]);
+	}, [comments]);
 
 	function point(event: PointerEvent<HTMLDivElement>) {
 		const rect = surfaceRef.current!.getBoundingClientRect();
