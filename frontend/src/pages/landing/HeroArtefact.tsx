@@ -57,6 +57,22 @@ const demo: ArtefactDocument = {
 								"With the GitHub Action installed, Klee comments on each pull request with a page like this. It shows what changed, what reviewers said and whether the checks passed.",
 						},
 					},
+					block("tour-flow", "flowchart", {
+						title: "How it fits together",
+						description: "Architecture and processes become diagrams.",
+						direction: "LR",
+						steps: [
+							{ id: "pr", label: "Pull request", kind: "start", detail: null, url: null },
+							{ id: "klee", label: "Klee", kind: "step", detail: "Builds the page", url: null },
+							{ id: "github", label: "PR comment", kind: "end", detail: null, url: null },
+							{ id: "slack", label: "Slack preview", kind: "end", detail: null, url: null },
+						],
+						edges: [
+							{ source: "pr", target: "klee", label: null },
+							{ source: "klee", target: "github", label: null },
+							{ source: "klee", target: "slack", label: null },
+						],
+					}),
 					block("tour-sprint", "sprint-timeline", {
 						title: "Sprint progress",
 						start: "2026-09-21",

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ArtefactNode } from "../model";
+import type { LiveStatus } from "./page/liveStatus";
 
 export type TemplateName = ArtefactNode["template"];
 
@@ -15,6 +16,8 @@ export type RenderContext = {
 	isEditing: boolean;
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
+	/** Current statuses from connected sources, keyed by the item's url. */
+	liveStatus?: Record<string, LiveStatus>;
 };
 
 /** Path to a text field inside a node's `data`, e.g. ["tasks", 0, "title"]. */

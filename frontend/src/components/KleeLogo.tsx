@@ -72,9 +72,15 @@ export function KleeLogo({
 			}
 			aimAt(event.clientX, event.clientY);
 		}
+		// The logo moves under a still cursor when the page scrolls, so re-aim then too.
+		function reaim() {
+			if (!lookAtRef.current && pointer.current) aimAt(pointer.current.x, pointer.current.y);
+		}
 		window.addEventListener("pointermove", follow);
+		window.addEventListener("scroll", reaim, { capture: true, passive: true });
 		return () => {
 			window.removeEventListener("pointermove", follow);
+			window.removeEventListener("scroll", reaim, { capture: true });
 			cancelAnimationFrame(animation.current);
 		};
 	}, [aimAt]);

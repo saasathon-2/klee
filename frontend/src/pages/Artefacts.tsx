@@ -10,6 +10,7 @@ import {
 	Paragraph,
 	Popover,
 	Separator,
+	Spinner,
 	Surface,
 	TextArea,
 	Toolbar,
@@ -47,8 +48,13 @@ import {
 import { signOut, useSession } from "../lib/auth-client";
 import { KleeIcon, KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
+import { LinkChips } from "../components/LinkChips";
+import { PageLoader } from "../components/PageLoader";
+import { takeLinkPaste } from "../lib/links";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
+import { useLiveStatus } from "../artefacts/templates/page/liveStatus";
 import {
+	changedBlockIds,
 	fallbackDocument,
 	withEditedValue,
 	type ArtefactDocument,
@@ -158,11 +164,25 @@ function textareaCaretPoint(textarea: HTMLTextAreaElement) {
 	const mirror = document.createElement("div");
 	const marker = document.createElement("span");
 	for (const property of [
-		"box-sizing", "width", "font-family", "font-size", "font-weight",
-		"letter-spacing", "line-height", "padding", "border", "text-transform",
-		"text-indent", "text-align", "word-break", "overflow-wrap", "tab-size",
-	]) mirror.style.setProperty(property, styles.getPropertyValue(property));
-	mirror.style.cssText += ";position:fixed;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;";
+		"box-sizing",
+		"width",
+		"font-family",
+		"font-size",
+		"font-weight",
+		"letter-spacing",
+		"line-height",
+		"padding",
+		"border",
+		"text-transform",
+		"text-indent",
+		"text-align",
+		"word-break",
+		"overflow-wrap",
+		"tab-size",
+	])
+		mirror.style.setProperty(property, styles.getPropertyValue(property));
+	mirror.style.cssText +=
+		";position:fixed;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;";
 	mirror.textContent = textarea.value.slice(0, textarea.selectionStart);
 	marker.textContent = textarea.value[textarea.selectionStart] || "\u200b";
 	mirror.append(marker);
@@ -172,8 +192,17 @@ function textareaCaretPoint(textarea: HTMLTextAreaElement) {
 	const markerBox = marker.getBoundingClientRect();
 	mirror.remove();
 	return {
-		x: inputBox.left + markerBox.left - mirrorBox.left - textarea.scrollLeft,
-		y: inputBox.top + markerBox.top - mirrorBox.top - textarea.scrollTop + markerBox.height / 2,
+		x:
+			inputBox.left +
+			markerBox.left -
+			mirrorBox.left -
+			textarea.scrollLeft,
+		y:
+			inputBox.top +
+			markerBox.top -
+			mirrorBox.top -
+			textarea.scrollTop +
+			markerBox.height / 2,
 	};
 }
 
@@ -191,12 +220,15 @@ export function Artefacts() {
 	const isIntegrations = panel === "integrations";
 	const isOrganisations = panel === "organisations";
 	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
+	const [artefactsLoaded, setArtefactsLoaded] = useState(false);
 	const [loaded, setLoaded] = useState<{
 		path: string;
 		artefact: Artefact;
 	}>();
 	const [failedPath, setFailedPath] = useState<string>();
 	const [prompt, setPrompt] = useState("");
+	// Links pasted into the prompt, shown as chips and sent after the text.
+	const [promptLinks, setPromptLinks] = useState<string[]>([]);
 	const [promptCaret, setPromptCaret] = useState<{ x: number; y: number }>();
 	const [googleFiles, setGoogleFiles] = useState<GoogleFile[]>([]);
 	const [localTime, setLocalTime] = useState(() => new Date());
@@ -216,6 +248,7 @@ export function Artefacts() {
 	const [shareOpen, setShareOpen] = useState(false);
 	const [notShared, setNotShared] = useState(false);
 	const [sharedCommentsOpen, setSharedCommentsOpen] = useState(false);
+	const [isSharedCommenting, setSharedCommenting] = useState(false);
 	const [sharedCommentCount, setSharedCommentCount] = useState(0);
 	const [copiedSharedLinkId, setCopiedSharedLinkId] = useState<string>();
 	const [sharedAccess, setSharedAccess] = useState<{
@@ -234,14 +267,17 @@ export function Artefacts() {
 	function followPromptCaret(textarea: HTMLTextAreaElement) {
 		setPromptCaret(textareaCaretPoint(textarea));
 		window.clearTimeout(promptCaretTimer.current);
-		promptCaretTimer.current = window.setTimeout(() => setPromptCaret(undefined), 1000);
+		promptCaretTimer.current = window.setTimeout(
+			() => setPromptCaret(undefined),
+			1000,
+		);
 	}
-	useEffect(
-		() => () => window.clearTimeout(promptCaretTimer.current),
-		[],
-	);
+	useEffect(() => () => window.clearTimeout(promptCaretTimer.current), []);
 	useEffect(() => {
-		const timer = window.setInterval(() => setLocalTime(new Date()), 60_000);
+		const timer = window.setInterval(
+			() => setLocalTime(new Date()),
+			60_000,
+		);
 		return () => window.clearInterval(timer);
 	}, []);
 	// Dropping a sidebar artefact onto the main view opens it.
@@ -285,6 +321,16 @@ export function Artefacts() {
 			? sharedAccess
 			: undefined;
 
+	// A shared artefact scrolls the window, so overscroll shows the page canvas;
+	// match it to the artefact's brand header and footer.
+	useEffect(() => {
+		if (!isShared) return;
+		const root = window.document.documentElement;
+		root.style.backgroundColor = "var(--brand)";
+		return () => {
+			root.style.backgroundColor = "";
+		};
+	}, [isShared]);
 	useEffect(() => {
 		if (isShared || !viewerId) return;
 		api("/artefacts")
@@ -292,7 +338,8 @@ export function Artefacts() {
 				response.ok ? response.json() : Promise.reject(),
 			)
 			.then(setArtefacts)
-			.catch(() => setError("Could not load artefacts."));
+			.catch(() => setError("Could not load artefacts."))
+			.finally(() => setArtefactsLoaded(true));
 	}, [isShared, viewerId]);
 	useEffect(() => {
 		if (!artefactPath || loaded?.path === artefactPath) return;
@@ -364,7 +411,10 @@ export function Artefacts() {
 
 	async function create(event: FormEvent) {
 		event.preventDefault();
-		if (!prompt.trim() || isCreating) return;
+		const fullPrompt = [prompt.trim(), ...promptLinks]
+			.filter(Boolean)
+			.join("\n");
+		if (!fullPrompt || isCreating) return;
 		const controller = new AbortController();
 		generationAbort.current = controller;
 		setIsCreating(true);
@@ -376,7 +426,7 @@ export function Artefacts() {
 		try {
 			const response = await api("/artefacts/stream", {
 				method: "POST",
-				body: JSON.stringify({ prompt, googleFileIds }),
+				body: JSON.stringify({ prompt: fullPrompt, googleFileIds }),
 				signal: controller.signal,
 			});
 			if (!response.ok || !response.body)
@@ -423,6 +473,7 @@ export function Artefacts() {
 			]);
 			setLoaded({ path, artefact: ownedArtefact });
 			setPrompt("");
+			setPromptLinks([]);
 			navigate(`/?artefact=${artefact.id}`);
 		} catch (error) {
 			if (!controller.signal.aborted)
@@ -613,12 +664,7 @@ export function Artefacts() {
 		navigate("/");
 	}
 
-	if (isPending && !isShared)
-		return (
-			<main className="grid min-h-screen place-items-center">
-				<span className="text-sm text-muted">Loading</span>
-			</main>
-		);
+	if (isPending && !isShared) return <PageLoader />;
 	if (!isShared && !session?.user)
 		return <Navigate to="/?auth=signin" replace />;
 	if (isShared)
@@ -705,6 +751,7 @@ export function Artefacts() {
 						</div>
 					</div>
 				)}
+				{!current && !notShared && !error && <ArtefactSkeleton />}
 				{current &&
 					(isPreview ? (
 						<ArtefactBody
@@ -727,6 +774,8 @@ export function Artefacts() {
 							}
 							isOpen={sharedCommentsOpen}
 							onOpenChange={setSharedCommentsOpen}
+							isCommenting={isSharedCommenting}
+							onCommentingChange={setSharedCommenting}
 							onCountChange={setSharedCommentCount}
 						>
 							<ArtefactBody
@@ -752,6 +801,7 @@ export function Artefacts() {
 		<WorkspaceSidebar
 			inDrawer={!isDesktop}
 			artefacts={artefacts}
+			isLoadingArtefacts={!artefactsLoaded}
 			folders={folders}
 			onCreateFolder={createFolder}
 			onRenameFolder={renameFolder}
@@ -819,17 +869,40 @@ export function Artefacts() {
 				<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 					<div className="mx-auto w-full max-w-2xl">
 						<div className="mb-8 text-center">
-							<KleeLogo className="mx-auto mb-4 size-16" lookAt={promptCaret} />
+							<KleeLogo
+								className="mx-auto mb-4 size-16"
+								lookAt={promptCaret}
+							/>
 							<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
 								{greeting},{" "}
 								<span className="text-accent-text">
 									{user.name?.split(" ")[0] || "there"}
-								</span>{greeting === "Night shift" ? "?" : "!"}
+								</span>
+								{greeting === "Night shift" ? "?" : "!"}
 							</h1>
 						</div>
 						<form onSubmit={create} className="w-full">
 							<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
+								<LinkChips
+									links={promptLinks}
+									onRemove={(link) =>
+										setPromptLinks((links) =>
+											links.filter(
+												(item) => item !== link,
+											),
+										)
+									}
+								/>
 								<TextArea
+									onPaste={(event) =>
+										takeLinkPaste(event, (link) =>
+											setPromptLinks((links) =>
+												links.includes(link)
+													? links
+													: [...links, link],
+											),
+										)
+									}
 									aria-label="Artefact prompt"
 									variant="secondary"
 									rows={3}
@@ -838,7 +911,9 @@ export function Artefacts() {
 										setPrompt(event.target.value);
 										followPromptCaret(event.currentTarget);
 									}}
-									onSelect={(event) => followPromptCaret(event.currentTarget)}
+									onSelect={(event) =>
+										followPromptCaret(event.currentTarget)
+									}
 									placeholder="What would you like to make? Paste a PR, issue, or a question…"
 									className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
 								/>
@@ -857,7 +932,9 @@ export function Artefacts() {
 											<Button
 												size="sm"
 												variant="ghost"
-												onPress={() => setGoogleFiles([])}
+												onPress={() =>
+													setGoogleFiles([])
+												}
 											>
 												Clear
 											</Button>
@@ -866,7 +943,9 @@ export function Artefacts() {
 										<Button
 											size="sm"
 											variant="ghost"
-											onPress={() => navigate("/?panel=integrations")}
+											onPress={() =>
+												navigate("/?panel=integrations")
+											}
 										>
 											<FileText size={15} />
 											Add Google files
@@ -880,15 +959,22 @@ export function Artefacts() {
 										}
 										type="submit"
 										className="size-9 min-w-9 rounded-xl p-0"
+										isPending={isCreating}
 										isDisabled={
-											!prompt.trim() || isCreating
+											!prompt.trim() &&
+											promptLinks.length === 0
 										}
 									>
-										{isCreating ? (
-											"…"
-										) : (
-											<ArrowUp size={17} />
-										)}
+										{({ isPending }) =>
+											isPending ? (
+												<Spinner
+													color="current"
+													size="sm"
+												/>
+											) : (
+												<ArrowUp size={17} />
+											)
+										}
 									</Button>
 								</Toolbar>
 							</Surface>
@@ -987,6 +1073,7 @@ export function Artefacts() {
 function WorkspaceSidebar({
 	inDrawer = false,
 	artefacts,
+	isLoadingArtefacts,
 	folders,
 	onCreateFolder,
 	onRenameFolder,
@@ -1005,6 +1092,7 @@ function WorkspaceSidebar({
 	/** Fills the phone drawer instead of sitting beside the page. */
 	inDrawer?: boolean;
 	artefacts: Artefact[];
+	isLoadingArtefacts: boolean;
 	folders: Folder[];
 	onCreateFolder: (name: string) => Promise<unknown>;
 	onRenameFolder: (id: string, name: string) => Promise<unknown>;
@@ -1079,6 +1167,7 @@ function WorkspaceSidebar({
 					description: artefactDescription(artefact),
 					icon: artefactIcon(artefact),
 				}))}
+				isLoading={isLoadingArtefacts}
 				folders={folders}
 				selectedId={selectedId}
 				onOpen={onOpenArtefact}
@@ -1203,6 +1292,7 @@ function ArtefactModal({
 	const [isDiscarding, setIsDiscarding] = useState(false);
 	const [showHistory, setShowHistory] = useState(false);
 	const [commentsOpen, setCommentsOpen] = useState(false);
+	const [isCommenting, setCommenting] = useState(false);
 	const [commentCount, setCommentCount] = useState(0);
 	// A past version picked on the history slider; `undefined` shows the latest.
 	const [pastVersion, setPastVersion] = useState<ArtefactDocument>();
@@ -1221,8 +1311,26 @@ function ArtefactModal({
 	const breadcrumb =
 		folders.find((folder) => folder.id === artefact?.folderId)?.name ??
 		"Artefacts";
+	// Blocks a revision or save changed, so they can be pointed out once.
+	const [seenContent, setSeenContent] = useState(artefact?.content);
+	const [changedIds, setChangedIds] = useState<Set<string>>();
+	if (artefact?.content !== seenContent) {
+		setSeenContent(artefact?.content);
+		setChangedIds(
+			seenContent && artefact?.content
+				? changedBlockIds(seenContent, artefact.content)
+				: undefined,
+		);
+	}
+	useEffect(() => {
+		if (changedIds?.size)
+			window.document
+				.querySelector(".artefact-changed")
+				?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+	}, [changedIds]);
 	const renderedArtefact = artefact && (
 		<ArtefactBody
+			changedIds={changedIds}
 			artefact={artefact}
 			document={draft ?? (historyOpen ? pastVersion : undefined)}
 			canInteract={canEdit}
@@ -1359,13 +1467,22 @@ function ArtefactModal({
 								{artefact && !isEditing && !historyOpen && (
 									<Button
 										aria-label={`Comments, ${commentCount}`}
+										aria-pressed={
+											commentsOpen || isCommenting
+										}
 										variant={
-											commentsOpen ? "secondary" : "ghost"
+											commentsOpen || isCommenting
+												? "secondary"
+												: "ghost"
 										}
 										size="sm"
-										onPress={() =>
-											setCommentsOpen(!commentsOpen)
-										}
+										onPress={() => {
+											const next = !(
+												commentsOpen || isCommenting
+											);
+											setCommentsOpen(next);
+											setCommenting(next && canComment);
+										}}
 									>
 										<MessageCircle size={15} />
 										<span className="hidden sm:inline">
@@ -1440,9 +1557,20 @@ function ArtefactModal({
 									canComment={canComment}
 									isOpen={commentsOpen}
 									onOpenChange={setCommentsOpen}
+									isCommenting={isCommenting}
+									onCommentingChange={setCommenting}
 									onCountChange={setCommentCount}
 								>
-									{renderedArtefact}
+									<div
+										aria-busy={isRevising}
+										className={
+											isRevising
+												? "artefact-revising"
+												: undefined
+										}
+									>
+										{renderedArtefact}
+									</div>
 								</ArtefactComments>
 							) : (
 								<div className="min-h-0 flex-1 overflow-auto">
@@ -1553,7 +1681,8 @@ function ArtefactModal({
 							!isCreating &&
 							!isEditing &&
 							canEdit &&
-							!commentsOpen && (
+							!commentsOpen &&
+							!isCommenting && (
 								<div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 px-4 sm:px-6">
 									<div className="pointer-events-auto relative mx-auto w-[70%] max-sm:w-full">
 										<form
@@ -1568,7 +1697,9 @@ function ArtefactModal({
 												>
 													{generationCommentary ? (
 														<GenerationCommentary
-															text={generationCommentary}
+															text={
+																generationCommentary
+															}
 														/>
 													) : (
 														<span
@@ -1584,9 +1715,14 @@ function ArtefactModal({
 													variant="secondary"
 													className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
 													value={followUp}
-													disabled={pastVersion !== undefined}
+													disabled={
+														pastVersion !==
+														undefined
+													}
 													onChange={(event) =>
-														setFollowUp(event.target.value)
+														setFollowUp(
+															event.target.value,
+														)
 													}
 													placeholder={
 														pastVersion
@@ -1603,17 +1739,22 @@ function ArtefactModal({
 												}
 												type="submit"
 												className="size-10 min-w-10 rounded-xl p-0"
+												isPending={isRevising}
 												isDisabled={
 													!followUp.trim() ||
-													isRevising ||
 													pastVersion !== undefined
 												}
 											>
-												{isRevising ? (
-													"…"
-												) : (
-													<ArrowUp size={17} />
-												)}
+												{({ isPending }) =>
+													isPending ? (
+														<Spinner
+															color="current"
+															size="sm"
+														/>
+													) : (
+														<ArrowUp size={17} />
+													)
+												}
 											</Button>
 										</form>
 									</div>
@@ -1670,6 +1811,7 @@ function ArtefactBody({
 	isEditing = false,
 	onAction,
 	onEdit,
+	changedIds,
 }: {
 	artefact: Artefact;
 	/** Shown instead of the saved content, e.g. an edit draft or a past version. */
@@ -1681,13 +1823,35 @@ function ArtefactBody({
 	isEditing?: boolean;
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
+	/** Blocks to flash as just changed. */
+	changedIds?: Set<string>;
 }) {
+	const { data: session } = useSession();
 	const document =
 		override ??
 		artefact.content ??
 		fallbackDocument(artefact.prompt, artefactHeading(artefact));
+	// Past versions keep their saved statuses; only the latest is live.
+	const liveStatus = useLiveStatus(
+		artefact.id,
+		override ? undefined : artefact.content,
+		Boolean(session?.user),
+	);
 	return (
 		<ArtefactRenderer
+			liveStatus={liveStatus}
+			renderNode={
+				changedIds?.size
+					? (node, rendered) =>
+							changedIds.has(node.id) ? (
+								<div className="artefact-changed">
+									{rendered}
+								</div>
+							) : (
+								rendered
+							)
+					: undefined
+			}
 			document={document}
 			createdAt={artefact.createdAt}
 			canInteract={canInteract && !isEditing}

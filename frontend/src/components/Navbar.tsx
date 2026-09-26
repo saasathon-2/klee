@@ -1,22 +1,24 @@
 import { Button, Description, Dropdown, Label, Link } from "@heroui/react";
 import { ChevronDown, Menu } from "lucide-react";
 import { type ComponentProps, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "../lib/auth-client";
-import { navMenus, pricingPath } from "../pages/landing/links";
+import { docsLink, navMenus, pricingPath, repositoryUrl } from "../pages/landing/links";
+import { GitHubIcon } from "./BrandIcons";
 import { KleeIcon } from "./KleeLogo";
 import { ThemeToggle } from "./ThemeToggle";
 
-const hrefFor = (link: { section?: string; to?: string }) =>
-	link.to ?? `/welcome#${link.section}`;
 const mobileLinks = [
+	docsLink,
 	...navMenus.flatMap((menu) => menu.links),
-	{ label: "Pricing", description: "Plans for individual work and teams", to: pricingPath },
+	{ label: "Pricing", description: "Plans", to: pricingPath },
 ];
 
 export function Navbar() {
 	const { data: session, isPending } = useSession();
 	const navigate = useNavigate();
+	// The docs link to the source instead of the dashboard.
+	const isDocs = useLocation().pathname === "/docs" || window.location.hostname === "docs.klee.work";
 	const [scrolled, setScrolled] = useState(false);
 	useEffect(() => {
 		const onScroll = (event: Event) => {
@@ -39,6 +41,14 @@ export function Navbar() {
 				</Link>
 
 				<div className="hidden items-center gap-2 md:flex">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="px-3 py-1.5"
+						onPress={() => navigate(docsLink.to)}
+					>
+						{docsLink.label}
+					</Button>
 					{navMenus.map((menu) => (
 						<Dropdown key={menu.label}>
 							<Button
@@ -64,7 +74,7 @@ export function Navbar() {
 											render={(props) => (
 												<a
 													{...(props as unknown as ComponentProps<"a">)}
-													href={hrefFor(link)}
+													href={link.to}
 												/>
 											)}
 										>
@@ -110,7 +120,7 @@ export function Navbar() {
 										render={(props) => (
 											<a
 												{...(props as unknown as ComponentProps<"a">)}
-												href={hrefFor(link)}
+												href={link.to}
 											/>
 										)}
 									>
@@ -123,15 +133,24 @@ export function Navbar() {
 							</Dropdown.Menu>
 						</Dropdown.Popover>
 					</Dropdown>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="hidden md:flex"
-						onPress={() => navigate("/docs")}
-					>
-						Docs
-					</Button>
-					{isPending ? null : session?.user ? (
+					{isDocs ? (
+						<Button
+							isIconOnly
+							aria-label="Klee on GitHub"
+							variant="ghost"
+							size="sm"
+							render={(props) => (
+								<a
+									{...(props as unknown as ComponentProps<"a">)}
+									href={repositoryUrl}
+									target="_blank"
+									rel="noreferrer"
+								/>
+							)}
+						>
+							<GitHubIcon aria-hidden className="size-5" />
+						</Button>
+					) : isPending ? null : session?.user ? (
 						<Button size="sm" onPress={() => navigate("/")}>
 							Dashboard
 						</Button>

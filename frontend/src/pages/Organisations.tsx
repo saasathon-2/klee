@@ -1,4 +1,4 @@
-import { Button, Input, Modal } from "@heroui/react";
+import { Button, Input, Modal, Skeleton } from "@heroui/react";
 import { Building2, Plus, UserPlus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -74,6 +74,11 @@ export function OrganisationsModal({ onClose }: { onClose: () => void }) {
 									{organisation.role !== "member" && <div className="mt-4 flex gap-2"><Input aria-label={`Add a member to ${organisation.name}`} value={emails[organisation.id] ?? ""} onChange={(event) => setEmails((current) => ({ ...current, [organisation.id]: event.target.value }))} placeholder="teammate@example.com" /><Button size="sm" isDisabled={!emails[organisation.id]?.trim()} onPress={() => void addMember(organisation)}><UserPlus size={15} /> Add</Button></div>}
 								</section>
 							))}
+							{!organisations && !error && (
+								<div role="status" aria-label="Loading organisations" className="space-y-3">
+									{[0, 1].map((index) => <Skeleton key={index} animationType="pulse" className="h-28 rounded-xl" />)}
+								</div>
+							)}
 							{organisations?.length === 0 && <p className="py-8 text-center text-sm text-muted">Create an organisation to share artefacts with your team.</p>}
 						</Modal.Body>
 					</Modal.Dialog>

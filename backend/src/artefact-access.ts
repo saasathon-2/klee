@@ -21,16 +21,26 @@ function githubAccessSql(userParam: string, alias: string) {
 	)`;
 }
 
-/** The most permissive grant for a user; GitHub project access remains edit access. */
+/**
+ * The most permissive grant for a user, from their organisations or a direct
+ * share to their account; GitHub project access remains edit access.
+ */
 export function artefactPermissionSql(userParam: string, alias = "artefact") {
 	return `(case
 		when ${alias}.owner_id = ${userParam} then 'edit'
 		when ${githubAccessSql(userParam, alias)} then 'edit'
 		else (
 			select permission_grant.permission
-			from artefact_organisation_permission permission_grant
-			join organisation_member member on member.organisation_id = permission_grant.organisation_id
-			where permission_grant.artefact_id = ${alias}.id and member.user_id = ${userParam}
+			from (
+				select organisation_grant.permission
+				from artefact_organisation_permission organisation_grant
+				join organisation_member member on member.organisation_id = organisation_grant.organisation_id
+				where organisation_grant.artefact_id = ${alias}.id and member.user_id = ${userParam}
+				union all
+				select user_grant.permission
+				from artefact_user_permission user_grant
+				where user_grant.artefact_id = ${alias}.id and user_grant.user_id = ${userParam}
+			) permission_grant
 			order by case permission_grant.permission when 'edit' then 3 when 'comment' then 2 else 1 end desc
 			limit 1
 		)

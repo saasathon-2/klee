@@ -12,19 +12,25 @@ import type {
 import dagre from "dagre";
 import { useMemo } from "react";
 import "@xyflow/react/dist/style.css";
-import type { SoftwareDiagramEdge, SoftwareDiagramNode } from "../../model";
+import type { SoftwareDiagramEdge } from "../../model";
 
-function layoutDiagram<T extends SoftwareDiagramNode>(
+type DiagramNode = { id: string; label: string };
+
+/** Left-to-right suits dependency graphs; top-to-bottom suits flowcharts. */
+export type DiagramDirection = "LR" | "TB";
+
+function layoutDiagram<T extends DiagramNode>(
     nodes: T[],
     edges: SoftwareDiagramEdge[],
     type: string,
     size: { width: number; height: number },
+    direction: DiagramDirection,
 ) {
     const graph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
     graph.setGraph({
-        rankdir: "LR",
-        nodesep: 96,
-        ranksep: 200,
+        rankdir: direction,
+        nodesep: direction === "LR" ? 96 : 64,
+        ranksep: direction === "LR" ? 200 : 80,
         marginx: 48,
         marginy: 48,
     });
@@ -70,13 +76,15 @@ function layoutDiagram<T extends SoftwareDiagramNode>(
  * change impact map. `nodeTypes` must hold `type` and be defined at module
  * scope so React Flow doesn't remount nodes on every render.
  */
-export function DiagramCanvas<T extends SoftwareDiagramNode>({
+export function DiagramCanvas<T extends DiagramNode>({
     title,
     nodes,
     edges,
     type,
     nodeTypes,
     nodeSize,
+    direction = "LR",
+    minHeight = 480,
 }: {
     title: string;
     nodes: T[];
@@ -84,18 +92,20 @@ export function DiagramCanvas<T extends SoftwareDiagramNode>({
     type: string;
     nodeTypes: NodeTypes;
     nodeSize: { width: number; height: number };
+    direction?: DiagramDirection;
+    minHeight?: number;
 }) {
     const diagram = useMemo(
-        () => layoutDiagram(nodes, edges, type, nodeSize),
-        [nodes, edges, type, nodeSize],
+        () => layoutDiagram(nodes, edges, type, nodeSize, direction),
+        [nodes, edges, type, nodeSize, direction],
     );
     const labels = new Map(nodes.map((item) => [item.id, item.label]));
     return (
         <>
             <div
                 role="group"
-                className="software-diagram-canvas min-h-[480px] overflow-hidden rounded-2xl border border-divider bg-background"
-                style={{ height: Math.max(480, diagram.height + 80) }}
+                className="software-diagram-canvas overflow-hidden rounded-2xl border border-divider bg-background"
+                style={{ height: Math.max(minHeight, diagram.height + 80) }}
                 aria-label={`${title} component diagram`}
             >
                 <ReactFlow

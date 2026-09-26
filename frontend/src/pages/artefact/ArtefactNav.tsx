@@ -6,6 +6,7 @@ import {
 	Label,
 	ListBox,
 	Paragraph,
+	Skeleton,
 } from "@heroui/react";
 import {
 	CalendarCheck,
@@ -220,6 +221,7 @@ export function ArtefactNav({
 	onCreateFolder,
 	onRenameFolder,
 	onDeleteFolder,
+	isLoading = false,
 }: {
 	artefacts: NavArtefact[];
 	folders: Folder[];
@@ -229,6 +231,7 @@ export function ArtefactNav({
 	onCreateFolder: (name: string) => Promise<unknown>;
 	onRenameFolder: (id: string, name: string) => Promise<unknown>;
 	onDeleteFolder: (id: string) => Promise<unknown>;
+	isLoading?: boolean;
 }) {
 	// Which dialog is open: creating, renaming a folder, or confirming a delete.
 	const [dialog, setDialog] = useState<
@@ -244,6 +247,15 @@ export function ArtefactNav({
 	const unfiled = artefacts.filter(
 		(artefact) => !artefact.folderId || !folderIds.has(artefact.folderId),
 	);
+
+	if (isLoading)
+		return (
+			<div role="status" aria-label="Loading artefacts" className="min-h-0 flex-1 space-y-2 px-2">
+				{[70, 55, 80, 60, 45].map((width, index) => (
+					<Skeleton key={index} animationType="pulse" className="h-8 rounded-lg" style={{ width: `${width}%` }} />
+				))}
+			</div>
+		);
 
 	return (
 		<div className="min-h-0 flex-1 overflow-y-auto">

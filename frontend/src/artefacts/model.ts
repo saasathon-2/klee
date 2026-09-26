@@ -7,6 +7,8 @@ export type SoftwareDiagramNode = {
 	position?: { x: number; y: number };
 	width?: number;
 	height?: number;
+	/** The component's source, e.g. its repository or service page. */
+	url?: string | null;
 };
 export type SoftwareDiagramEdge = {
 	source: string;
@@ -27,6 +29,8 @@ export type SuggestedAction = {
 	label: string;
 	description: string;
 	action: string;
+	/** Opens this page instead of asking Klee for a follow-up. */
+	url?: string | null;
 };
 export type DiffLine = {
 	kind: "context" | "add" | "remove";
@@ -107,6 +111,23 @@ export type GraphCommit = {
 	/** Parent SHAs; the first is the mainline parent. */
 	parents: string[];
 	branchIds: string[];
+	url?: string | null;
+};
+export type FlowchartStep = {
+	id: string;
+	label: string;
+	kind: "start" | "end" | "step" | "decision";
+	detail?: string | null;
+	url?: string | null;
+};
+export type DependencyHealth = "current" | "outdated" | "vulnerable";
+export type DependencyNode = {
+	id: string;
+	label: string;
+	kind: "package" | "module" | "service" | "database" | "external";
+	detail: string;
+	version?: string | null;
+	health?: DependencyHealth | null;
 	url?: string | null;
 };
 export type ChangeState = "added" | "modified" | "at-risk" | "unchanged";
@@ -192,6 +213,8 @@ export type ArtefactNode = {
 		| "code-diff"
 		| "architecture-flow"
 		| "software-diagram"
+		| "flowchart"
+		| "dependency-graph"
 		| "glue"
 		| "task-list"
 		| "next-steps"
@@ -281,4 +304,16 @@ export function withEditedValue(
 			: node;
 	};
 	return { ...document, root: update(document.root) };
+}
+
+/**
+ * Ids of the content blocks in `after` that weren't in `before`. Blocks are
+ * compared by content, not id, since ids follow position and shift when a
+ * block is added or removed.
+ */
+export function changedBlockIds(before: ArtefactDocument, after: ArtefactDocument) {
+	const blocks = (document: ArtefactDocument) => document.root.children?.[0]?.children ?? [];
+	const key = (node: ArtefactNode) => JSON.stringify({ ...node, id: undefined });
+	const previous = new Set(blocks(before).map(key));
+	return new Set(blocks(after).filter((node) => !previous.has(key(node))).map((node) => node.id));
 }

@@ -1,45 +1,37 @@
-import {
-	Button,
-	Chip,
-	Heading,
-	Link,
-	Paragraph,
-	Separator,
-} from "@heroui/react";
-import { ChevronRight, ExternalLink, LibraryBig } from "lucide-react";
+import { Heading, Link, Paragraph, Separator } from "@heroui/react";
+import { ExternalLink, LibraryBig } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useDocumentTitle } from "../useDocumentTitle";
-import { KleeIcon } from "../components/KleeLogo";
 
 const sections = [
-	{
-		id: "overview",
-		label: "Overview",
-		items: ["What is Klee?", "Core concepts"],
-	},
-	{
-		id: "start",
-		label: "Get started",
-		items: ["Create an artefact", "Share an artefact"],
-	},
-	{
-		id: "github",
-		label: "GitHub",
-		items: ["Connect GitHub", "Pull request artefacts", "CI updates"],
-	},
-	{ id: "help", label: "Help", items: ["Troubleshooting", "Security"] },
+	{ id: "overview", label: "Overview" },
+	{ id: "start", label: "Create and edit" },
+	{ id: "blocks", label: "Blocks" },
+	{ id: "sharing", label: "Sharing and comments" },
+	{ id: "github", label: "GitHub" },
+	{ id: "slack-jira", label: "Slack and Jira" },
+	{ id: "help", label: "Troubleshooting" },
 ];
+
+const integrationsSource = "https://github.com/saasathon-2/integrations/tree/main";
+
+function scrollToSection(root: HTMLElement | null, id: string, behavior: ScrollBehavior = "smooth") {
+	root?.querySelector(`#${CSS.escape(id)}`)?.scrollIntoView({ behavior, block: "start" });
+}
 
 export function Docs() {
 	useDocumentTitle("Docs - Klee");
-	const navigate = useNavigate();
+	const { hash } = useLocation();
 	const content = useRef<HTMLElement>(null);
 	const [activeSection, setActiveSection] = useState(sections[0].id);
-	const scrollTo = (id: string) =>
-		content.current
-			?.querySelector(`#${id}`)
-			?.scrollIntoView({ behavior: "smooth", block: "start" });
+	const scrollTo = (id: string) => scrollToSection(content.current, id);
+
+	// Links such as /docs#github land on their section.
+	useEffect(() => {
+		if (hash) scrollToSection(content.current, hash.slice(1), "auto");
+	}, [hash]);
+
 	useEffect(() => {
 		const scroller = content.current;
 		if (!scroller) return;
@@ -79,153 +71,182 @@ export function Docs() {
 					<LibraryBig size={16} />
 					Klee Docs
 				</div>
-				<nav aria-label="Documentation" className="mt-6 grid gap-6">
+				<nav aria-label="Documentation" className="mt-6 grid gap-1">
 					{sections.map((section) => (
-						<div key={section.id}>
-							<button
-								type="button"
-								onClick={() => scrollTo(section.id)}
-								className={`-ml-3 flex w-[calc(100%+0.75rem)] items-center border-l-2 px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider transition-colors ${activeSection === section.id ? "border-brand text-foreground" : "border-transparent text-muted hover:text-foreground"}`}
-							>
-								{section.label}
-							</button>
-							<div className="mt-2 grid gap-1">
-								{section.items.map((item) => (
-									<button
-										type="button"
-										key={item}
-										onClick={() => scrollTo(section.id)}
-										className={`rounded px-2 py-1 text-left text-sm transition-colors ${activeSection === section.id ? "text-foreground" : "text-muted hover:bg-default hover:text-foreground"}`}
-									>
-										{item}
-									</button>
-								))}
-							</div>
-						</div>
+						<a
+							key={section.id}
+							href={`#${section.id}`}
+							onClick={(event) => {
+								event.preventDefault();
+								window.history.replaceState(null, "", `#${section.id}`);
+								scrollTo(section.id);
+							}}
+							className={`-ml-3 border-l-2 px-3 py-1 text-sm transition-colors ${activeSection === section.id ? "border-brand text-foreground" : "border-transparent text-muted hover:text-foreground"}`}
+						>
+							{section.label}
+						</a>
 					))}
 				</nav>
 			</aside>
 			<article
 				ref={content}
-				className="max-w-3xl px-6 py-10 sm:px-12 sm:py-16 lg:max-w-none lg:overflow-y-auto"
+				className="max-w-3xl px-6 py-10 sm:px-12 sm:py-16 lg:overflow-y-auto"
 			>
-				<div className="flex items-center gap-2">
-					<Chip size="sm">Docs</Chip>
-					<span className="text-sm text-muted">
-						Klee Documentation
-					</span>
-				</div>
-				<Heading
-					level={1}
-					className="mt-5 text-4xl tracking-tight sm:text-5xl"
-				>
-					Map out your ideas, projects, and changes.
+				<Heading level={1} className="text-4xl tracking-tight">
+					Klee docs
 				</Heading>
-				<Paragraph className="mt-5 max-w-2xl text-lg text-muted">
-					Klee turns context into clear, shareable artefacts:
-					decisions, pull-request briefs, architecture views, and
-					implementation plans.
+				<Paragraph className="mt-4 text-lg text-muted">
+					How to create artefacts, share them, and connect GitHub, Slack, and Jira.
 				</Paragraph>
-				<div className="mt-8 flex flex-wrap gap-3">
-					<Button onPress={() => navigate("/")}>
-						Open Klee <ChevronRight size={16} />
-					</Button>
-					<Button
-						variant="secondary"
-						onPress={() => scrollTo("github")}
-					>
-						GitHub setup
-					</Button>
-				</div>
 
-				<DocsSection id="overview" title="What is Klee?">
-					<KleeIcon className="size-10" />
-
+				<DocsSection id="overview" title="Overview">
 					<Paragraph>
-						Klee turns a prompt or connected pull request into a
-						structured artefact. Artefacts are private by default
-						and can include code diffs, review feedback, commits, CI
-						status, and software architecture.
+						An artefact is a page built from blocks: code diffs, git graphs, flowcharts, checklists, timelines, and more. Klee picks and fills the blocks from your prompt, the links you paste, and your connected apps.
 					</Paragraph>
-					<DocsCard
-						title="Core concepts"
+					<DocsList
+						title="Terms"
 						items={[
-							"Artefact - a generated, editable document for a decision or change.",
-							"Template - a purposeful visual block such as a diff, check list, or review summary.",
-							"Share link - a read-only URL you explicitly enable for an artefact.",
+							"Artefact: a generated page you can edit, version, share, and comment on.",
+							"Block: one section of an artefact, such as a code diff or a check list.",
+							"Organisation: a group of Klee accounts you can share with at once.",
+							"Project: the GitHub org an artefact belongs to. Its members can edit it.",
 						]}
 					/>
 				</DocsSection>
 
-				<DocsSection id="start" title="Create and share an artefact">
-					<ol className="list-decimal space-y-3 pl-5 text-muted">
-						<li>
-							Describe the outcome you need, or connect GitHub,
-							GitLab or BitBucket and open a pull request.
-						</li>
-						<li>
-							Review the generated artefact and add any follow-up
-							context, either through comments or editing it
-							directly.
-						</li>
-						<li>
-							Use Share to create a read-only, commentable link
-							for collaborators.
-						</li>
+				<DocsSection id="start" title="Create and edit">
+					<ol className="list-decimal space-y-2 pl-5">
+						<li>Write what you need in the prompt. Paste links to pull requests, issues, or pages; they show as chips and are sent with the prompt.</li>
+						<li>Klee streams the artefact in. Its reasoning shows under the loading bar.</li>
+						<li>Ask for changes in the bar at the bottom of the artefact. Changed blocks are highlighted when the update lands.</li>
+						<li>Press Edit to change any text by hand, then Save.</li>
+						<li>History shows every version. Pick one to view it.</li>
 					</ol>
-					<blockquote className="mt-6 border-l-2 border-brand pl-4 text-sm text-muted">
-						NOTE: Sharing is opt-in. Creating an artefact does not
-						make it public.
-					</blockquote>
 				</DocsSection>
 
-				<DocsSection id="github" title="GitHub pull-request artefacts">
+				<DocsSection id="blocks" title="Blocks">
+					<DocsList
+						title="For engineering work"
+						items={[
+							"Code diff: changed lines for one file.",
+							"Git graph: branches, merges, and commits. Used when commits have parent SHAs; otherwise a commit list.",
+							"Check list: CI checks. Checks linked to GitHub runs update live while you have the page open.",
+							"Flowchart: steps and decisions, top to bottom.",
+							"Dependency graph: packages, modules, and services, with versions and health.",
+							"Software diagram and change impact map: components and what depends on what.",
+							"Release timeline, incident timeline, sprint timeline, and work item board.",
+						]}
+					/>
+					<DocsList
+						title="For anything"
+						items={[
+							"Prose, metric row, decision record, evidence table, activity trend, and handoff brief.",
+							"Next steps: buttons. Link buttons open the linked page for everyone; prompt buttons are only shown to the owner.",
+						]}
+					/>
 					<Paragraph>
-						Install the Klee GitHub App from your profile, then
-						grant it access to the repositories you want Klee to
-						read. Klee fetches pull requests, and then grabs the
-						important file changes, reviews, commits, and check runs
-						to generate a focused brief.
+						Diagram nodes with a link open their source, such as a repository or service page, when clicked.
 					</Paragraph>
-					<DocsCard
-						title="GitHub App permissions"
+				</DocsSection>
+
+				<DocsSection id="sharing" title="Sharing and comments">
+					<Paragraph>Artefacts are private until you share them. Press Share on an artefact you own.</Paragraph>
+					<DocsList
+						title="Share options"
 						items={[
-							"Pull requests: Read-only - PR metadata, files, reviews, and commits.",
-							"Checks: Read-only - CI check status and pipeline links.",
-							"Issues: Read and write - Klee posts and refreshes the PR artefact comment.",
+							"Invite people: enter the email of a Klee account and pick view, comment, or edit.",
+							"Organisation: share with every member at the level you pick.",
+							"Anyone with the link: turns on public, view-only access.",
+							"Stop sharing: removes every invite and organisation and turns the link off.",
 						]}
 					/>
-					<DocsCard
-						title="CI updates"
+					<Paragraph>
+						To comment, press Comments to turn on comment mode and drag across part of the page. Press Esc or Comments again to leave comment mode and select text normally.
+					</Paragraph>
+				</DocsSection>
+
+				<DocsSection id="github" title="GitHub">
+					<Paragraph>
+						Connect GitHub from Integrations in your workspace. This installs the Klee GitHub App on the repositories you choose.
+					</Paragraph>
+					<DocsList
+						title="App permissions"
 						items={[
-							"Add the Klee GitHub Action to a pull-request workflow.",
-							"Klee refreshes the linked artefact when PR CI completes.",
-							"Enable the Check run webhook for individual check-run updates.",
+							"Pull requests (read): metadata, files, reviews, and commits.",
+							"Checks (read): CI status, including the live status shown on artefacts.",
+							"Issues (read and write): Klee posts and updates the artefact comment.",
 						]}
 					/>
+					<Paragraph>Add this workflow to build a page for every pull request:</Paragraph>
+					<pre className="overflow-x-auto rounded-xl border border-border bg-surface-secondary p-4 font-mono text-sm leading-6 text-foreground">
+						<code>{`on: pull_request
+
+permissions:
+  id-token: write
+
+jobs:
+  klee:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: saasathon-2/integrations/github@main
+        with:
+          api-url: https://<api-domain>
+          pull-request: \${{ github.event.pull_request.number }}`}</code>
+					</pre>
 					<Link
-						href="https://github.com/saasathon-2/integrations/tree/main/github"
+						href={`${integrationsSource}/github`}
 						target="_blank"
-						className="mt-6 inline-flex items-center gap-1 text-sm"
+						className="inline-flex items-center gap-1 text-sm"
 					>
-						View the GitHub Action setup <ExternalLink size={14} />
+						GitHub Action source <ExternalLink size={14} />
 					</Link>
 				</DocsSection>
 
-				<DocsSection id="help" title="Troubleshooting and security">
-					<DocsCard
-						title="A pull request did not update"
+				<DocsSection id="slack-jira" title="Slack and Jira">
+					<DocsList
+						title="Slack"
 						items={[
-							"Confirm the GitHub Action has id-token: write permission.",
-							"Confirm the GitHub App is installed for the repository and subscribed to Check run events.",
-							"Check that the app API URL and GitHub App credentials are configured in deployment.",
+							"Install the Klee app from Integrations.",
+							"Paste a shared artefact link in a channel to unfurl a preview.",
+							"Use /klee followed by an artefact link or id to post a preview.",
 						]}
 					/>
-					<Paragraph className="mt-6">
-						Klee validates GitHub Action identity tokens before
-						accepting a request. Treat share URLs as public to
-						anyone who receives them, and revoke sharing when access
-						is no longer needed.
+					<DocsList
+						title="Jira"
+						items={[
+							"Install the Klee app from the Atlassian Marketplace.",
+							"Paste a shared artefact link into an issue description or comment.",
+							"Open the Klee panel on the issue to see the artefact.",
+						]}
+					/>
+					<div className="flex gap-4 text-sm">
+						<Link href={`${integrationsSource}/slack`} target="_blank" className="inline-flex items-center gap-1">
+							Slack app source <ExternalLink size={14} />
+						</Link>
+						<Link href={`${integrationsSource}/jira`} target="_blank" className="inline-flex items-center gap-1">
+							Jira app source <ExternalLink size={14} />
+						</Link>
+					</div>
+				</DocsSection>
+
+				<DocsSection id="help" title="Troubleshooting">
+					<DocsList
+						title="A pull request page didn't update"
+						items={[
+							"Check the workflow has id-token: write permission.",
+							"Check the GitHub App is installed on the repository and subscribed to check run events.",
+							"Check api-url matches the API's address exactly, without a trailing slash.",
+						]}
+					/>
+					<DocsList
+						title="A check isn't showing live status"
+						items={[
+							"Live status needs the check to link to a GitHub run or Actions job.",
+							"The artefact owner must have the GitHub App installed on that repository's account.",
+						]}
+					/>
+					<Paragraph>
+						Anyone with a public link can view the artefact. Turn link sharing off when it's no longer needed.
 					</Paragraph>
 				</DocsSection>
 			</article>
@@ -245,9 +266,9 @@ function DocsSection({
 	return (
 		<section
 			id={id}
-			className="scroll-mt-24 border-t border-border pt-10 mt-12"
+			className="mt-12 scroll-mt-24 border-t border-border pt-10"
 		>
-			<Heading level={2} className="flex items-center gap-2 text-2xl">
+			<Heading level={2} className="text-2xl">
 				{title}
 			</Heading>
 			<div className="mt-5 space-y-4 leading-7 text-muted">
@@ -257,7 +278,7 @@ function DocsSection({
 	);
 }
 
-function DocsCard({ title, items }: { title: string; items: string[] }) {
+function DocsList({ title, items }: { title: string; items: string[] }) {
 	return (
 		<div className="rounded-lg border border-border bg-surface p-5">
 			<p className="font-semibold text-foreground">{title}</p>

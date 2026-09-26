@@ -104,6 +104,8 @@ DeveloperPage.children = {
 		"metric-row",
 		"architecture-flow",
 		"software-diagram",
+		"flowchart",
+		"dependency-graph",
 		"glue",
 		"task-list",
 		"next-steps",
@@ -142,6 +144,7 @@ GenericPage.children = {
 	max: 8,
 	allowed: [
 		"prose",
+		"flowchart",
 		"metric-row",
 		"glue",
 		"next-steps",
