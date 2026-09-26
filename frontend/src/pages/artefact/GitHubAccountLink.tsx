@@ -6,7 +6,12 @@ import { authClient, linkGitHub } from "../../lib/auth-client";
  * Links a GitHub login to the current user so artefacts in their GitHub orgs
  * become visible and editable. Separate from installing the GitHub App.
  */
-export function GitHubAccountLink() {
+export function GitHubAccountLink({
+	returnTo = "/profile",
+}: {
+	/** Where GitHub sends the user back to after linking. */
+	returnTo?: string;
+} = {}) {
 	const [isLinked, setIsLinked] = useState<boolean>();
 	const [error, setError] = useState("");
 
@@ -21,7 +26,7 @@ export function GitHubAccountLink() {
 
 	async function link() {
 		setError("");
-		const { error: linkError } = await linkGitHub("/profile");
+		const { error: linkError } = await linkGitHub(returnTo);
 		if (linkError) setError(linkError.message ?? "Could not link GitHub.");
 	}
 
