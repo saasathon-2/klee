@@ -1,7 +1,8 @@
 import { Button, Modal } from "@heroui/react";
-import { GitPullRequest, MessageSquare, PlugZap, SquareKanban, X } from "lucide-react";
+import { PlugZap, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { GitHubIcon, JiraIcon, SlackIcon } from "../components/BrandIcons";
 
 type GitHubInstallation = {
 	installationId: string;
@@ -70,13 +71,13 @@ export function IntegrationsModal({ onClose }: { onClose: () => void }) {
 							<Button aria-label="Close apps and integrations" variant="ghost" className="size-8 min-w-8 p-0" onPress={onClose}><X size={18} /></Button>
 						</Modal.Header>
 						<Modal.Body className="m-0 space-y-3 p-6">
-							<IntegrationRow icon={<GitPullRequest size={20} />} name="GitHub" summary={installations?.length ? `Connected as ${installations.map((app) => app.accountLogin).join(", ")}` : "Generate an artefact for every pull request."} action={gitHubAction}>
+							<IntegrationRow icon={<GitHubIcon size={20} />} name="GitHub" summary={installations?.length ? `Connected as ${installations.map((app) => app.accountLogin).join(", ")}` : "Generate an artefact for every pull request."} action={gitHubAction}>
 								<ul className="list-disc space-y-1 pl-4"><li>Choose repositories for the Klee app.</li><li>Add the Klee GitHub Actions workflow to each repository.</li><li>Open or update a pull request to generate its artefact.</li></ul>
 							</IntegrationRow>
-							<IntegrationRow icon={<MessageSquare size={20} />} name="Slack" summary="Preview artefacts in channels and threads." action={<Button size="sm" variant="secondary" onPress={() => window.open(slackInstallUrl, "_blank", "noopener,noreferrer")}>Install</Button>}>
+							<IntegrationRow icon={<SlackIcon size={20} />} name="Slack" summary="Preview artefacts in channels and threads." action={<Button size="sm" variant="secondary" onPress={() => window.open(slackInstallUrl, "_blank", "noopener,noreferrer")}>Install</Button>}>
 								<p>Install the Klee Slack app for your workspace, then paste a shared artefact link or use <code>/artefact &lt;link or ID&gt;</code>.</p>
 							</IntegrationRow>
-							<IntegrationRow icon={<SquareKanban size={20} />} name="Jira" summary="Show linked artefacts on Jira issues." action={<Button size="sm" variant="secondary" onPress={() => window.open(jiraInstallUrl, "_blank", "noopener,noreferrer")}>Install</Button>}>
+							<IntegrationRow icon={<JiraIcon size={20} />} name="Jira" summary="Show linked artefacts on Jira issues." action={<Button size="sm" variant="secondary" onPress={() => window.open(jiraInstallUrl, "_blank", "noopener,noreferrer")}>Install</Button>}>
 								<p>Install the Klee Jira app, then paste a shared artefact link into an issue description or comment to see it in the Klee panel.</p>
 							</IntegrationRow>
 						</Modal.Body>

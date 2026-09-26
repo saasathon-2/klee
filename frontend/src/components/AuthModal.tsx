@@ -10,7 +10,8 @@ import {
 	Separator,
 	TextField,
 } from "@heroui/react";
-import { ArrowLeft, GitPullRequest, Globe, Mail } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
+import { GitHubIcon, GoogleIcon } from "./BrandIcons";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -176,7 +177,7 @@ export function AuthModal() {
 											isDisabled={pending !== undefined}
 											onPress={() => void social("google")}
 										>
-											<Globe size={17} />
+											<GoogleIcon aria-hidden size={17} />
 											{pending === "google" ? "Redirecting…" : "Continue with Google"}
 										</Button>
 									)}
@@ -187,7 +188,7 @@ export function AuthModal() {
 											isDisabled={pending !== undefined}
 											onPress={() => void social("github")}
 										>
-											<GitPullRequest size={17} />
+											<GitHubIcon aria-hidden size={17} />
 											{pending === "github" ? "Redirecting…" : "Continue with GitHub"}
 										</Button>
 									)}

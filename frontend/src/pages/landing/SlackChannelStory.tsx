@@ -8,6 +8,7 @@ import {
 import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
+import { SlackIcon } from "../../components/BrandIcons";
 
 const shareUrl =
 	"https://klee.work/artefacts/shared/29984434-6a04-490e-9d70-08cc214a6c22";
@@ -76,6 +77,7 @@ export function SlackChannelStory() {
 					align="center"
 					className="max-w-3xl shrink-0 px-4 text-heading-2 text-balance sm:[@media(min-height:44rem)]:text-heading-1"
 				>
+					<SlackIcon aria-hidden className="mx-auto mb-3 size-7 sm:[@media(min-height:44rem)]:size-9" />
 					Get up to speed without leaving the channel
 				</Heading>
 				<section

@@ -9,6 +9,7 @@ import {
 import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
+import { GitHubIcon } from "../../components/BrandIcons";
 import { UserAvatar } from "../../components/UserAvatar";
 
 const shareUrl =
@@ -106,6 +107,7 @@ export function GitHubPullRequestStory() {
 					align="center"
 					className="max-w-3xl shrink-0 px-4 text-heading-2 text-balance sm:[@media(min-height:44rem)]:text-heading-1"
 				>
+					<GitHubIcon aria-hidden className="mx-auto mb-3 size-7 sm:[@media(min-height:44rem)]:size-9" />
 					Every pull request, explained
 				</Heading>
 				<section
