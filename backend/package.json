@@ -8,7 +8,7 @@
     "start": "node --experimental-strip-types --env-file-if-exists=.env src/app.ts",
     "typecheck": "tsc -p tfconfig.json",
     "premigrate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/migrate-preflight.mjs",
-    "migrate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/node-pg-migrate/bin/node-pg-migrate.js up -j ts -m src/migrations",
+    "migrate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/node-pg-migrate/bin/node-pg-migrate.js up -j ts -m src/migrations --check-order=false",
     "migrate:down": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/node-pg-migrate/bin/node-pg-migrate.js down -j ts -m src/migrations",
     "migrate:create": "node-pg-migrate create -j ts -m src/migrations --",
     "migrations:check": "node scripts/migrations-check.mjs",

@@ -51,7 +51,7 @@ import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import {
 	fallbackDocument,
-	withEditedText,
+	withEditedValue,
 	type ArtefactDocument,
 } from "../artefacts/model";
 import type { EditPath } from "../artefacts/templates/types";
@@ -1107,7 +1107,7 @@ function ArtefactModal({
 			onEdit={(nodeId, path, value) =>
 				setDraft(
 					(current) =>
-						current && withEditedText(current, nodeId, path, value),
+						current && withEditedValue(current, nodeId, path, value),
 				)
 			}
 		/>
@@ -1559,7 +1559,7 @@ function ArtefactBody({
 	compactHeader?: boolean;
 	isEditing?: boolean;
 	onAction?: (label: string) => void;
-	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
+	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
 }) {
 	const document =
 		override ??

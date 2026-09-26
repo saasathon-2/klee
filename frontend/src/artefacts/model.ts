@@ -4,10 +4,15 @@ export type SoftwareDiagramNode = {
 	id: string;
 	label: string;
 	detail: string;
+	position?: { x: number; y: number };
+	width?: number;
+	height?: number;
 };
 export type SoftwareDiagramEdge = {
 	source: string;
 	target: string;
+	sourceHandle?: string | null;
+	targetHandle?: string | null;
 	label?: string | null;
 };
 export type ArtefactTask = {
@@ -250,12 +255,12 @@ export function fallbackDocument(prompt: string, title: string): ArtefactDocumen
 	};
 }
 
-/** Returns a copy of `document` with one text field of one node's data replaced. */
-export function withEditedText(
+/** Returns a copy of `document` with one value of one node's data replaced. */
+export function withEditedValue(
 	document: ArtefactDocument,
 	nodeId: string,
 	path: (string | number)[],
-	value: string,
+	value: unknown,
 ): ArtefactDocument {
 	const update = (node: ArtefactNode): ArtefactNode => {
 		if (node.id === nodeId) {

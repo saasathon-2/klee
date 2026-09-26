@@ -17,7 +17,7 @@ import {
 	describeChanges,
 	diffDocuments,
 	documentAtVersion,
-	isTextOnlyEdit,
+	isTextOrDiagramEdit,
 	recordVersion,
 	type PatchOp,
 	type VersionSource,
@@ -1118,7 +1118,7 @@ app.put("/api/artefacts/:id/content", async (req, res) => {
 		const before = current.rows[0].content;
 		if (Number(current.rows[0].version) !== baseVersion)
 			return { status: 409 as const };
-		if (!isTextOnlyEdit(diffDocuments(before, content), before))
+		if (!isTextOrDiagramEdit(diffDocuments(before, content), before, content))
 			return { status: 400 as const };
 		const title = String(
 			content.root?.children?.[0]?.data?.title ??
@@ -1145,7 +1145,7 @@ app.put("/api/artefacts/:id/content", async (req, res) => {
 				error: "This artefact changed since you started editing.",
 			});
 	if (result.status === 400)
-		return res.status(400).json({ error: "Only text can be edited." });
+		return res.status(400).json({ error: "Only text and diagram content can be edited." });
 	res.json({ artefact: result.artefact });
 });
 
