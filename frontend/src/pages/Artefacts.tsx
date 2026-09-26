@@ -8,7 +8,6 @@ import {
 } from "@heroui/react";
 import {
 	ArrowUp,
-	BrainCog,
 	Check,
 	Copy,
 	FileText,
@@ -54,19 +53,7 @@ import { useDocumentTitle } from "../useDocumentTitle";
 const desktopQuery = "(min-width: 768px)";
 
 /** Starter prompts offered as buttons under the prompt box. */
-const starterPromptIds = new Set([
-	"god-prompt",
-	"sprint-status",
-	"branch-history",
-	"release-readiness",
-	"incident-review",
-	"architecture-decision",
-	"on-call-handoff",
-	"two-column",
-]);
-const starterPrompts = developerExamplePrompts.filter((template) =>
-	starterPromptIds.has(template.id),
-);
+const starterPrompts = developerExamplePrompts;
 
 const api = (path: string, options?: RequestInit) =>
 	fetch(`/api${path}`, {
@@ -909,7 +896,7 @@ export function Artefacts() {
 												: "Create artefact"
 										}
 										type="submit"
-									className="ml-auto size-9 min-w-9 rounded-xl p-0"
+										className="ml-auto size-9 min-w-9 rounded-xl p-0"
 										isPending={isCreating}
 										isDisabled={
 											!prompt.trim() &&
@@ -959,9 +946,6 @@ export function Artefacts() {
 									className="rounded-full"
 									onPress={() => setPrompt(template.prompt)}
 								>
-									{template.id === "god-prompt" && (
-										<BrainCog size={15} />
-									)}
 									{template.label}
 								</Button>
 							))}
