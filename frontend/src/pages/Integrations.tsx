@@ -247,7 +247,7 @@ export function IntegrationsModal({ onClose }: { onClose: () => void }) {
 									</div>
 								)}
 								<div className={isConnected ? "mt-3 border-t border-separator pt-1" : "-mt-3"}>
-									<GitHubAccountLink returnTo="/integrations" />
+									<GitHubAccountLink />
 								</div>
 							</IntegrationCard>
 							<IntegrationCard

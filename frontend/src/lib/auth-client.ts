@@ -40,7 +40,7 @@ export function authErrorMessage(code: string) {
 		state_mismatch: "That sign-in link expired. Please try again.",
 		please_restart_the_process: "That sign-in link expired. Please try again.",
 		account_not_linked:
-			"This email already has an account. Sign in the way you did before, then link this provider from your profile.",
+			"This email already has an account. Sign in the way you did before, then link this provider from Integrations.",
 		email_not_found: "Your account doesn't share an email address, so we couldn't sign you in.",
 		unable_to_link_account: "We couldn't link that account. Please try again.",
 	};

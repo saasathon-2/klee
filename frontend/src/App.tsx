@@ -36,7 +36,7 @@ function App() {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { data: session, isPending } = useSession();
-	const isWorkspace = location.pathname.startsWith("/artefacts") || (["/", "/profile", "/integrations", "/organisations"].includes(location.pathname) && Boolean(session?.user));
+	const isWorkspace = location.pathname.startsWith("/artefacts") || (["/", "/integrations", "/organisations"].includes(location.pathname) && Boolean(session?.user));
 
 	return (
 		// Lets HeroUI links and menu items navigate with react-router.
@@ -58,9 +58,11 @@ function App() {
 					<Route path="/login" element={<Navigate to="/?auth=signin" replace />} />
 					<Route path="/register" element={<Navigate to="/?auth=signup" replace />} />
 					<Route element={<RequireUser />}>
-						<Route path="/profile" element={<Artefacts />} />
-						<Route path="/integrations" element={<Artefacts />} />
-						<Route path="/organisations" element={<Artefacts />} />
+						<Route
+							path="/integrations"
+							element={<Navigate to="/?panel=integrations" replace />}
+						/>
+						<Route path="/organisations" element={<Navigate to="/?panel=organisations" replace />} />
 					</Route>
 					<Route path="/artefacts" element={<Navigate to="/" replace />} />
 					<Route path="/artefacts/:id" element={<Navigate to="/" replace />} />
@@ -69,6 +71,7 @@ function App() {
 					<Route path="/examples/forms" element={<FormsExample />} />
 					<Route path="/examples/social" element={<SocialExample />} />
 					<Route path="/examples/settings" element={<SettingsExample />} />
+					<Route path="*" element={<Navigate to="/welcome" replace />} />
 				</Routes>
 				{!isPending && !session?.user && <AuthModal />}
 			</div>
