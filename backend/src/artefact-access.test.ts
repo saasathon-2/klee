@@ -4,7 +4,7 @@ import test from "node:test";
 process.env.DATABASE_URL ??= "postgres://localhost/test";
 process.env.BETTER_AUTH_SECRET ??= "test";
 
-const { canAccessArtefact, orgRefreshMs, refreshGitHubOrgs } = await import("./artefact-access.ts");
+const { artefactPermissionSql, can, canAccessArtefact, orgRefreshMs, refreshGitHubOrgs } = await import("./artefact-access.ts");
 
 test("owners and org members can access an artefact", () => {
 	const artefact = { ownerId: "owner", projectLogin: "Acme" };
@@ -12,6 +12,16 @@ test("owners and org members can access an artefact", () => {
 	assert.equal(canAccessArtefact(artefact, "member", ["acme"]), true, "logins match case-insensitively");
 	assert.equal(canAccessArtefact(artefact, "outsider", ["other-org"]), false);
 	assert.equal(canAccessArtefact({ ownerId: "owner", projectLogin: null }, "member", ["acme"]), false);
+});
+
+test("organisation grants only allow their configured permission level", () => {
+	assert.equal(can("view", "view"), true);
+	assert.equal(can("view", "comment"), false);
+	assert.equal(can("comment", "comment"), true);
+	assert.equal(can("comment", "edit"), false);
+	assert.equal(can("edit", "edit"), true);
+	assert.equal(can(undefined, "view"), false);
+	assert.match(artefactPermissionSql("$1"), /artefact_organisation_permission/);
 });
 
 /** A fake database that answers the refresh queries and records writes. */

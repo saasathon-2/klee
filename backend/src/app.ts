@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 import { env } from "./env.ts";
 import { auth } from "./auth.ts";
 import { pool, transaction } from "./db.ts";
-import { accessibleArtefactSql, refreshGitHubOrgs } from "./artefact-access.ts";
+import { accessibleArtefactSql, artefactPermissionSql, can, refreshGitHubOrgs } from "./artefact-access.ts";
 import {
 	applyPatch,
 	describeChanges,
@@ -569,8 +569,9 @@ async function refreshAccess(userId: string) {
 const artefactColumns = (
 	userParam: string,
 ) => `artefact.id, artefact.is_shared as "isShared", artefact.prompt, artefact.title,
-    artefact.created_at as "createdAt", artefact.updated_at as "updatedAt",
+	artefact.created_at as "createdAt", artefact.updated_at as "updatedAt",
 	artefact.owner_id = ${userParam} as "isOwner", project.account_login as "project",
+	${artefactPermissionSql(userParam)} as "permission",
 	artefact.github_installation_id as "installationId", folder_entry.folder_id as "folderId",
 	artefact.content #>> '{root,children,0,data,summary}' as "description",
 	artefact.content #>> '{root,children,0,data,icon}' as "icon"`;
@@ -595,20 +596,8 @@ async function accessibleArtefact(artefactId: string, userId: string) {
 }
 
 async function commentableArtefact(artefactId: string, userId: string) {
-	const { rows } = await pool.query(
-		`select owner_id = $2 as "isOwner", is_shared as "isShared",
-			github_installation_id as "installationId"
-		from artefact where id = $1`,
-		[artefactId, userId],
-	);
-	const artefact = rows[0] as
-		| { isOwner: boolean; isShared: boolean; installationId: string | null }
-		| undefined;
-	if (!artefact || artefact.isOwner || artefact.isShared) return artefact;
-	if (!artefact.installationId) return;
-	// Organization membership is cached; refresh it without delaying the interaction.
-	void refreshAccess(userId);
-	return accessibleArtefact(artefactId, userId);
+	const artefact = await accessibleArtefact(artefactId, userId);
+	return can(artefact?.permission, "comment") ? artefact : undefined;
 }
 
 async function artefactPatches(artefactId: string) {
@@ -895,7 +884,7 @@ app.post("/api/artefacts/:id/comments/ai-reply", async (req, res) => {
 	if (!user) return;
 	await refreshAccess(user.id);
 	const artefact = await accessibleArtefact(req.params.id, user.id);
-	if (!artefact) return res.sendStatus(404);
+	if (!can(artefact?.permission, "edit")) return res.sendStatus(404);
 	if (!artefact.isOwner) return res.sendStatus(403);
 	const parentId = typeof req.body?.parentId === "string" ? req.body.parentId : "";
 	const { rows: parents } = await pool.query(
@@ -977,7 +966,7 @@ app.post("/api/artefacts/:id/share", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
 	const { rows } = await pool.query(
-		`update artefact set is_shared = true where id = $1 and ${accessibleArtefactSql("$2")} returning id, is_shared as "isShared"`,
+		`update artefact set is_shared = true where id = $1 and owner_id = $2 returning id, is_shared as "isShared"`,
 		[req.params.id, user.id],
 	);
 	if (!rows[0]) return res.sendStatus(404);
@@ -1032,7 +1021,7 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
 		typeof req.body?.content === "string" ? req.body.content.trim() : "";
 	if (!content) return res.status(400).json({ error: "content is required" });
 	const artefact = await accessibleArtefact(req.params.id, user.id);
-	if (!artefact) return res.sendStatus(404);
+	if (!can(artefact?.permission, "edit")) return res.sendStatus(404);
 	res.status(200).set({
 		"Cache-Control": "no-cache",
 		Connection: "keep-alive",
@@ -1114,7 +1103,7 @@ app.put("/api/artefacts/:id/content", async (req, res) => {
 			.status(400)
 			.json({ error: "content and baseVersion are required" });
 	const artefact = await accessibleArtefact(req.params.id, user.id);
-	if (!artefact) return res.sendStatus(404);
+	if (!can(artefact?.permission, "edit")) return res.sendStatus(404);
 	const result = await transaction(async (client) => {
 		const current = await client.query(
 			`select content, (select coalesce(max(version), 0) from artefact_version where artefact_id = $1) as version
@@ -1202,6 +1191,151 @@ app.get("/api/artefacts/:id/versions/:version", async (req, res) => {
 
 const folderName = (value: unknown) =>
 	typeof value === "string" ? value.trim().slice(0, 80) : "";
+
+const organisationRoles = ["owner", "admin", "member"] as const;
+type OrganisationRole = (typeof organisationRoles)[number];
+const organisationPermissions = ["view", "comment", "edit"] as const;
+
+const organisationName = (value: unknown) =>
+	typeof value === "string" ? value.trim().slice(0, 80) : "";
+
+async function organisationRole(organisationId: string, userId: string) {
+	const { rows } = await pool.query(
+		"select role from organisation_member where organisation_id = $1 and user_id = $2",
+		[organisationId, userId],
+	);
+	return rows[0]?.role as OrganisationRole | undefined;
+}
+
+const canManageOrganisation = (role: OrganisationRole | undefined) =>
+	role === "owner" || role === "admin";
+
+async function ownedArtefact(artefactId: string, userId: string) {
+	const { rows } = await pool.query(
+		"select id from artefact where id = $1 and owner_id = $2",
+		[artefactId, userId],
+	);
+	return rows[0];
+}
+
+app.get("/api/organisations", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	const { rows } = await pool.query(
+		`select organisation.id, organisation.name, current_member.role,
+			coalesce(jsonb_agg(jsonb_build_object(
+				'id', member_user.id, 'name', member_user.name, 'email', member_user.email,
+				'image', member_user.image, 'role', member.role
+			) order by member.created_at), '[]'::jsonb) as members
+		from organisation
+		join organisation_member current_member on current_member.organisation_id = organisation.id and current_member.user_id = $1
+		join organisation_member member on member.organisation_id = organisation.id
+		join "user" member_user on member_user.id = member.user_id
+		group by organisation.id, current_member.role
+		order by lower(organisation.name)`,
+		[user.id],
+	);
+	res.json(rows);
+});
+
+app.post("/api/organisations", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	const name = organisationName(req.body?.name);
+	if (!name) return res.status(400).json({ error: "An organisation name is required." });
+	const organisation = { id: randomUUID(), name };
+	await transaction(async (client) => {
+		await client.query("insert into organisation (id, name) values ($1, $2)", [organisation.id, name]);
+		await client.query("insert into organisation_member (organisation_id, user_id, role) values ($1, $2, 'owner')", [organisation.id, user.id]);
+	});
+	res.status(201).json({
+		...organisation,
+		role: "owner",
+		members: [{ id: user.id, name: user.name ?? null, email: user.email, image: user.image ?? null, role: "owner" }],
+	});
+});
+
+app.post("/api/organisations/:id/members", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	const role = req.body?.role as OrganisationRole;
+	const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+	const managerRole = await organisationRole(req.params.id, user.id);
+	if (!canManageOrganisation(managerRole)) return res.sendStatus(404);
+	if (!email) return res.status(400).json({ error: "An email address is required." });
+	if (!organisationRoles.includes(role)) return res.status(400).json({ error: "Choose a valid organisation role." });
+	if (managerRole !== "owner" && role !== "member") return res.sendStatus(403);
+	const { rows: users } = await pool.query(
+		"select id, name, email, image from \"user\" where lower(email) = $1",
+		[email],
+	);
+	if (!users[0]) return res.status(404).json({ error: "No Klee user has that email address." });
+	await pool.query(
+		`insert into organisation_member (organisation_id, user_id, role) values ($1, $2, $3)
+		on conflict (organisation_id, user_id) do update set role = excluded.role`,
+		[req.params.id, users[0].id, role],
+	);
+	res.json({ ...users[0], role });
+});
+
+app.patch("/api/organisations/:id/members/:userId", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	const role = req.body?.role as OrganisationRole;
+	if (!organisationRoles.includes(role)) return res.status(400).json({ error: "Choose a valid organisation role." });
+	if ((await organisationRole(req.params.id, user.id)) !== "owner") return res.sendStatus(404);
+	if (role !== "owner" && req.params.userId === user.id) {
+		const { rows } = await pool.query(
+			"select count(*)::int as count from organisation_member where organisation_id = $1 and role = 'owner'",
+			[req.params.id],
+		);
+		if (rows[0].count < 2) return res.status(400).json({ error: "An organisation needs at least one owner." });
+	}
+	const { rows } = await pool.query(
+		"update organisation_member set role = $3 where organisation_id = $1 and user_id = $2 returning role",
+		[req.params.id, req.params.userId, role],
+	);
+	if (!rows[0]) return res.sendStatus(404);
+	res.json(rows[0]);
+});
+
+app.get("/api/artefacts/:id/organisations", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user || !(await ownedArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	const { rows } = await pool.query(
+		`select grant.organisation_id as "organisationId", organisation.name, grant.permission
+		from artefact_organisation_permission grant
+		join organisation on organisation.id = grant.organisation_id
+		where grant.artefact_id = $1 order by lower(organisation.name)`,
+		[req.params.id],
+	);
+	res.json(rows);
+});
+
+app.put("/api/artefacts/:id/organisations/:organisationId", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user || !(await ownedArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	const permission = req.body?.permission;
+	if (!organisationPermissions.includes(permission)) return res.status(400).json({ error: "Choose view, comment, or edit access." });
+	if (!canManageOrganisation(await organisationRole(req.params.organisationId, user.id))) return res.sendStatus(403);
+	await pool.query(
+		`insert into artefact_organisation_permission (artefact_id, organisation_id, permission) values ($1, $2, $3)
+		on conflict (artefact_id, organisation_id) do update set permission = excluded.permission`,
+		[req.params.id, req.params.organisationId, permission],
+	);
+	res.json({ organisationId: req.params.organisationId, permission });
+});
+
+app.delete("/api/artefacts/:id/organisations/:organisationId", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user || !(await ownedArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	const { rowCount } = await pool.query(
+		"delete from artefact_organisation_permission where artefact_id = $1 and organisation_id = $2",
+		[req.params.id, req.params.organisationId],
+	);
+	if (!rowCount) return res.sendStatus(404);
+	res.sendStatus(204);
+});
 
 app.get("/api/folders", async (req, res) => {
 	const user = await sessionUser(req, res);
