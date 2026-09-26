@@ -26,7 +26,7 @@ export function CommitList({ node, context }: TemplateProps) {
 							</Avatar>
 							<div className="min-w-0 flex-1">
 								<Paragraph size="sm" weight="medium">
-									{commit.url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-primary" href={commit.url} target="_blank" rel="noreferrer">{text(["commits", index, "message"], commit.message, "Commit message")}</a> : text(["commits", index, "message"], commit.message, "Commit message")}
+									{commit.url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-accent-text" href={commit.url} target="_blank" rel="noreferrer">{text(["commits", index, "message"], commit.message, "Commit message")}</a> : text(["commits", index, "message"], commit.message, "Commit message")}
 								</Paragraph>
 								<Paragraph size="xs" color="muted">
 									{commit.author}

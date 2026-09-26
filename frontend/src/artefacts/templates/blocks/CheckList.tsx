@@ -51,7 +51,7 @@ export function CheckList({ node, context }: TemplateProps) {
 									return (
 										<Table.Row key={check.name} id={check.name}>
 											<Table.Cell className="font-medium">
-											{check.url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-primary" href={check.url} target="_blank" rel="noreferrer">{check.name}</a> : check.name}
+											{check.url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-accent-text" href={check.url} target="_blank" rel="noreferrer">{check.name}</a> : check.name}
 											</Table.Cell>
 											<Table.Cell>
 												<Chip size="sm" color={status.color}>

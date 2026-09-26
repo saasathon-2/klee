@@ -33,7 +33,7 @@ export function ReviewComments({ node, context }: TemplateProps) {
 									</Avatar.Fallback>
 								</Avatar>
 								<Card.Title className="min-w-0 flex-1 truncate">
-									{comment.url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-primary" href={comment.url} target="_blank" rel="noreferrer">{comment.author}</a> : comment.author}
+									{comment.url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-accent-text" href={comment.url} target="_blank" rel="noreferrer">{comment.author}</a> : comment.author}
 								</Card.Title>
 								<Chip size="sm" color={verdict.color}>
 									{verdict.label}

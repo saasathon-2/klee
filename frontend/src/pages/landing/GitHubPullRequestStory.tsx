@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
 import { UserAvatar } from "../../components/UserAvatar";
 
@@ -115,7 +114,7 @@ export function GitHubPullRequestStory() {
 				>
 					<header className="shrink-0 border-b border-github-border px-4 py-4 sm:px-8">
 						<div className="flex flex-wrap items-center gap-3">
-							<span className="inline-flex items-center gap-2 rounded-full bg-github-open px-4 py-2 text-sm font-semibold text-white">
+							<span className="inline-flex items-center gap-2 rounded-full bg-github-open px-4 py-2 text-sm font-semibold text-github-foreground-on-emphasis">
 								<GitPullRequest aria-hidden size={17} />
 								Open
 							</span>
@@ -264,7 +263,7 @@ export function GitHubPullRequestStory() {
 												].map((tag) => (
 													<span
 														key={tag}
-														className="rounded bg-white/70 px-1.5 py-0.5"
+														className="rounded bg-preview-surface/70 px-1.5 py-0.5"
 													>
 														{tag}
 													</span>
@@ -274,13 +273,7 @@ export function GitHubPullRequestStory() {
 												</span>
 											</div>
 										</header>
-										<div
-											style={
-												{
-													"--brand": "var(--preview-brand)",
-												} as CSSProperties
-											}
-										>
+										<div className="[--brand:var(--preview-brand)]">
 											<Scallop edge="bottom" />
 										</div>
 										<div className="p-4 sm:p-8">

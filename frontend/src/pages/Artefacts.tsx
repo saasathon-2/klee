@@ -11,6 +11,7 @@ import {
 	Paragraph,
 	Popover,
 	Separator,
+	Skeleton,
 	Surface,
 	TextArea,
 	Toolbar,
@@ -450,7 +451,7 @@ export function Artefacts() {
 		/>
 	);
 	return (
-		<Surface className="flex min-h-screen overflow-hidden rounded-none border border-divider bg-background text-foreground">
+		<Surface className="flex min-h-screen overflow-hidden rounded-none border border-border bg-background text-foreground">
 			{isDesktop ? (
 				isSidebarOpen && sidebar
 			) : (
@@ -521,7 +522,7 @@ export function Artefacts() {
 								</div>
 							</Card.Header>
 							<Card.Content>
-								<dl className="divide-y divide-divider text-sm">
+								<dl className="divide-y divide-border text-sm">
 									<div className="flex items-center justify-between py-3">
 										<dt className="text-muted">
 											Email verified
@@ -578,7 +579,7 @@ export function Artefacts() {
 								</p>
 								<Button
 									variant="ghost"
-									className="mt-5 h-auto max-w-full rounded-xl border border-divider bg-surface px-4 py-3 text-left hover:bg-surface-secondary"
+									className="mt-5 h-auto max-w-full rounded-xl border border-border bg-surface px-4 py-3 text-left hover:bg-surface-secondary"
 									onPress={() => navigate("/integrations")}
 								>
 									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
@@ -596,7 +597,7 @@ export function Artefacts() {
 								</Button>
 							</div>
 							<form onSubmit={create} className="w-full">
-								<Surface className="rounded-2xl border border-divider bg-surface p-3 transition-colors focus-within:border-muted">
+								<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
 									<TextArea
 										aria-label="Artefact prompt"
 										variant="secondary"
@@ -726,8 +727,8 @@ function WorkspaceSidebar({
 		<aside
 			className={
 				inDrawer
-					? "flex h-full w-full flex-col bg-default-50 px-4 py-5"
-					: "sticky top-0 flex h-screen w-[288px] shrink-0 flex-col border-r border-divider bg-default-50 px-4 py-5"
+					? "flex h-full w-full flex-col px-4 py-5"
+					: "sticky top-0 flex h-screen w-[288px] shrink-0 flex-col border-r border-border px-4 py-5"
 			}
 		>
 			<ListBox
@@ -919,7 +920,7 @@ function ArtefactModal({
 						}
 					>
 						{/* Phones: title with fullscreen/close on top, the other actions on a second row. */}
-						<Modal.Header className="z-10 shrink-0 flex-row flex-wrap items-center gap-x-4 gap-y-2 border-b border-divider bg-surface px-4 py-3 sm:flex-nowrap sm:px-6">
+						<Modal.Header className="z-10 shrink-0 flex-row flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-surface px-4 py-3 sm:flex-nowrap sm:px-6">
 							<Modal.Heading className="order-1 flex min-w-0 flex-1 items-center gap-2">
 								{artefact ? (
 									<>
@@ -1054,7 +1055,7 @@ function ArtefactModal({
 						{artefact && historyOpen && (
 							<Surface
 								variant="secondary"
-								className="shrink-0 border-b border-divider px-5 py-4 sm:px-6"
+								className="shrink-0 border-b border-border px-5 py-4 sm:px-6"
 							>
 								<VersionHistory
 									artefactId={artefact.id}
@@ -1093,21 +1094,21 @@ function ArtefactModal({
 									className="grid min-h-96 place-items-center p-8"
 									role="status"
 								>
-									<div className="w-full max-w-xl space-y-5 animate-pulse">
+									<div className="w-full max-w-xl space-y-5">
 										<p className="text-center text-sm text-muted">
 											{generationStatus ||
 												"Starting your artefact…"}
 										</p>
-										<div className="h-8 w-2/3 rounded bg-divider" />
-										<div className="h-4 w-full rounded bg-divider" />
-										<div className="h-4 w-5/6 rounded bg-divider" />
-										<div className="h-32 rounded-xl bg-divider" />
+										<Skeleton className="h-8 w-2/3 rounded" />
+										<Skeleton className="h-4 w-full rounded" />
+										<Skeleton className="h-4 w-5/6 rounded" />
+										<Skeleton className="h-32 rounded-xl" />
 									</div>
 								</div>
 							)}
 						</Modal.Body>
 						{artefact && !isCreating && isEditing && (
-							<Modal.Footer className="z-10 m-0 shrink-0 flex-col gap-3 border-t border-divider bg-surface px-4 py-3 sm:px-6">
+							<Modal.Footer className="z-10 m-0 shrink-0 flex-col gap-3 border-t border-border bg-surface px-4 py-3 sm:px-6">
 								{hasConflict && (
 									<Alert status="warning" className="w-full">
 										<Alert.Indicator />
@@ -1166,10 +1167,10 @@ function ArtefactModal({
 							</Modal.Footer>
 						)}
 						{artefact && !isCreating && !isEditing && (
-							<Modal.Footer className="z-10 m-0 shrink-0 border-t border-divider bg-surface px-4 py-3 sm:px-6">
+							<Modal.Footer className="z-10 m-0 shrink-0 border-t border-border bg-surface px-4 py-3 sm:px-6">
 								<form
 									onSubmit={onSubmit}
-									className="flex w-full items-center gap-2 rounded-full border border-divider bg-field p-1.5 pl-4"
+									className="flex w-full items-center gap-2 rounded-full border border-border bg-field p-1.5 pl-4"
 								>
 									<Input
 										aria-label="Refine artefact"

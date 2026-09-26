@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
 
 const shareUrl =
@@ -97,7 +96,7 @@ export function SlackChannelStory() {
 						aria-label="Channel tabs"
 						className="flex h-[3.25rem] shrink-0 items-stretch gap-2 border-b border-slack-border px-5 sm:px-8"
 					>
-						<button className="flex items-center gap-2 border-b-2 border-slack-tab-active px-3 font-semibold text-white">
+						<button className="flex items-center gap-2 border-b-2 border-slack-tab-active px-3 font-semibold text-slack-foreground-bright">
 							<MessageSquare
 								aria-hidden
 								size={19}
@@ -120,7 +119,7 @@ export function SlackChannelStory() {
 								aria-label="Patrick Jane Profile Picture"
 								aria-hidden={!userVisible}
 								inert={!userVisible}
-								className={`grid size-14 shrink-0 place-items-center rounded-2xl bg-slack-avatar text-3xl text-white sm:size-[4.5rem] ${pop(userVisible)}`}
+								className={`grid size-14 shrink-0 place-items-center rounded-2xl bg-slack-avatar text-3xl text-slack-foreground-bright sm:size-[4.5rem] ${pop(userVisible)}`}
 							>
 								P
 							</div>
@@ -206,7 +205,7 @@ export function SlackChannelStory() {
 												].map((tag) => (
 													<span
 														key={tag}
-														className="rounded bg-white/70 px-1.5 py-0.5"
+														className="rounded bg-preview-surface/70 px-1.5 py-0.5"
 													>
 														{tag}
 													</span>
@@ -216,9 +215,7 @@ export function SlackChannelStory() {
 												</span>
 											</div>
 										</header>
-										<div
-											style={{ "--brand": "var(--preview-brand)" } as CSSProperties}
-										>
+										<div className="[--brand:var(--preview-brand)]">
 											<Scallop edge="bottom" />
 										</div>
 										<div className="p-4 sm:p-8">

@@ -21,7 +21,7 @@ export function Navbar() {
 	}, []);
 
 	return (
-		<header className={`sticky top-0 z-40 border-b bg-background transition-colors ${scrolled ? "border-divider" : "border-transparent"}`}>
+		<header className={`sticky top-0 z-40 border-b bg-background transition-colors ${scrolled ? "border-border" : "border-transparent"}`}>
 			<nav className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-6">
 				<Link
 					href="/welcome"

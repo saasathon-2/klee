@@ -20,13 +20,13 @@ function IntegrationRow({ icon, name, summary, action, children }: {
 	children: ReactNode;
 }) {
 	return (
-		<div className="rounded-xl border border-divider bg-surface-secondary p-4">
+		<div className="rounded-xl border border-border bg-surface-secondary p-4">
 			<div className="flex items-center gap-3">
 				<div className="grid size-10 shrink-0 place-items-center rounded-lg bg-surface">{icon}</div>
 				<div className="min-w-0 flex-1"><p className="font-medium">{name}</p><p className="text-sm text-muted">{summary}</p></div>
 				{action}
 			</div>
-			<details className="mt-3 border-t border-divider pt-3 text-sm text-muted">
+			<details className="mt-3 border-t border-border pt-3 text-sm text-muted">
 				<summary className="cursor-pointer font-medium text-foreground">Show setup</summary>
 				<div className="pt-3 leading-5">{children}</div>
 			</details>
@@ -64,7 +64,7 @@ export function IntegrationsModal({ onClose }: { onClose: () => void }) {
 			<Modal.Backdrop isOpen onOpenChange={(open) => !open && onClose()} variant="blur">
 				<Modal.Container placement="center" scroll="inside" size="md">
 					<Modal.Dialog aria-label="Apps and integrations" className="max-h-[calc(100dvh-2rem)] overflow-hidden rounded-2xl p-0">
-						<Modal.Header className="flex-row items-start gap-4 border-b border-divider px-6 py-5">
+						<Modal.Header className="flex-row items-start gap-4 border-b border-border px-6 py-5">
 							<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground"><PlugZap size={20} /></div>
 							<div className="min-w-0 flex-1"><Modal.Heading>Apps & integrations</Modal.Heading><p className="mt-1 text-sm leading-5 text-muted">Connect Klee to the tools your team already uses.</p></div>
 							<Button aria-label="Close apps and integrations" variant="ghost" className="size-8 min-w-8 p-0" onPress={onClose}><X size={18} /></Button>
@@ -80,7 +80,7 @@ export function IntegrationsModal({ onClose }: { onClose: () => void }) {
 								<p>Install the Klee Jira app, then paste a shared artefact link into an issue description or comment to see it in the Klee panel.</p>
 							</IntegrationRow>
 						</Modal.Body>
-						<Modal.Footer className="m-0 border-t border-divider px-6 py-4"><span className="text-xs text-muted">You can revoke GitHub access at any time.</span></Modal.Footer>
+						<Modal.Footer className="m-0 border-t border-border px-6 py-4"><span className="text-xs text-muted">You can revoke GitHub access at any time.</span></Modal.Footer>
 					</Modal.Dialog>
 				</Modal.Container>
 			</Modal.Backdrop>

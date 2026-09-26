@@ -80,9 +80,6 @@
 	/* Artefact bands (header band and scallop edge on artefact pages) */
 	--brand: oklch(94.42% 0.1624 106.11);
 	--brand-foreground: oklch(24% 0.04 100);
-
-	/* Skeleton loading placeholders */
-	--skeleton: oklch(22% 0.02 100 / 5%);
 }
 
 /* 2. Semantic colours, dark mode ----------------------------------------- */
@@ -142,9 +139,6 @@
 	/* Artefact bands */
 	--brand: oklch(94.42% 0.1624 106.11);
 	--brand-foreground: oklch(20% 0.03 100);
-
-	/* Skeleton loading placeholders */
-	--skeleton: oklch(97% 0.01 106 / 10%);
 }
 
 /* 3. Mode-independent tokens --------------------------------------------- */
@@ -172,6 +166,7 @@
 	--slack-canvas-highlight: #23252a;
 	--slack-foreground: #d1d2d3;
 	--slack-foreground-strong: #f4f4f5;
+	--slack-foreground-bright: #ffffff;
 	--slack-muted: #a4a6aa;
 	--slack-icon: #b7b8bb;
 	--slack-border: #393b40;
@@ -187,6 +182,7 @@
 	--github-canvas-subtle: #161b22;
 	--github-foreground: #e6edf3;
 	--github-foreground-code: #c9d1d9;
+	--github-foreground-on-emphasis: #ffffff;
 	--github-muted: #8b949e;
 	--github-border: #30363d;
 	--github-link: #58a6ff;
@@ -216,14 +212,12 @@
 	--color-brand: var(--brand);
 	--color-brand-foreground: var(--brand-foreground);
 	--color-accent-text: var(--accent-text);
-	--color-skeleton: var(--skeleton);
-	/* Legacy HeroUI v2 name still used across the app; same as border. */
-	--color-divider: var(--border);
 
 	--color-slack-canvas: var(--slack-canvas);
 	--color-slack-canvas-highlight: var(--slack-canvas-highlight);
 	--color-slack-foreground: var(--slack-foreground);
 	--color-slack-foreground-strong: var(--slack-foreground-strong);
+	--color-slack-foreground-bright: var(--slack-foreground-bright);
 	--color-slack-muted: var(--slack-muted);
 	--color-slack-icon: var(--slack-icon);
 	--color-slack-border: var(--slack-border);
@@ -238,6 +232,7 @@
 	--color-github-canvas-subtle: var(--github-canvas-subtle);
 	--color-github-foreground: var(--github-foreground);
 	--color-github-foreground-code: var(--github-foreground-code);
+	--color-github-foreground-on-emphasis: var(--github-foreground-on-emphasis);
 	--color-github-muted: var(--github-muted);
 	--color-github-border: var(--github-border);
 	--color-github-link: var(--github-link);

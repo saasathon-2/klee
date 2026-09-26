@@ -71,7 +71,7 @@ export function Docs() {
 	}, []);
 	return (
 		<main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl grid-cols-1 lg:h-[calc(100vh-4rem)] lg:grid-cols-[15rem_minmax(0,1fr)] lg:overflow-hidden">
-			<aside className="border-b border-divider px-6 py-8 lg:overflow-hidden lg:border-r lg:border-b-0">
+			<aside className="border-b border-border px-6 py-8 lg:overflow-hidden lg:border-r lg:border-b-0">
 				<div className="flex items-center gap-2 text-sm font-semibold">
 					<LibraryBig size={16} />
 					Klee Docs
@@ -242,7 +242,7 @@ function DocsSection({
 	return (
 		<section
 			id={id}
-			className="scroll-mt-24 border-t border-divider pt-10 mt-12"
+			className="scroll-mt-24 border-t border-border pt-10 mt-12"
 		>
 			<Heading level={2} className="flex items-center gap-2 text-2xl">
 				{title}
@@ -256,7 +256,7 @@ function DocsSection({
 
 function DocsCard({ title, items }: { title: string; items: string[] }) {
 	return (
-		<div className="rounded-lg border border-divider bg-surface p-5">
+		<div className="rounded-lg border border-border bg-surface p-5">
 			<p className="font-semibold text-foreground">{title}</p>
 			<Separator className="my-3" />
 			<ul className="space-y-2 text-sm">

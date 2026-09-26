@@ -18,8 +18,8 @@ type SplitRow = { old?: NumberedLine; new?: NumberedLine };
 
 const lineTone: Record<DiffLine["kind"], string> = {
 	context: "",
-	add: "bg-success/10",
-	remove: "bg-danger/10",
+	add: "bg-success-soft",
+	remove: "bg-danger-soft",
 };
 const signTone: Record<DiffLine["kind"], string> = {
 	context: "text-muted",
@@ -229,7 +229,7 @@ export function CodeDiff({ node, context }: TemplateProps) {
 					<Card
 						className={`gap-0 overflow-hidden p-0 ${scrollStory ? "lg:col-start-2 lg:row-start-1" : ""}`}
 					>
-						<Card.Header className="flex-row items-center gap-2 border-b border-divider bg-surface-secondary px-4 py-2">
+						<Card.Header className="flex-row items-center gap-2 border-b border-border bg-surface-secondary px-4 py-2">
 							<FileCode2
 								size={15}
 								className="shrink-0 text-muted"
@@ -237,7 +237,7 @@ export function CodeDiff({ node, context }: TemplateProps) {
 							<Card.Title className="min-w-0 flex-1 truncate font-mono text-xs">
 								{url?.startsWith("https://") ? (
 									<a
-										className="underline decoration-muted underline-offset-4 hover:text-primary"
+										className="underline decoration-muted underline-offset-4 hover:text-accent-text"
 										href={url}
 										target="_blank"
 										rel="noreferrer"
@@ -266,7 +266,7 @@ export function CodeDiff({ node, context }: TemplateProps) {
 									<Paragraph
 										size="xs"
 										color="muted"
-										className="border-b border-divider bg-surface-secondary/60 px-4 py-1 font-mono"
+										className="border-b border-border bg-surface-secondary/60 px-4 py-1 font-mono"
 									>
 										{hunk.header}
 									</Paragraph>
@@ -278,7 +278,7 @@ export function CodeDiff({ node, context }: TemplateProps) {
 												(row, index) => (
 													<div
 														key={index}
-														className="grid grid-cols-2 divide-x divide-divider"
+														className="grid grid-cols-2 divide-x divide-border"
 													>
 														<SplitCell
 															line={row.old}
@@ -361,7 +361,7 @@ function StoryNote({
 		>
 			<aside
 				aria-hidden={!visible}
-				className={`rounded-2xl border border-divider bg-surface-secondary p-6 shadow-2xl transition-all duration-500 ease-out ${visible ? "translate-x-0 translate-y-0 opacity-100" : "pointer-events-none translate-x-8 translate-y-3 opacity-0"}`}
+				className={`rounded-2xl border border-border bg-surface-secondary p-6 shadow-2xl transition-all duration-500 ease-out ${visible ? "translate-x-0 translate-y-0 opacity-100" : "pointer-events-none translate-x-8 translate-y-3 opacity-0"}`}
 			>
 				<p className="mt-2 text-lg font-semibold leading-6">{title}</p>
 				<p className="mt-3 text-base leading-7 text-muted">{body}</p>

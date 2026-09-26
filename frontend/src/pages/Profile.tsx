@@ -1,4 +1,4 @@
-import { Card } from "@heroui/react";
+import { Card, Skeleton } from "@heroui/react";
 import { Navigate } from "react-router-dom";
 import { UserAvatar } from "../components/UserAvatar";
 import { useSession } from "../lib/auth-client";
@@ -9,10 +9,7 @@ export function Profile() {
 	if (isPending) {
 		return (
 			<main className="mx-auto max-w-sm px-6 py-16">
-				<div
-					className="h-8 w-48 animate-pulse rounded bg-skeleton"
-					aria-label="Loading profile"
-				/>
+				<Skeleton className="h-8 w-48 rounded" aria-label="Loading profile" />
 			</main>
 		);
 	}
@@ -34,7 +31,7 @@ export function Profile() {
 					</div>
 				</Card.Header>
 				<Card.Content>
-					<dl className="divide-y divide-divider text-sm">
+					<dl className="divide-y divide-border text-sm">
 						<div className="flex items-center justify-between py-3">
 							<dt className="text-muted">Email verified</dt>
 							<dd>{user.emailVerified ? "Yes" : "No"}</dd>
