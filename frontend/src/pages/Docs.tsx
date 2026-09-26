@@ -208,6 +208,10 @@ export function Docs() {
 						installs the Klee GitHub App on the repositories you
 						choose.
 					</Paragraph>
+					<Paragraph className="mt-3 rounded-lg border border-accent/30 bg-accent-soft px-4 py-3 text-sm">
+						Comments on a pull-request artefact can be relayed back to
+						the pull request by Klee.
+					</Paragraph>
 					<DocsList
 						title="App permissions"
 						items={[
