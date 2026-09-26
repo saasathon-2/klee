@@ -23,6 +23,7 @@ import {
 	History,
 	LogOut,
 	Maximize2,
+	MessageCircle,
 	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
@@ -64,6 +65,7 @@ import { FolderSelect } from "./artefact/FolderSelect";
 import { ProjectSelect } from "./artefact/ProjectSelect";
 import { useFolders, type Folder } from "./artefact/useFolders";
 import { VersionHistory } from "./artefact/VersionHistory";
+import { ArtefactComments } from "./artefact/ArtefactComments";
 
 type Revision = {
 	id: string;
@@ -717,6 +719,7 @@ export function Artefacts() {
 					generationCommentary={generationCommentary}
 					isCommentaryStarting={isCommentaryStarting}
 					isFullscreen={isFullscreen}
+					userId={user.id}
 					onClose={current ? close : cancelGeneration}
 					onFullscreen={() => setFullscreen(!isFullscreen)}
 					onShare={share}
@@ -877,6 +880,7 @@ function ArtefactModal({
 	generationCommentary,
 	isCommentaryStarting,
 	isFullscreen,
+	userId,
 	onClose,
 	onFullscreen,
 	onShare,
@@ -898,6 +902,7 @@ function ArtefactModal({
 	generationCommentary: string;
 	isCommentaryStarting: boolean;
 	isFullscreen: boolean;
+	userId: string;
 	onClose: () => void;
 	onFullscreen: () => void;
 	onShare: () => void;
@@ -934,6 +939,8 @@ function ArtefactModal({
 	const [hasConflict, setHasConflict] = useState(false);
 	const [isDiscarding, setIsDiscarding] = useState(false);
 	const [showHistory, setShowHistory] = useState(false);
+	const [commentsOpen, setCommentsOpen] = useState(false);
+	const [commentCount, setCommentCount] = useState(0);
 	// A past version picked on the history slider; `undefined` shows the latest.
 	const [pastVersion, setPastVersion] = useState<ArtefactDocument>();
 	const isEditing = draft !== undefined;
@@ -941,6 +948,22 @@ function ArtefactModal({
 		isEditing &&
 		JSON.stringify(draft) !== JSON.stringify(artefact?.content);
 	const historyOpen = isFullscreen && showHistory && !isEditing;
+	const canComment = Boolean(artefact && !isEditing && !historyOpen);
+	const renderedArtefact = artefact && (
+		<ArtefactBody
+			artefact={artefact}
+			document={draft ?? (historyOpen ? pastVersion : undefined)}
+			canInteract
+			edgeToEdge
+			onAction={setFollowUp}
+			isEditing={isEditing}
+			onEdit={(nodeId, path, value) =>
+				setDraft(
+					(current) => current && withEditedText(current, nodeId, path, value),
+				)
+			}
+		/>
+	);
 
 	function startEditing() {
 		if (!artefact?.content) return;
@@ -1068,6 +1091,18 @@ function ArtefactModal({
 										</span>
 									</Button>
 								)}
+								{artefact && !isEditing && !historyOpen && (
+									<Button
+										aria-label={`Comments, ${commentCount}`}
+										variant={commentsOpen ? "secondary" : "ghost"}
+										size="sm"
+										onPress={() => setCommentsOpen(!commentsOpen)}
+									>
+										<MessageCircle size={15} />
+										<span className="hidden sm:inline">Comments</span>
+										{commentCount > 0 && <span>{commentCount}</span>}
+									</Button>
+								)}
 								{artefact && !isEditing && (
 									<Button
 										aria-label={
@@ -1133,31 +1168,24 @@ function ArtefactModal({
 								/>
 							</Surface>
 						)}
-						<Modal.Body className="m-0 bg-surface p-0">
+						<Modal.Body className="m-0 flex min-h-0 flex-1 bg-surface p-0">
 							{artefact ? (
-								<ArtefactBody
-									artefact={artefact}
-									document={
-										draft ??
-										(historyOpen ? pastVersion : undefined)
-									}
-									canInteract
-									edgeToEdge
-									onAction={setFollowUp}
-									isEditing={isEditing}
-									onEdit={(nodeId, path, value) =>
-										setDraft(
-											(current) =>
-												current &&
-												withEditedText(
-													current,
-													nodeId,
-													path,
-													value,
-												),
-										)
-									}
-								/>
+								canComment ? (
+									<ArtefactComments
+										artefactId={artefact.id}
+										isOwner={artefact.isOwner ?? false}
+										userId={userId}
+										isOpen={commentsOpen}
+										onOpenChange={setCommentsOpen}
+										onCountChange={setCommentCount}
+									>
+										{renderedArtefact}
+									</ArtefactComments>
+								) : (
+									<div className="min-h-0 flex-1 overflow-auto">
+										{renderedArtefact}
+									</div>
+								)
 							) : (
 				<div
 					className="grid min-h-96 place-items-center p-8"
