@@ -473,7 +473,7 @@ export function ArtefactComments({
 					{comments.filter((comment) => comment.anchor).map((comment) => {
 						const color = userColor(comment.author.id);
 						const anchor = visibleAnchor(adjustingAnchor?.id === comment.id ? adjustingAnchor.anchor : comment.anchor!, surfaceSize.width, surfaceSize.height);
-						const highlighted = hoveredCommentId === comment.id || threadId === comment.id;
+						const highlighted = hoveredCommentId === comment.id;
 						const previewStyle = previewPosition(anchor, hoverPreviewSide, surfaceSize.width);
 						const { left, top, width, height, ...boxStyle } = regionStyle(anchor, color, highlighted);
 						return (
@@ -482,19 +482,21 @@ export function ArtefactComments({
 								data-comment-region={comment.id}
 								className="pointer-events-none absolute z-[5]"
 								style={{ left, top, width, height }}
-								onMouseEnter={() => showCommentHover(comment.id)}
-								onMouseLeave={hideCommentHover}
-								onFocusCapture={() => showCommentHover(comment.id)}
-								onBlurCapture={hideCommentHover}
 							>
 								<button
 									type="button"
 									data-comment-id={comment.id}
 									data-comment-overlay
+									aria-hidden={!highlighted}
 									aria-label={"Open comment by " + (comment.author.name || "teammate")}
 									title={comment.author.name || "Comment"}
-									className={canAdjustAnchor(comment) ? "pointer-events-auto absolute inset-0 cursor-move select-none rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow]" : "pointer-events-auto absolute inset-0 rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow]"}
-									style={{ ...boxStyle, ...(canAdjustAnchor(comment) ? { touchAction: "none" } : {}) }}
+									tabIndex={highlighted ? 0 : -1}
+									className={canAdjustAnchor(comment) ? "pointer-events-auto absolute inset-0 cursor-move select-none rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow,opacity] duration-150" : "pointer-events-auto absolute inset-0 rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow,opacity] duration-150"}
+									style={{ ...boxStyle, opacity: highlighted ? 1 : 0, pointerEvents: highlighted ? "auto" : "none", ...(canAdjustAnchor(comment) ? { touchAction: "none" } : {}) }}
+									onMouseEnter={() => showCommentHover(comment.id)}
+									onMouseLeave={hideCommentHover}
+									onFocusCapture={() => showCommentHover(comment.id)}
+									onBlurCapture={hideCommentHover}
 									onPointerDown={(event) => startAnchorAdjustment(event, comment)}
 									onPointerMove={moveAnchorAdjustment}
 									onPointerUp={finishAnchorAdjustment}
@@ -507,10 +509,21 @@ export function ArtefactComments({
 										openThread(comment.id);
 									}}
 								>
-									<span className="absolute -left-4 -top-3 leading-none rounded-xl border-2 border-surface bg-surface p-0.5 shadow-sm">
-										<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
-									</span>
 									{canAdjustAnchor(comment) && <span data-comment-resize className="absolute -bottom-1.5 -right-1.5 size-3.5 cursor-se-resize rounded-sm border-2 border-surface bg-current" style={{ color }} />}
+								</button>
+								<button
+									type="button"
+									data-comment-avatar
+									aria-label={"Show comment by " + (comment.author.name || "teammate")}
+									title={comment.author.name || "Comment"}
+									className="pointer-events-auto absolute -left-4 -top-3 z-10 rounded-xl border-2 border-surface bg-surface p-0.5 shadow-sm"
+									onMouseEnter={() => showCommentHover(comment.id)}
+									onMouseLeave={hideCommentHover}
+									onFocus={() => showCommentHover(comment.id)}
+									onBlur={hideCommentHover}
+									onClick={() => openThread(comment.id)}
+								>
+									<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
 								</button>
 								{hoveredCommentId === comment.id && (
 									<div
@@ -627,8 +640,6 @@ export function ArtefactComments({
 									canComment={canComment}
 									canEdit={canComment && comment.author.id === userId}
 									onEdit={editComment}
-									onHover={() => showCommentHover(comment.parentId ?? comment.id)}
-									onHoverEnd={hideCommentHover}
 								/>
 							))
 						) : roots.length ? (
@@ -638,10 +649,6 @@ export function ArtefactComments({
 									<div
 										key={comment.id}
 										className="mb-3 rounded-xl border border-border p-3"
-										onMouseEnter={() => showCommentHover(comment.id)}
-										onMouseLeave={hideCommentHover}
-										onFocusCapture={() => showCommentHover(comment.id)}
-										onBlurCapture={hideCommentHover}
 									>
 										<button
 											type="button"
@@ -692,14 +699,12 @@ export function ArtefactComments({
 }
 
 
-function CommentCard({ comment, onReact, canComment, canEdit, onEdit, onHover, onHoverEnd }: {
+function CommentCard({ comment, onReact, canComment, canEdit, onEdit }: {
 	comment: Comment;
 	onReact: (commentId: string, emoji: string) => void;
 	canComment: boolean;
 	canEdit: boolean;
 	onEdit: (commentId: string, body: string) => Promise<boolean>;
-	onHover: () => void;
-	onHoverEnd: () => void;
 }) {
 	const [isEditing, setEditing] = useState(false);
 	const [body, setBody] = useState(comment.body);
@@ -714,7 +719,7 @@ function CommentCard({ comment, onReact, canComment, canEdit, onEdit, onHover, o
 	}
 
 	return (
-		<article onMouseEnter={onHover} onMouseLeave={onHoverEnd} className={`mb-3 rounded-xl border border-border p-3 ${comment.parentId ? "ml-5" : ""}`}>
+		<article className={`mb-3 rounded-xl border border-border p-3 ${comment.parentId ? "ml-5" : ""}`}>
 			<div className="flex items-center gap-2">
 				<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
 				<span className="min-w-0 flex-1 truncate text-sm font-medium">{comment.author.name || "Teammate"}</span>
