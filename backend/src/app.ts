@@ -532,11 +532,21 @@ app.post("/api/integrations/github/actions/artefacts", async (req, res) => {
 	}
 });
 
-/** Refreshes cached GitHub org membership; a GitHub outage keeps the cached list. */
+const accessRefreshes = new Map<string, Promise<void>>();
+
+/** Refreshes cached GitHub org membership; concurrent requests share one refresh. */
 async function refreshAccess(userId: string) {
-	await refreshGitHubOrgs(userId).catch((error) =>
-		console.error("GitHub org refresh failed", error),
-	);
+	const pending = accessRefreshes.get(userId);
+	if (pending) return pending;
+	const refresh = (async () => {
+		try {
+			await refreshGitHubOrgs(userId);
+		} catch (error) {
+			console.error("GitHub org refresh failed", error);
+		}
+	})().finally(() => accessRefreshes.delete(userId));
+	accessRefreshes.set(userId, refresh);
+	return refresh;
 }
 
 const artefactColumns = (
@@ -568,15 +578,20 @@ async function accessibleArtefact(artefactId: string, userId: string) {
 }
 
 async function commentableArtefact(artefactId: string, userId: string) {
-	await refreshAccess(userId);
-	const artefact = await accessibleArtefact(artefactId, userId);
-	if (artefact) return artefact;
-	// Testing mode: any signed-in user can comment on a shared artefact.
 	const { rows } = await pool.query(
-		'select false as "isOwner" from artefact where id = $1 and is_shared = true',
-		[artefactId],
+		`select owner_id = $2 as "isOwner", is_shared as "isShared",
+			github_installation_id as "installationId"
+		from artefact where id = $1`,
+		[artefactId, userId],
 	);
-	return rows[0];
+	const artefact = rows[0] as
+		| { isOwner: boolean; isShared: boolean; installationId: string | null }
+		| undefined;
+	if (!artefact || artefact.isOwner || artefact.isShared) return artefact;
+	if (!artefact.installationId) return;
+	// Organization membership is cached; refresh it without delaying the interaction.
+	void refreshAccess(userId);
+	return accessibleArtefact(artefactId, userId);
 }
 
 async function artefactPatches(artefactId: string) {
