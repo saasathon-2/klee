@@ -9,10 +9,22 @@ import {
 	Surface,
 	Toolbar,
 } from "@heroui/react";
-import { ArrowUp, ExternalLink, History, MessageCircle, Pencil, Share2, X } from "lucide-react";
+import {
+	ArrowUp,
+	ExternalLink,
+	History,
+	MessageCircle,
+	Pencil,
+	Share2,
+	X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { changedBlockIds, withEditedValue, type ArtefactDocument } from "../../artefacts/model";
+import {
+	changedBlockIds,
+	withEditedValue,
+	type ArtefactDocument,
+} from "../../artefacts/model";
 import { ArtefactIcon } from "./ArtefactNav";
 import { ArtefactBody } from "./ArtefactBody";
 import { artefactHeading, artefactIcon } from "./artefactDisplay";
@@ -100,7 +112,6 @@ export function ArtefactModal({
 	const canEdit = artefact?.permission === "edit";
 	const canComment = Boolean(
 		artefact &&
-		!isEditing &&
 		!historyOpen &&
 		(canEdit || artefact.permission === "comment"),
 	);
@@ -260,7 +271,7 @@ export function ArtefactModal({
 										</span>
 									</Button>
 								)}
-								{artefact && !isEditing && !historyOpen && (
+								{artefact && !historyOpen && (
 									<Button
 										aria-label={`Comments, ${commentCount}`}
 										aria-pressed={
@@ -596,4 +607,3 @@ export function ArtefactModal({
 		</Modal>
 	);
 }
-

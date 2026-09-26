@@ -1,5 +1,15 @@
 import { Button, Chip, TextArea } from "@heroui/react";
-import { ArrowLeft, Heart, MessageCircle, MessageCirclePlus, Pencil, Reply, Send, Sparkles, X } from "lucide-react";
+import {
+	ArrowLeft,
+	Heart,
+	MessageCircle,
+	MessageCirclePlus,
+	Pencil,
+	Reply,
+	Send,
+	Sparkles,
+	X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, PointerEvent, ReactNode } from "react";
 import { UserAvatar } from "../../components/UserAvatar";
@@ -12,7 +22,17 @@ type Anchor = {
 	basisWidth?: number;
 	basisHeight?: number;
 };
-type AnchorAdjustment = { commentId: string; pointerId: number; mode: "move" | "resize"; startX: number; startY: number; surfaceWidth: number; surfaceHeight: number; original: Anchor; moved: boolean };
+type AnchorAdjustment = {
+	commentId: string;
+	pointerId: number;
+	mode: "move" | "resize";
+	startX: number;
+	startY: number;
+	surfaceWidth: number;
+	surfaceHeight: number;
+	original: Anchor;
+	moved: boolean;
+};
 type Reaction = { emoji: string; count: number; reacted: boolean };
 type Comment = {
 	id: string;
@@ -24,18 +44,24 @@ type Comment = {
 	reactions: Reaction[];
 };
 
-const reactions = [
-	{ emoji: "❤️", label: "love", Icon: Heart },
-];
+const reactions = [{ emoji: "❤️", label: "love", Icon: Heart }];
 
 function userColor(id: string) {
 	let hash = 2166136261;
-	for (const character of id) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+	for (const character of id)
+		hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
 	return `hsl(${(hash >>> 0) % 360} 68% 48%)`;
 }
 
-function commentApi(artefactId: string, suffix = "", options?: RequestInit, publicView = false) {
-	const path = publicView ? `/api/shared/artefacts/${artefactId}/comments` : `/api/artefacts/${artefactId}/comments`;
+function commentApi(
+	artefactId: string,
+	suffix = "",
+	options?: RequestInit,
+	publicView = false,
+) {
+	const path = publicView
+		? `/api/shared/artefacts/${artefactId}/comments`
+		: `/api/artefacts/${artefactId}/comments`;
 	return fetch(`${path}${suffix}`, {
 		credentials: "include",
 		headers: { "Content-Type": "application/json", ...options?.headers },
@@ -57,8 +83,9 @@ function regionBounds(anchor: Anchor) {
 }
 
 function visibleAnchor(anchor: Anchor, width: number, height: number): Anchor {
-	if (!anchor.basisWidth || !anchor.basisHeight || !width || !height) return anchor;
-	const scale = (width / anchor.basisWidth) / (height / anchor.basisHeight);
+	if (!anchor.basisWidth || !anchor.basisHeight || !width || !height)
+		return anchor;
+	const scale = width / anchor.basisWidth / (height / anchor.basisHeight);
 	return { ...anchor, y: anchor.y * scale, height: anchor.height * scale };
 }
 
@@ -106,13 +133,17 @@ export function ArtefactComments({
 	const [comments, setComments] = useState<Comment[]>([]);
 	const [draftAnchor, setDraftAnchor] = useState<Anchor>();
 	const [dragAnchor, setDragAnchor] = useState<Anchor>();
-	const [adjustingAnchor, setAdjustingAnchor] = useState<{ id: string; anchor: Anchor }>();
+	const [adjustingAnchor, setAdjustingAnchor] = useState<{
+		id: string;
+		anchor: Anchor;
+	}>();
 	const [savingCommentId, setSavingCommentId] = useState<string>();
 	const [hoveredCommentId, setHoveredCommentId] = useState<string>();
 	const [threadId, setThreadId] = useState<string>();
 	const [body, setBody] = useState("");
 	const [error, setError] = useState("");
 	const [isDrafting, setDrafting] = useState(false);
+	const [isGeneralDraft, setGeneralDraft] = useState(false);
 	const hoverTimeout = useRef<number | undefined>(undefined);
 	const pendingReactions = useRef(new Set<string>());
 
@@ -148,13 +179,16 @@ export function ArtefactComments({
 	}, []);
 
 	useEffect(() => {
-		if (!draftAnchor) return;
+		if (!draftAnchor && !isGeneralDraft) return;
 		const frame = window.requestAnimationFrame(() => {
 			draftInputRef.current?.focus();
-			draftInputRef.current?.form?.scrollIntoView({ block: "nearest", inline: "nearest" });
+			draftInputRef.current?.form?.scrollIntoView({
+				block: "nearest",
+				inline: "nearest",
+			});
 		});
 		return () => window.cancelAnimationFrame(frame);
-	}, [draftAnchor]);
+	}, [draftAnchor, isGeneralDraft]);
 
 	useEffect(() => {
 		let current = true;
@@ -175,14 +209,19 @@ export function ArtefactComments({
 		};
 	}, [artefactId, isShared, userId]);
 
-	useEffect(() => onCountChange(comments.length), [comments.length, onCountChange]);
+	useEffect(
+		() => onCountChange(comments.length),
+		[comments.length, onCountChange],
+	);
 
 	useEffect(() => {
 		const commentId = window.location.hash.match(/^#comment-(.+)$/)?.[1];
-		if (!commentId || !comments.some((comment) => comment.id === commentId)) return;
+		if (!commentId || !comments.some((comment) => comment.id === commentId))
+			return;
 		setHoveredCommentId(commentId);
 		const frame = window.requestAnimationFrame(() =>
-			surfaceRef.current?.querySelector(`[data-comment-id="${commentId}"]`)
+			surfaceRef.current
+				?.querySelector(`[data-comment-id="${commentId}"]`)
 				?.scrollIntoView({ block: "center" }),
 		);
 		return () => window.cancelAnimationFrame(frame);
@@ -196,7 +235,10 @@ export function ArtefactComments({
 		};
 	}
 
-	function anchorBetween(start: { x: number; y: number }, end: { x: number; y: number }): Anchor {
+	function anchorBetween(
+		start: { x: number; y: number },
+		end: { x: number; y: number },
+	): Anchor {
 		const rect = surfaceRef.current!.getBoundingClientRect();
 		const width = Math.max(1, rect.width);
 		const height = Math.max(1, rect.height);
@@ -217,7 +259,11 @@ export function ArtefactComments({
 	useEffect(() => {
 		if (!isCommenting) return;
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key !== "Escape" || (event.target as HTMLElement).closest("textarea,input")) return;
+			if (
+				event.key !== "Escape" ||
+				(event.target as HTMLElement).closest("textarea,input")
+			)
+				return;
 			setDraftAnchor(undefined);
 			onCommentingChange?.(false);
 		};
@@ -228,12 +274,18 @@ export function ArtefactComments({
 	function startSelection(event: PointerEvent<HTMLDivElement>) {
 		if (!canDraw || event.button !== 0 || !surfaceRef.current) return;
 		const target = event.target as HTMLElement;
-		if (target.closest("a,button,input,textarea,[contenteditable=true],.react-flow,[data-comment-ui]")) return;
+		if (
+			target.closest(
+				"a,button,input,textarea,[contenteditable=true],.react-flow,[data-comment-ui]",
+			)
+		)
+			return;
 		event.preventDefault();
 		dragStart.current = point(event);
 		setDraftAnchor(undefined);
 		setDragAnchor(undefined);
 		setThreadId(undefined);
+		setGeneralDraft(false);
 		setBody("");
 		setError("");
 		event.currentTarget.setPointerCapture(event.pointerId);
@@ -243,7 +295,10 @@ export function ArtefactComments({
 		if (!dragStart.current) return;
 		const end = point(event);
 		const selection = anchorBetween(dragStart.current, end);
-		if (selection.width * surfaceRef.current!.clientWidth > 5 || selection.height * surfaceRef.current!.clientHeight > 5)
+		if (
+			selection.width * surfaceRef.current!.clientWidth > 5 ||
+			selection.height * surfaceRef.current!.clientHeight > 5
+		)
 			setDragAnchor(selection);
 	}
 
@@ -253,9 +308,14 @@ export function ArtefactComments({
 		const selection = anchorBetween(start, point(event));
 		dragStart.current = undefined;
 		setDragAnchor(undefined);
-		if (selection.width * surfaceRef.current!.clientWidth < 12 || selection.height * surfaceRef.current!.clientHeight < 12) return;
+		if (
+			selection.width * surfaceRef.current!.clientWidth < 12 ||
+			selection.height * surfaceRef.current!.clientHeight < 12
+		)
+			return;
 		setDraftAnchor(selection);
 		setThreadId(undefined);
+		setGeneralDraft(false);
 		setBody("");
 		setError("");
 		onOpenChange(false);
@@ -267,18 +327,33 @@ export function ArtefactComments({
 	}
 
 	function canAdjustAnchor(comment: Comment) {
-		return canComment && comment.parentId === null && comment.author.id === userId;
+		return (
+			canComment &&
+			comment.parentId === null &&
+			comment.author.id === userId
+		);
 	}
 
-	function startAnchorAdjustment(event: PointerEvent<HTMLButtonElement>, comment: Comment) {
-		if (!canAdjustAnchor(comment) || savingCommentId || event.button !== 0 || !surfaceRef.current) return;
+	function startAnchorAdjustment(
+		event: PointerEvent<HTMLButtonElement>,
+		comment: Comment,
+	) {
+		if (
+			!canAdjustAnchor(comment) ||
+			savingCommentId ||
+			event.button !== 0 ||
+			!surfaceRef.current
+		)
+			return;
 		event.stopPropagation();
 		suppressOverlayClick.current = false;
 		const surface = surfaceRef.current;
 		anchorAdjustment.current = {
 			commentId: comment.id,
 			pointerId: event.pointerId,
-			mode: (event.target as HTMLElement).closest("[data-comment-resize]") ? "resize" : "move",
+			mode: (event.target as HTMLElement).closest("[data-comment-resize]")
+				? "resize"
+				: "move",
 			startX: event.clientX,
 			startY: event.clientY,
 			surfaceWidth: Math.max(1, surface.getBoundingClientRect().width),
@@ -289,10 +364,17 @@ export function ArtefactComments({
 		event.currentTarget.setPointerCapture(event.pointerId);
 	}
 
-	function anchorAt(adjustment: AnchorAdjustment, clientX: number, clientY: number) {
-		const basisWidth = adjustment.original.basisWidth ?? adjustment.surfaceWidth;
-		const basisHeight = adjustment.original.basisHeight ?? adjustment.surfaceHeight;
-		const scaledHeight = basisHeight * adjustment.surfaceWidth / basisWidth;
+	function anchorAt(
+		adjustment: AnchorAdjustment,
+		clientX: number,
+		clientY: number,
+	) {
+		const basisWidth =
+			adjustment.original.basisWidth ?? adjustment.surfaceWidth;
+		const basisHeight =
+			adjustment.original.basisHeight ?? adjustment.surfaceHeight;
+		const scaledHeight =
+			(basisHeight * adjustment.surfaceWidth) / basisWidth;
 		const dx = (clientX - adjustment.startX) / adjustment.surfaceWidth;
 		const dy = (clientY - adjustment.startY) / scaledHeight;
 		const basis = { basisWidth, basisHeight };
@@ -300,8 +382,14 @@ export function ArtefactComments({
 			return {
 				...adjustment.original,
 				...basis,
-				x: bounded(adjustment.original.x + dx, 1 - adjustment.original.width),
-				y: bounded(adjustment.original.y + dy, 1 - adjustment.original.height),
+				x: bounded(
+					adjustment.original.x + dx,
+					1 - adjustment.original.width,
+				),
+				y: bounded(
+					adjustment.original.y + dy,
+					1 - adjustment.original.height,
+				),
 			};
 		}
 		const maxWidth = 1 - adjustment.original.x;
@@ -309,32 +397,69 @@ export function ArtefactComments({
 		return {
 			...adjustment.original,
 			...basis,
-			width: Math.min(maxWidth, Math.max(Math.min(12 / adjustment.surfaceWidth, maxWidth), adjustment.original.width + dx)),
-			height: Math.min(maxHeight, Math.max(Math.min(12 / scaledHeight, maxHeight), adjustment.original.height + dy)),
+			width: Math.min(
+				maxWidth,
+				Math.max(
+					Math.min(12 / adjustment.surfaceWidth, maxWidth),
+					adjustment.original.width + dx,
+				),
+			),
+			height: Math.min(
+				maxHeight,
+				Math.max(
+					Math.min(12 / scaledHeight, maxHeight),
+					adjustment.original.height + dy,
+				),
+			),
 		};
 	}
 
 	function moveAnchorAdjustment(event: PointerEvent<HTMLButtonElement>) {
 		const adjustment = anchorAdjustment.current;
 		if (!adjustment || adjustment.pointerId !== event.pointerId) return;
-		if (Math.abs(event.clientX - adjustment.startX) > 3 || Math.abs(event.clientY - adjustment.startY) > 3)
+		if (
+			Math.abs(event.clientX - adjustment.startX) > 3 ||
+			Math.abs(event.clientY - adjustment.startY) > 3
+		)
 			adjustment.moved = true;
-		setAdjustingAnchor({ id: adjustment.commentId, anchor: anchorAt(adjustment, event.clientX, event.clientY) });
+		setAdjustingAnchor({
+			id: adjustment.commentId,
+			anchor: anchorAt(adjustment, event.clientX, event.clientY),
+		});
 	}
 
-	async function persistAnchor(commentId: string, anchor: Anchor, previous: Anchor) {
+	async function persistAnchor(
+		commentId: string,
+		anchor: Anchor,
+		previous: Anchor,
+	) {
 		setSavingCommentId(commentId);
 		setError("");
-		setComments((current) => current.map((comment) => comment.id === commentId ? { ...comment, anchor } : comment));
+		setComments((current) =>
+			current.map((comment) =>
+				comment.id === commentId ? { ...comment, anchor } : comment,
+			),
+		);
 		try {
 			const response = await commentApi(artefactId, "/" + commentId, {
 				method: "PATCH",
 				body: JSON.stringify({ anchor }),
 			});
-			if (!response.ok) throw new Error("Could not update the comment area.");
+			if (!response.ok)
+				throw new Error("Could not update the comment area.");
 		} catch (error) {
-			setComments((current) => current.map((comment) => comment.id === commentId ? { ...comment, anchor: previous } : comment));
-			setError(error instanceof Error ? error.message : "Could not update the comment area.");
+			setComments((current) =>
+				current.map((comment) =>
+					comment.id === commentId
+						? { ...comment, anchor: previous }
+						: comment,
+				),
+			);
+			setError(
+				error instanceof Error
+					? error.message
+					: "Could not update the comment area.",
+			);
 			onOpenChange(true);
 		} finally {
 			setSavingCommentId(undefined);
@@ -351,10 +476,20 @@ export function ArtefactComments({
 				body: JSON.stringify({ body: nextBody }),
 			});
 			if (!response.ok) throw new Error("Could not update your comment.");
-			setComments((current) => current.map((comment) => comment.id === commentId ? { ...comment, body: nextBody } : comment));
+			setComments((current) =>
+				current.map((comment) =>
+					comment.id === commentId
+						? { ...comment, body: nextBody }
+						: comment,
+				),
+			);
 			return true;
 		} catch (error) {
-			setError(error instanceof Error ? error.message : "Could not update your comment.");
+			setError(
+				error instanceof Error
+					? error.message
+					: "Could not update your comment.",
+			);
 			return false;
 		}
 	}
@@ -364,10 +499,17 @@ export function ArtefactComments({
 		if (!adjustment || adjustment.pointerId !== event.pointerId) return;
 		anchorAdjustment.current = undefined;
 		setAdjustingAnchor(undefined);
-		const moved = adjustment.moved || Math.abs(event.clientX - adjustment.startX) > 3 || Math.abs(event.clientY - adjustment.startY) > 3;
+		const moved =
+			adjustment.moved ||
+			Math.abs(event.clientX - adjustment.startX) > 3 ||
+			Math.abs(event.clientY - adjustment.startY) > 3;
 		if (!moved) return;
 		suppressOverlayClick.current = true;
-		void persistAnchor(adjustment.commentId, anchorAt(adjustment, event.clientX, event.clientY), adjustment.original);
+		void persistAnchor(
+			adjustment.commentId,
+			anchorAt(adjustment, event.clientX, event.clientY),
+			adjustment.original,
+		);
 	}
 
 	function cancelAnchorAdjustment(event: PointerEvent<HTMLButtonElement>) {
@@ -381,8 +523,7 @@ export function ArtefactComments({
 		const nextBody = body.trim();
 		if (!canComment || !nextBody) return;
 		const parentId = threadId ?? null;
-		const anchor = parentId ? null : draftAnchor ?? null;
-		if (!parentId && !anchor) return;
+		const anchor = parentId ? null : (draftAnchor ?? null);
 		const pendingId = `pending-${crypto.randomUUID()}`;
 		const pending: Comment = {
 			id: pendingId,
@@ -396,29 +537,47 @@ export function ArtefactComments({
 		setComments((current) => [...current, pending]);
 		setBody("");
 		setDraftAnchor(undefined);
+		setGeneralDraft(false);
 		if (!parentId) setThreadId(pendingId);
 		setError("");
-		void commentApi(artefactId, "", {
+		void commentApi(
+			artefactId,
+			"",
+			{
 				method: "POST",
 				body: JSON.stringify({
 					body: nextBody,
 					...(parentId ? { parentId } : { anchor }),
 				}),
-			}, isShared && !canComment)
+			},
+			isShared && !canComment,
+		)
 			.then(async (response) => {
-				if (!response.ok) throw new Error("Could not post your comment.");
+				if (!response.ok)
+					throw new Error("Could not post your comment.");
 				return (await response.json()) as Comment;
 			})
 			.then((comment) => {
-				setComments((current) => current.map((item) => item.id === pendingId ? comment : item));
+				setComments((current) =>
+					current.map((item) =>
+						item.id === pendingId ? comment : item,
+					),
+				);
 				if (!parentId) setThreadId(comment.id);
 			})
 			.catch((error) => {
-				setComments((current) => current.filter((item) => item.id !== pendingId));
+				setComments((current) =>
+					current.filter((item) => item.id !== pendingId),
+				);
 				setBody(nextBody);
 				if (parentId) setThreadId(parentId);
-				else setDraftAnchor(anchor!);
-				setError(error instanceof Error ? error.message : "Could not post your comment.");
+				else if (anchor) setDraftAnchor(anchor);
+				else setGeneralDraft(true);
+				setError(
+					error instanceof Error
+						? error.message
+						: "Could not post your comment.",
+				);
 			});
 	}
 
@@ -427,27 +586,61 @@ export function ArtefactComments({
 		const key = `${commentId}:${emoji}`;
 		if (pendingReactions.current.has(key)) return;
 		pendingReactions.current.add(key);
-		const previous = comments.find((comment) => comment.id === commentId)?.reactions;
-		setComments((current) => current.map((comment) => {
-			if (comment.id !== commentId) return comment;
-			const reaction = comment.reactions.find((item) => item.emoji === emoji);
-			const reactions = reaction
-				? comment.reactions.map((item) => item.emoji === emoji
-					? { ...item, count: item.reacted ? item.count - 1 : item.count + 1, reacted: !item.reacted }
-					: item).filter((item) => item.count > 0)
-				: [...comment.reactions, { emoji, count: 1, reacted: true }];
-			return { ...comment, reactions };
-		}));
+		const previous = comments.find(
+			(comment) => comment.id === commentId,
+		)?.reactions;
+		setComments((current) =>
+			current.map((comment) => {
+				if (comment.id !== commentId) return comment;
+				const reaction = comment.reactions.find(
+					(item) => item.emoji === emoji,
+				);
+				const reactions = reaction
+					? comment.reactions
+							.map((item) =>
+								item.emoji === emoji
+									? {
+											...item,
+											count: item.reacted
+												? item.count - 1
+												: item.count + 1,
+											reacted: !item.reacted,
+										}
+									: item,
+							)
+							.filter((item) => item.count > 0)
+					: [
+							...comment.reactions,
+							{ emoji, count: 1, reacted: true },
+						];
+				return { ...comment, reactions };
+			}),
+		);
 		setError("");
 		try {
-			const response = await commentApi(artefactId, `/${commentId}/reactions`, {
-				method: "POST",
-				body: JSON.stringify({ emoji }),
-			}, isShared && !canComment);
+			const response = await commentApi(
+				artefactId,
+				`/${commentId}/reactions`,
+				{
+					method: "POST",
+					body: JSON.stringify({ emoji }),
+				},
+				isShared && !canComment,
+			);
 			if (!response.ok) throw new Error("Could not add reaction.");
 		} catch (error) {
-			setComments((current) => current.map((comment) => comment.id === commentId && previous ? { ...comment, reactions: previous } : comment));
-			setError(error instanceof Error ? error.message : "Could not add reaction.");
+			setComments((current) =>
+				current.map((comment) =>
+					comment.id === commentId && previous
+						? { ...comment, reactions: previous }
+						: comment,
+				),
+			);
+			setError(
+				error instanceof Error
+					? error.message
+					: "Could not add reaction.",
+			);
 		} finally {
 			pendingReactions.current.delete(key);
 		}
@@ -466,7 +659,11 @@ export function ArtefactComments({
 			const result = (await response.json()) as { text: string };
 			setBody(result.text);
 		} catch (error) {
-			setError(error instanceof Error ? error.message : "Could not draft an AI reply.");
+			setError(
+				error instanceof Error
+					? error.message
+					: "Could not draft an AI reply.",
+			);
 		} finally {
 			setDrafting(false);
 		}
@@ -475,16 +672,35 @@ export function ArtefactComments({
 	function openThread(id: string) {
 		setThreadId(id);
 		setDraftAnchor(undefined);
+		setGeneralDraft(false);
 		setError("");
 		onOpenChange(true);
-		surfaceRef.current?.querySelector(`[data-comment-id="${id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+		surfaceRef.current
+			?.querySelector(`[data-comment-id="${id}"]`)
+			?.scrollIntoView({ block: "center", behavior: "smooth" });
 	}
 
 	const roots = comments.filter((comment) => !comment.parentId);
-	const thread = threadId ? comments.filter((comment) => comment.id === threadId || comment.parentId === threadId) : [];
+	const thread = threadId
+		? comments.filter(
+				(comment) =>
+					comment.id === threadId || comment.parentId === threadId,
+			)
+		: [];
 	const selected = comments.find((comment) => comment.id === threadId);
-	const compose = Boolean(selected);
-	const draftDisplayAnchor = draftAnchor && visibleAnchor(draftAnchor, surfaceSize.width, surfaceSize.height);
+	const compose = Boolean(selected) || isGeneralDraft;
+
+	function startGeneralComment() {
+		setDraftAnchor(undefined);
+		setThreadId(undefined);
+		setBody("");
+		setError("");
+		setGeneralDraft(true);
+		onOpenChange(true);
+	}
+	const draftDisplayAnchor =
+		draftAnchor &&
+		visibleAnchor(draftAnchor, surfaceSize.width, surfaceSize.height);
 
 	return (
 		<div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -492,7 +708,11 @@ export function ArtefactComments({
 			<div className="relative min-w-0 flex-1 overflow-auto bg-brand">
 				{canDraw && (
 					<div className="pointer-events-none sticky top-3 z-[65] flex h-0 justify-center">
-						<Chip size="sm" variant="primary" className="h-7 shadow-lg">
+						<Chip
+							size="sm"
+							variant="primary"
+							className="h-7 shadow-lg"
+						>
 							<MessageCirclePlus size={14} />
 							Drag across the artefact to comment · Esc to finish
 						</Chip>
@@ -507,87 +727,200 @@ export function ArtefactComments({
 					onPointerCancel={cancelSelection}
 				>
 					{children}
-					{comments.filter((comment) => comment.anchor).map((comment) => {
-						const color = userColor(comment.author.id);
-						const anchor = visibleAnchor(adjustingAnchor?.id === comment.id ? adjustingAnchor.anchor : comment.anchor!, surfaceSize.width, surfaceSize.height);
-						const highlighted = hoveredCommentId === comment.id;
-						const { left, top, width, height, ...boxStyle } = regionStyle(anchor, color, highlighted);
-						return (
-							<div
-								key={comment.id}
-								data-comment-region={comment.id}
-								className="pointer-events-none absolute z-[60]"
-								style={{ left, top, width, height }}
-							>
-								<button
-									type="button"
-									data-comment-id={comment.id}
-									data-comment-overlay
-									aria-hidden={!highlighted}
-									aria-label={"Open comment by " + (comment.author.name || "teammate")}
-									title={comment.author.name || "Comment"}
-									tabIndex={highlighted ? 0 : -1}
-									className={canAdjustAnchor(comment) ? "pointer-events-auto absolute inset-0 cursor-move select-none rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow,opacity] duration-150" : "pointer-events-auto absolute inset-0 rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow,opacity] duration-150"}
-									style={{ ...boxStyle, opacity: highlighted ? 1 : 0, pointerEvents: highlighted ? "auto" : "none", ...(canAdjustAnchor(comment) ? { touchAction: "none" } : {}) }}
-									onMouseEnter={() => showCommentHover(comment.id)}
-									onMouseLeave={hideCommentHover}
-									onFocusCapture={() => showCommentHover(comment.id)}
-									onBlurCapture={hideCommentHover}
-									onPointerDown={(event) => startAnchorAdjustment(event, comment)}
-									onPointerMove={moveAnchorAdjustment}
-									onPointerUp={finishAnchorAdjustment}
-									onPointerCancel={cancelAnchorAdjustment}
-									onClick={() => {
-										if (suppressOverlayClick.current) {
-											suppressOverlayClick.current = false;
-											return;
+					{comments
+						.filter((comment) => comment.anchor)
+						.map((comment) => {
+							const color = userColor(comment.author.id);
+							const anchor = visibleAnchor(
+								adjustingAnchor?.id === comment.id
+									? adjustingAnchor.anchor
+									: comment.anchor!,
+								surfaceSize.width,
+								surfaceSize.height,
+							);
+							const highlighted = hoveredCommentId === comment.id;
+							const { left, top, width, height, ...boxStyle } =
+								regionStyle(anchor, color, highlighted);
+							return (
+								<div
+									key={comment.id}
+									data-comment-region={comment.id}
+									className="pointer-events-none absolute z-[60]"
+									style={{ left, top, width, height }}
+								>
+									<button
+										type="button"
+										data-comment-id={comment.id}
+										data-comment-overlay
+										aria-hidden={!highlighted}
+										aria-label={
+											"Open comment by " +
+											(comment.author.name || "teammate")
 										}
-										openThread(comment.id);
-									}}
-								>
-									{canAdjustAnchor(comment) && <span data-comment-resize className="absolute -bottom-1.5 -right-1.5 size-3.5 cursor-se-resize rounded-sm border-2 border-surface bg-current" style={{ color }} />}
-								</button>
-								<button
-									type="button"
-									data-comment-avatar
-									aria-label={"Show comment by " + (comment.author.name || "teammate")}
-									title={comment.author.name || "Comment"}
-									className="pointer-events-auto absolute -left-4 -top-3 z-10 rounded-xl border-2 border-surface bg-surface p-0.5 shadow-sm"
-									onMouseEnter={() => showCommentHover(comment.id)}
-									onMouseLeave={hideCommentHover}
-									onFocus={() => showCommentHover(comment.id)}
-									onBlur={hideCommentHover}
-									onClick={() => openThread(comment.id)}
-								>
-									<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
-								</button>
-								{hoveredCommentId === comment.id && (
-									<div
-										data-comment-ui
-										className="pointer-events-auto absolute z-[70] max-h-64 overflow-y-auto"
-										style={{ left: 0, top: "calc(100% + 0.5rem)", width: "min(20rem, calc(100vw - 2rem))" }}
-										onMouseEnter={() => showCommentHover(comment.id)}
+										title={comment.author.name || "Comment"}
+										tabIndex={highlighted ? 0 : -1}
+										className={
+											canAdjustAnchor(comment)
+												? "pointer-events-auto absolute inset-0 cursor-move select-none rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow,opacity] duration-150"
+												: "pointer-events-auto absolute inset-0 rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow,opacity] duration-150"
+										}
+										style={{
+											...boxStyle,
+											opacity: highlighted ? 1 : 0,
+											pointerEvents: highlighted
+												? "auto"
+												: "none",
+											...(canAdjustAnchor(comment)
+												? { touchAction: "none" }
+												: {}),
+										}}
+										onMouseEnter={() =>
+											showCommentHover(comment.id)
+										}
 										onMouseLeave={hideCommentHover}
+										onFocusCapture={() =>
+											showCommentHover(comment.id)
+										}
+										onBlurCapture={hideCommentHover}
+										onPointerDown={(event) =>
+											startAnchorAdjustment(
+												event,
+												comment,
+											)
+										}
+										onPointerMove={moveAnchorAdjustment}
+										onPointerUp={finishAnchorAdjustment}
+										onPointerCancel={cancelAnchorAdjustment}
+										onClick={() => {
+											if (suppressOverlayClick.current) {
+												suppressOverlayClick.current = false;
+												return;
+											}
+											openThread(comment.id);
+										}}
 									>
-										<div className="rounded-xl border border-border bg-surface p-3 text-left shadow-xl">
-											<div className="flex items-center gap-2">
-												<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
-												<span className="min-w-0 flex-1 truncate text-sm font-medium">{comment.author.name || "Teammate"}</span>
-												<time dateTime={comment.createdAt} className="text-[11px] text-muted">{new Date(comment.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</time>
+										{canAdjustAnchor(comment) && (
+											<span
+												data-comment-resize
+												className="absolute -bottom-1.5 -right-1.5 size-3.5 cursor-se-resize rounded-sm border-2 border-surface bg-current"
+												style={{ color }}
+											/>
+										)}
+									</button>
+									<button
+										type="button"
+										data-comment-avatar
+										aria-label={
+											"Show comment by " +
+											(comment.author.name || "teammate")
+										}
+										title={comment.author.name || "Comment"}
+										className="pointer-events-auto absolute -left-4 -top-3 z-10 rounded-xl border-2 border-surface bg-surface p-0.5 shadow-sm"
+										onMouseEnter={() =>
+											showCommentHover(comment.id)
+										}
+										onMouseLeave={hideCommentHover}
+										onFocus={() =>
+											showCommentHover(comment.id)
+										}
+										onBlur={hideCommentHover}
+										onClick={() => openThread(comment.id)}
+									>
+										<UserAvatar
+											image={comment.author.image}
+											name={
+												comment.author.name ||
+												"Teammate"
+											}
+											size="sm"
+										/>
+									</button>
+									{hoveredCommentId === comment.id && (
+										<div
+											data-comment-ui
+											className="pointer-events-auto absolute z-[70] max-h-64 overflow-y-auto"
+											style={{
+												left: 0,
+												top: "calc(100% + 0.5rem)",
+												width: "min(20rem, calc(100vw - 2rem))",
+											}}
+											onMouseEnter={() =>
+												showCommentHover(comment.id)
+											}
+											onMouseLeave={hideCommentHover}
+										>
+											<div className="rounded-xl border border-border bg-surface p-3 text-left shadow-xl">
+												<div className="flex items-center gap-2">
+													<UserAvatar
+														image={
+															comment.author.image
+														}
+														name={
+															comment.author
+																.name ||
+															"Teammate"
+														}
+														size="sm"
+													/>
+													<span className="min-w-0 flex-1 truncate text-sm font-medium">
+														{comment.author.name ||
+															"Teammate"}
+													</span>
+													<time
+														dateTime={
+															comment.createdAt
+														}
+														className="text-[11px] text-muted"
+													>
+														{new Date(
+															comment.createdAt,
+														).toLocaleString(
+															undefined,
+															{
+																dateStyle:
+																	"medium",
+																timeStyle:
+																	"short",
+															},
+														)}
+													</time>
+												</div>
+												<p className="mt-2 whitespace-pre-wrap break-words text-sm leading-5">
+													{comment.body}
+												</p>
+												{canComment && (
+													<button
+														type="button"
+														className="mt-3 inline-flex items-center gap-1 text-xs text-muted hover:text-foreground"
+														onPointerDown={(
+															event,
+														) =>
+															event.stopPropagation()
+														}
+														onClick={() =>
+															openThread(
+																comment.id,
+															)
+														}
+													>
+														<Reply size={14} />{" "}
+														Reply
+													</button>
+												)}
 											</div>
-											<p className="mt-2 whitespace-pre-wrap break-words text-sm leading-5">{comment.body}</p>
-											{canComment && <button type="button" className="mt-3 inline-flex items-center gap-1 text-xs text-muted hover:text-foreground" onPointerDown={(event) => event.stopPropagation()} onClick={() => openThread(comment.id)}><Reply size={14} /> Reply</button>}
-											</div>
-									</div>
-								)}
-							</div>
-						);
-					})}
+										</div>
+									)}
+								</div>
+							);
+						})}
 					{(draftAnchor || dragAnchor) && (
 						<div
 							aria-hidden="true"
 							className="pointer-events-none absolute z-[60] rounded-lg border-2 border-dashed border-accent-text bg-accent/15"
-							style={regionStyle(draftDisplayAnchor ?? dragAnchor!, userColor(userId))}
+							style={regionStyle(
+								draftDisplayAnchor ?? dragAnchor!,
+								userColor(userId),
+							)}
 						/>
 					)}
 					{draftAnchor && canComment && (
@@ -603,12 +936,18 @@ export function ArtefactComments({
 							}}
 						>
 							<div className="mb-2 flex items-center gap-2">
-								<span className="flex-1 text-sm font-medium">Comment on this area</span>
+								<span className="flex-1 text-sm font-medium">
+									Comment on this area
+								</span>
 								<button
 									type="button"
 									aria-label="Cancel comment"
 									className="rounded-md p-1 text-muted hover:bg-surface-secondary hover:text-foreground"
-									onClick={() => { setDraftAnchor(undefined); setBody(""); setError(""); }}
+									onClick={() => {
+										setDraftAnchor(undefined);
+										setBody("");
+										setError("");
+									}}
 								>
 									<X size={15} />
 								</button>
@@ -619,19 +958,33 @@ export function ArtefactComments({
 								rows={3}
 								maxLength={5000}
 								value={body}
-								onChange={(event) => setBody(event.target.value)}
+								onChange={(event) =>
+									setBody(event.target.value)
+								}
 								placeholder="Write a comment…"
 								className="w-full resize-none"
 							/>
-							{error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
+							{error && (
+								<p
+									role="alert"
+									className="mt-2 text-xs text-danger"
+								>
+									{error}
+								</p>
+							)}
 							<div className="mt-2 flex justify-end">
-								<Button type="submit" size="sm" isDisabled={!body.trim()}>
-									Post<Send size={14} />
+								<Button
+									type="submit"
+									size="sm"
+									isDisabled={!body.trim()}
+								>
+									Post
+									<Send size={14} />
 								</Button>
 							</div>
 						</form>
 					)}
-					</div>
+				</div>
 			</div>
 			{isOpen && (
 				<aside
@@ -641,7 +994,21 @@ export function ArtefactComments({
 					<header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
 						<MessageCircle size={17} className="text-muted" />
 						<h2 className="flex-1 font-semibold">Comments</h2>
-						{!canComment && <span className="text-xs text-muted">View only</span>}
+						{!canComment && (
+							<span className="text-xs text-muted">
+								View only
+							</span>
+						)}
+						{canComment && !compose && (
+							<Button
+								size="sm"
+								variant="ghost"
+								onPress={startGeneralComment}
+							>
+								<MessageCirclePlus size={15} />
+								Add comment
+							</Button>
+						)}
 						<Button
 							aria-label="Collapse comments"
 							variant="ghost"
@@ -672,18 +1039,46 @@ export function ArtefactComments({
 						)}
 						{compose ? (
 							<>
-								<CommentCard comment={selected!} onReact={react} canComment={canComment} canEdit={canComment && selected!.author.id === userId} onEdit={editComment} />
+								<CommentCard
+									comment={selected!}
+									onReact={react}
+									canComment={canComment}
+									canEdit={
+										canComment &&
+										selected!.author.id === userId
+									}
+									onEdit={editComment}
+								/>
 								{thread.length > 1 && (
 									<div className="relative ml-5 border-l border-border pl-4">
-										{thread.filter((comment) => comment.id !== selected!.id).map((comment) => (
-											<CommentCard key={comment.id} comment={comment} connected onReact={react} canComment={canComment} canEdit={canComment && comment.author.id === userId} onEdit={editComment} />
-										))}
+										{thread
+											.filter(
+												(comment) =>
+													comment.id !== selected!.id,
+											)
+											.map((comment) => (
+												<CommentCard
+													key={comment.id}
+													comment={comment}
+													connected
+													onReact={react}
+													canComment={canComment}
+													canEdit={
+														canComment &&
+														comment.author.id ===
+															userId
+													}
+													onEdit={editComment}
+												/>
+											))}
 									</div>
 								)}
 							</>
 						) : roots.length ? (
 							roots.map((comment) => {
-								const replyCount = comments.filter((reply) => reply.parentId === comment.id).length;
+								const replyCount = comments.filter(
+									(reply) => reply.parentId === comment.id,
+								).length;
 								return (
 									<div
 										key={comment.id}
@@ -692,22 +1087,50 @@ export function ArtefactComments({
 										<button
 											type="button"
 											className="flex w-full items-start gap-2 text-left"
-											onClick={() => openThread(comment.id)}
+											onClick={() =>
+												openThread(comment.id)
+											}
 										>
-											<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
+											<UserAvatar
+												image={comment.author.image}
+												name={
+													comment.author.name ||
+													"Teammate"
+												}
+												size="sm"
+											/>
 											<span className="min-w-0 flex-1">
-												<span className="block truncate text-sm font-medium">{comment.author.name || "Teammate"}</span>
-												<span className="mt-1 block line-clamp-3 text-sm text-muted">{comment.body}</span>
+												<span className="block truncate text-sm font-medium">
+													{comment.author.name ||
+														"Teammate"}
+												</span>
+												<span className="mt-1 block line-clamp-3 text-sm text-muted">
+													{comment.body}
+												</span>
 											</span>
 										</button>
 										<div className="mt-2 flex items-center justify-between gap-2">
-											<button type="button" onClick={() => openThread(comment.id)} className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground">
+											<button
+												type="button"
+												onClick={() =>
+													openThread(comment.id)
+												}
+												className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground"
+											>
 												<Reply size={14} />
 												{canComment
-													? replyCount ? `${replyCount} ${replyCount === 1 ? "reply" : "replies"} · Reply` : "Reply"
-													: replyCount ? `${replyCount} ${replyCount === 1 ? "reply" : "replies"}` : "View thread"}
+													? replyCount
+														? `${replyCount} ${replyCount === 1 ? "reply" : "replies"} · Reply`
+														: "Reply"
+													: replyCount
+														? `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`
+														: "View thread"}
 											</button>
-											<ReactionBar comment={comment} onReact={react} canComment={canComment} />
+											<ReactionBar
+												comment={comment}
+												onReact={react}
+												canComment={canComment}
+											/>
 										</div>
 									</div>
 								);
@@ -717,30 +1140,90 @@ export function ArtefactComments({
 								{canDraw
 									? "Drag across an area of the artefact to start a comment."
 									: canComment
-										? "No comments yet. Turn on Comment mode to add one."
+										? "No comments yet. Add a page comment or turn on Comment mode to select an area."
 										: "No comments on this artefact yet."}
 							</p>
 						)}
 					</div>
 					{compose && canComment && (
-						<form onSubmit={post} className="shrink-0 space-y-2 border-t border-border p-3">
-							<TextArea aria-label={selected ? "Reply" : "Comment"} rows={3} value={body} onChange={(event) => setBody(event.target.value)} placeholder={selected ? "Write a reply…" : "Add a comment…"} className="w-full resize-none" />
-							{error && <p role="alert" className="text-xs text-danger">{error}</p>}
+						<form
+							onSubmit={post}
+							className="shrink-0 space-y-2 border-t border-border p-3"
+						>
+							<TextArea
+								ref={isGeneralDraft ? draftInputRef : undefined}
+								aria-label={selected ? "Reply" : "Comment"}
+								rows={3}
+								value={body}
+								onChange={(event) =>
+									setBody(event.target.value)
+								}
+								placeholder={
+									selected
+										? "Write a reply…"
+										: "Add a comment…"
+								}
+								className="w-full resize-none"
+							/>
+							{error && (
+								<p role="alert" className="text-xs text-danger">
+									{error}
+								</p>
+							)}
 							<div className="flex items-center justify-between gap-2">
-								{selected && isOwner ? <Button type="button" variant="ghost" size="sm" isDisabled={isDrafting} onPress={() => void draftReply()}>{isDrafting ? "Drafting…" : <><Sparkles size={14} /> Draft with AI</>}</Button> : <span />}
-								<Button type="submit" size="sm" isDisabled={!body.trim()}>Post<Send size={14} /></Button>
+								{selected && isOwner ? (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										isDisabled={isDrafting}
+										onPress={() => void draftReply()}
+									>
+										{isDrafting ? (
+											"Drafting…"
+										) : (
+											<>
+												<Sparkles size={14} /> Draft
+												with AI
+											</>
+										)}
+									</Button>
+								) : (
+									<span />
+								)}
+								<Button
+									type="submit"
+									size="sm"
+									isDisabled={!body.trim()}
+								>
+									Post
+									<Send size={14} />
+								</Button>
 							</div>
 						</form>
 					)}
-					{!compose && error && <p role="alert" className="border-t border-border px-4 py-2 text-xs text-danger">{error}</p>}
+					{!compose && error && (
+						<p
+							role="alert"
+							className="border-t border-border px-4 py-2 text-xs text-danger"
+						>
+							{error}
+						</p>
+					)}
 				</aside>
 			)}
 		</div>
 	);
 }
 
-
-function CommentCard({ comment, connected = false, onReact, canComment, canEdit, onEdit }: {
+function CommentCard({
+	comment,
+	connected = false,
+	onReact,
+	canComment,
+	canEdit,
+	onEdit,
+}: {
 	comment: Comment;
 	connected?: boolean;
 	onReact: (commentId: string, emoji: string) => void;
@@ -761,40 +1244,143 @@ function CommentCard({ comment, connected = false, onReact, canComment, canEdit,
 	}
 
 	return (
-		<article className={`relative mb-3 rounded-xl border border-border p-3 ${connected ? "last:mb-0 before:absolute before:-left-4 before:top-6 before:h-px before:w-4 before:bg-border" : ""}`}>
+		<article
+			className={`relative mb-3 rounded-xl border border-border p-3 ${connected ? "last:mb-0 before:absolute before:-left-4 before:top-6 before:h-px before:w-4 before:bg-border" : ""}`}
+		>
 			<div className="flex items-center gap-2">
-				<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
-				<span className="min-w-0 flex-1 truncate text-sm font-medium">{comment.author.name || "Teammate"}</span>
-				<time dateTime={comment.createdAt} className="text-[11px] text-muted">{new Date(comment.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</time>
+				<UserAvatar
+					image={comment.author.image}
+					name={comment.author.name || "Teammate"}
+					size="sm"
+				/>
+				<span className="min-w-0 flex-1 truncate text-sm font-medium">
+					{comment.author.name || "Teammate"}
+				</span>
+				<time
+					dateTime={comment.createdAt}
+					className="text-[11px] text-muted"
+				>
+					{new Date(comment.createdAt).toLocaleString(undefined, {
+						dateStyle: "medium",
+						timeStyle: "short",
+					})}
+				</time>
 			</div>
 			{isEditing ? (
-				<form data-comment-ui onSubmit={save} className="mt-2 space-y-2">
-					<TextArea aria-label="Edit comment" rows={3} maxLength={5000} value={body} onChange={(event) => setBody(event.target.value)} className="w-full resize-none" />
+				<form
+					data-comment-ui
+					onSubmit={save}
+					className="mt-2 space-y-2"
+				>
+					<TextArea
+						aria-label="Edit comment"
+						rows={3}
+						maxLength={5000}
+						value={body}
+						onChange={(event) => setBody(event.target.value)}
+						className="w-full resize-none"
+					/>
 					<div className="flex justify-end gap-2">
-						<Button type="button" variant="ghost" size="sm" onPress={() => { setBody(comment.body); setEditing(false); }}>Cancel</Button>
-						<Button type="submit" size="sm" isDisabled={!body.trim() || isSaving}>{isSaving ? "Saving…" : "Save"}</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onPress={() => {
+								setBody(comment.body);
+								setEditing(false);
+							}}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="submit"
+							size="sm"
+							isDisabled={!body.trim() || isSaving}
+						>
+							{isSaving ? "Saving…" : "Save"}
+						</Button>
 					</div>
 				</form>
 			) : (
-				<p className="mt-2 whitespace-pre-wrap break-words text-sm leading-5">{comment.body}</p>
+				<p className="mt-2 whitespace-pre-wrap break-words text-sm leading-5">
+					{comment.body}
+				</p>
 			)}
 			<div className="mt-2 flex items-center justify-between gap-2">
-				{canEdit && !isEditing && <button type="button" aria-label="Edit comment" className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground" onClick={() => { setBody(comment.body); setEditing(true); }}><Pencil size={13} /> Edit</button>}
-				<ReactionBar comment={comment} onReact={onReact} canComment={canComment} />
+				{canEdit && !isEditing && (
+					<button
+						type="button"
+						aria-label="Edit comment"
+						className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground"
+						onClick={() => {
+							setBody(comment.body);
+							setEditing(true);
+						}}
+					>
+						<Pencil size={13} /> Edit
+					</button>
+				)}
+				<ReactionBar
+					comment={comment}
+					onReact={onReact}
+					canComment={canComment}
+				/>
 			</div>
 		</article>
 	);
 }
 
-function ReactionBar({ comment, onReact, canComment }: { comment: Comment; onReact: (commentId: string, emoji: string) => void; canComment: boolean }) {
+function ReactionBar({
+	comment,
+	onReact,
+	canComment,
+}: {
+	comment: Comment;
+	onReact: (commentId: string, emoji: string) => void;
+	canComment: boolean;
+}) {
 	return (
 		<div className="mt-2 flex flex-wrap gap-1">
 			{reactions.map(({ emoji, label, Icon }) => {
-				const reaction = comment.reactions.find((item) => item.emoji === emoji);
-				if (!canComment) return reaction ? <span key={emoji} aria-label={label + ", " + reaction.count + " reactions"} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs"><Icon size={15} strokeWidth={2.75} aria-hidden="true" /> {reaction.count}</span> : null;
+				const reaction = comment.reactions.find(
+					(item) => item.emoji === emoji,
+				);
+				if (!canComment)
+					return reaction ? (
+						<span
+							key={emoji}
+							aria-label={
+								label + ", " + reaction.count + " reactions"
+							}
+							className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs"
+						>
+							<Icon
+								size={15}
+								strokeWidth={2.75}
+								aria-hidden="true"
+							/>{" "}
+							{reaction.count}
+						</span>
+					) : null;
 				return (
-					<button key={emoji} type="button" aria-label={(reaction?.reacted ? "Remove " : "Add ") + label + " reaction"} aria-pressed={reaction?.reacted ?? false} onClick={() => onReact(comment.id, emoji)} className={reaction?.reacted ? "inline-flex items-center gap-1 rounded-full border border-accent-text bg-accent/20 px-2 py-0.5 text-xs" : "inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-secondary"}>
-						<Icon size={15} strokeWidth={2.75} aria-hidden="true" />{reaction?.count ? " " + reaction.count : ""}
+					<button
+						key={emoji}
+						type="button"
+						aria-label={
+							(reaction?.reacted ? "Remove " : "Add ") +
+							label +
+							" reaction"
+						}
+						aria-pressed={reaction?.reacted ?? false}
+						onClick={() => onReact(comment.id, emoji)}
+						className={
+							reaction?.reacted
+								? "inline-flex items-center gap-1 rounded-full border border-accent-text bg-accent/20 px-2 py-0.5 text-xs"
+								: "inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-secondary"
+						}
+					>
+						<Icon size={15} strokeWidth={2.75} aria-hidden="true" />
+						{reaction?.count ? " " + reaction.count : ""}
 					</button>
 				);
 			})}

@@ -1,11 +1,10 @@
-import { Input, TextArea, TextField } from "@heroui/react";
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import type { ArtefactNode } from "../../model";
 import type { EditPath, RenderContext } from "../types";
 
 /**
- * A text field in an artefact. Renders `children` (or the value) normally and
- * a HeroUI text field while the artefact is being edited.
+ * Renders artefact copy as inline editable text, preserving the type and flow
+ * of the surrounding content while edit mode is active.
  */
 export function EditableText({
 	node,
@@ -27,25 +26,40 @@ export function EditableText({
 	className?: string;
 	children?: ReactNode;
 }) {
-	if (!context.isEditing || !context.onEdit)
-		return <>{children ?? value}</>;
+	const element = useRef<HTMLSpanElement>(null);
+	useLayoutEffect(() => {
+		if (
+			element.current &&
+			document.activeElement !== element.current &&
+			element.current.textContent !== value
+		)
+			element.current.textContent = value;
+	}, [context.isEditing, value]);
+	if (!context.isEditing || !context.onEdit) return <>{children ?? value}</>;
+
 	return (
-		<TextField
+		<span
+			ref={element}
+			contentEditable
+			suppressContentEditableWarning
+			role="textbox"
 			aria-label={label}
-			value={value}
-			onChange={(next) => context.onEdit?.(node.id, path, next)}
-			className={`w-full ${className ?? ""}`}
-		>
-			{multiline ? (
-				<TextArea
-					fullWidth
-					// Roughly one row per phone-width line, so text isn't hidden behind a scroll.
-					rows={Math.min(8, Math.max(2, Math.ceil(value.length / 30)))}
-					className="resize-y"
-				/>
-			) : (
-				<Input fullWidth />
-			)}
-		</TextField>
+			aria-multiline={multiline || undefined}
+			title={`Edit ${label}`}
+			onInput={(event) =>
+				context.onEdit?.(
+					node.id,
+					path,
+					event.currentTarget.textContent ?? "",
+				)
+			}
+			onKeyDown={(event) => {
+				if (!multiline && event.key === "Enter") {
+					event.preventDefault();
+					event.currentTarget.blur();
+				}
+			}}
+			className={`inline-block min-w-[1ch] rounded-sm px-0.5 -mx-0.5 outline-none transition-colors hover:bg-foreground/5 focus:bg-foreground/5 focus:ring-1 focus:ring-brand/40 ${multiline ? "w-full whitespace-pre-wrap" : ""} ${className ?? ""}`}
+		/>
 	);
 }

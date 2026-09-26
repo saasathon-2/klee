@@ -25,7 +25,12 @@ function BauhausShapes() {
 	return (
 		<div aria-hidden="true" className="bauhaus-shapes">
 			<div className="bauhaus-arch" />
-			<div className="bauhaus-bloom"><i /><i /><i /><i /></div>
+			<div className="bauhaus-bloom">
+				<i />
+				<i />
+				<i />
+				<i />
+			</div>
 			<img className="bauhaus-star" src={starTwo} alt="" />
 			<div className="bauhaus-dot" />
 		</div>
@@ -61,6 +66,7 @@ export function Landing() {
 						))}
 					</div>
 					<BauhausShapes />
+					{/* Decorative shapes stay behind the interactive content. */}
 					<div className="relative z-10 flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
 						<div className="max-w-3xl text-center">
 							<Heading

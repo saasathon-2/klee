@@ -22,7 +22,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useDrop } from "react-aria-components";
-import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+	Navigate,
+	useNavigate,
+	useParams,
+	useSearchParams,
+} from "react-router-dom";
 import { signOut, useSession } from "../lib/auth-client";
 import { KleeLogo } from "../components/KleeLogo";
 import { LinkChips } from "../components/LinkChips";
@@ -659,9 +664,19 @@ export function Artefacts() {
 								}
 								size="sm"
 								className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-								onPress={() =>
-									setSharedCommentsOpen(!sharedCommentsOpen)
-								}
+								onPress={() => {
+									const next = !(
+										sharedCommentsOpen || isSharedCommenting
+									);
+									setSharedCommentsOpen(next);
+									setSharedCommenting(
+										next &&
+											(currentSharedAccess?.permission ===
+												"comment" ||
+												currentSharedAccess?.permission ===
+													"edit"),
+									);
+								}}
 							>
 								<MessageCircle size={15} />
 								Comments
@@ -864,7 +879,9 @@ export function Artefacts() {
 											size="sm"
 											variant="ghost"
 											onPress={() =>
-												navigate("/?panel=integrations&select=google")
+												navigate(
+													"/?panel=integrations&select=google",
+												)
 											}
 										>
 											<FileText size={15} />
