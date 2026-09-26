@@ -27,11 +27,11 @@ export function artefactPermissionSql(userParam: string, alias = "artefact") {
 		when ${alias}.owner_id = ${userParam} then 'edit'
 		when ${githubAccessSql(userParam, alias)} then 'edit'
 		else (
-			select grant.permission
-			from artefact_organisation_permission grant
-			join organisation_member member on member.organisation_id = grant.organisation_id
-			where grant.artefact_id = ${alias}.id and member.user_id = ${userParam}
-			order by case grant.permission when 'edit' then 3 when 'comment' then 2 else 1 end desc
+			select permission_grant.permission
+			from artefact_organisation_permission permission_grant
+			join organisation_member member on member.organisation_id = permission_grant.organisation_id
+			where permission_grant.artefact_id = ${alias}.id and member.user_id = ${userParam}
+			order by case permission_grant.permission when 'edit' then 3 when 'comment' then 2 else 1 end desc
 			limit 1
 		)
 	end)`;
