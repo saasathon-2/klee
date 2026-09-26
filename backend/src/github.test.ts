@@ -41,7 +41,7 @@ assert.equal(validActionsClaims({ iss: "wrong", aud: "klee-github-actions", repo
 const artefactUrl = "https://klee.work/artefacts/shared/example";
 const previewUrl = "https://klee.work/api/shared/artefacts/example/preview?v=1";
 assert.equal(githubArtefactComment(artefactUrl, previewUrl), `<a href="${artefactUrl}" target="_blank"><img src="${previewUrl}" alt="Klee artefact"></a>`);
-assert.equal(githubArtefactDiscussionComment("Jane Doe", "Please rename this.\nIt is unclear.", `${artefactUrl}#comment-123`), `**Jane Doe commented:**\n\n> Please rename this.\n> It is unclear.\n\n[View comment in Klee](${artefactUrl}#comment-123)`);
+assert.equal(githubArtefactDiscussionComment("Jane Doe", "Please rename this.\nIt is unclear.", `${artefactUrl}#comment-123`), `**Jane Doe commented:**\n\n> Please rename this.\n> It is unclear.\n\n[View comment in Klee ↗](${artefactUrl}#comment-123)`);
 const prompt = githubPullRequestPrompt("acme/repo", 12, {
 	headSha: "abcdef",
 	title: "Add context",
