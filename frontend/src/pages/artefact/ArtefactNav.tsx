@@ -78,7 +78,7 @@ function ArtefactListItem({
 		<ListBox.Item
 			id={artefact.id}
 			textValue={artefact.title}
-			className="h-10 min-h-10 max-h-10 min-w-0 overflow-hidden rounded-xl px-3 data-[dragging]:scale-[.98] data-[dragging]:opacity-55"
+			className="h-8 min-h-8 max-h-8 min-w-0 overflow-hidden rounded-xl px-3 data-[dragging]:scale-[.98] data-[dragging]:opacity-55"
 			onPointerEnter={(event) =>
 				onPreview(artefact, event.clientX, event.clientY)
 			}
@@ -197,8 +197,8 @@ function UnfiledGroup({
 	return (
 		<div className="mt-3">
 			<Disclosure defaultExpanded>
-				<Disclosure.Heading className="flex h-10 items-center rounded-xl hover:bg-default focus-within:bg-default">
-					<Disclosure.Trigger className="flex h-full w-full items-center gap-2 rounded-xl px-2 text-left">
+				<Disclosure.Heading className="flex h-8 items-center rounded-xl hover:bg-default focus-within:bg-default">
+					<Disclosure.Trigger className="flex h-full w-full items-center gap-2 rounded-xl px-1 text-left">
 						<Paragraph
 							size="xs"
 							color="muted"
@@ -211,7 +211,7 @@ function UnfiledGroup({
 					</Disclosure.Trigger>
 				</Disclosure.Heading>
 				<Disclosure.Content>
-					<Disclosure.Body>
+					<Disclosure.Body className="-m-2">
 						<ListBox
 							aria-label={project ?? "Artefacts"}
 							className="rounded-xl transition-colors data-[drop-target]:bg-accent-soft data-[drop-target]:ring-2 data-[drop-target]:ring-accent-text"
@@ -395,7 +395,7 @@ export function ArtefactNav({
 										</Dropdown>
 									</Disclosure.Heading>
 									<Disclosure.Content>
-										<Disclosure.Body className="pl-4">
+										<Disclosure.Body className="-m-2 ml-2">
 											{contents.length ? (
 												<ArtefactItems
 													label={folder.name}

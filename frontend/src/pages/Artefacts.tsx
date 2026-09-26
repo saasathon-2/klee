@@ -156,6 +156,7 @@ export function Artefacts() {
 	const [promptLinks, setPromptLinks] = useState<string[]>([]);
 	const [promptCaret, setPromptCaret] = useState<{ x: number; y: number }>();
 	const [googleFiles, setGoogleFiles] = useState<GoogleFile[]>([]);
+	const [googleConnected, setGoogleConnected] = useState<boolean>();
 	const [localTime, setLocalTime] = useState(() => new Date());
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
@@ -265,6 +266,20 @@ export function Artefacts() {
 			.then(setArtefacts)
 			.catch(() => setError("Could not load artefacts."))
 			.finally(() => setArtefactsLoaded(true));
+	}, [isShared, viewerId]);
+	useEffect(() => {
+		if (isShared || !viewerId) {
+			setGoogleConnected(false);
+			return;
+		}
+		api("/integrations/google")
+			.then((response) =>
+				response.ok
+					? (response.json() as Promise<{ connected: boolean }>)
+					: { connected: false },
+			)
+			.then((data) => setGoogleConnected(data.connected))
+			.catch(() => setGoogleConnected(false));
 	}, [isShared, viewerId]);
 	useEffect(() => {
 		if (!artefactPath || loaded?.path === artefactPath) return;
@@ -873,7 +888,7 @@ export function Artefacts() {
 												Clear
 											</Button>
 										</div>
-									) : (
+									) : googleConnected ? (
 										<Button
 											size="sm"
 											variant="ghost"
@@ -886,7 +901,7 @@ export function Artefacts() {
 											<FileText size={15} />
 											Add Google files
 										</Button>
-									)}
+									) : null}
 									<Button
 										aria-label={
 											isCreating
@@ -894,7 +909,7 @@ export function Artefacts() {
 												: "Create artefact"
 										}
 										type="submit"
-										className="size-9 min-w-9 rounded-xl p-0"
+									className="ml-auto size-9 min-w-9 rounded-xl p-0"
 										isPending={isCreating}
 										isDisabled={
 											!prompt.trim() &&
