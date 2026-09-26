@@ -1,7 +1,6 @@
 import {
 	Check,
 	Copy,
-	ExternalLink,
 	GitBranch,
 	GitCommitHorizontal,
 	GitPullRequest,
@@ -10,11 +9,9 @@ import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
 import { GitHubIcon } from "../../components/BrandIcons";
-import { KleeLogo } from "../../components/KleeLogo";
+import { KleeIcon } from "../../components/KleeLogo";
 import { UserAvatar } from "../../components/UserAvatar";
 
-const shareUrl =
-	"https://klee.work/artefacts/shared/29984434-6a04-490e-9d70-08cc214a6c22";
 const commits = [
 	{ message: "chore: scaffold integration fixtures", sha: "7c32a61" },
 	{ message: "docs: add context fixture notes", sha: "4f291ea" },
@@ -113,6 +110,7 @@ export function GitHubPullRequestStory() {
 				</Heading>
 				<section
 					aria-label="GitHub pull request preview"
+					inert
 					className="flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-github-border bg-github-canvas text-github-foreground shadow-xl"
 				>
 					<header className="shrink-0 border-b border-github-border px-4 py-4 sm:px-8">
@@ -220,10 +218,7 @@ export function GitHubPullRequestStory() {
 								pop(botVisible)
 							}
 						>
-							<KleeLogo
-								alt="orca-klee profile picture"
-								className="size-10 shrink-0 rounded-xl sm:size-[4.5rem] sm:rounded-2xl"
-							/>
+							<KleeIcon className="size-10 shrink-0 rounded-xl sm:size-[4.5rem] sm:rounded-2xl" />
 							<article className="min-w-0 flex-1 overflow-hidden rounded-lg border border-github-border">
 								<header className="flex flex-wrap items-baseline gap-x-2 border-b border-github-border bg-github-canvas-subtle px-4 py-3 sm:px-6">
 									<strong className="text-sm sm:text-lg">
@@ -342,18 +337,6 @@ export function GitHubPullRequestStory() {
 													summary.
 												</p>
 											</div>
-											<a
-												className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-preview-link hover:underline"
-												href={shareUrl}
-												target="_blank"
-												rel="noopener noreferrer"
-											>
-												Open shareable artefact{" "}
-												<ExternalLink
-													aria-hidden
-													size={15}
-												/>
-											</a>
 										</div>
 									</div>
 								</div>

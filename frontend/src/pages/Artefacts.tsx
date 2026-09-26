@@ -42,7 +42,7 @@ import {
 	useSearchParams,
 } from "react-router-dom";
 import { signOut, useSession } from "../lib/auth-client";
-import { KleeLogo } from "../components/KleeLogo";
+import { KleeIcon, KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import {
@@ -852,11 +852,11 @@ function WorkspaceSidebar({
 				aria-label="Klee home"
 				className="mb-5 flex h-10 items-center gap-2 px-2 text-left"
 			>
-				<KleeLogo alt="" className="size-8" />
+				<KleeIcon className="size-8" />
 				<img
 					src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
 					alt="Klee"
-					className="h-5 w-auto"
+					className="h-6 w-auto"
 				/>
 			</Link>
 			<ListBox

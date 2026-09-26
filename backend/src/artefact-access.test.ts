@@ -22,6 +22,7 @@ test("organisation grants only allow their configured permission level", () => {
 	assert.equal(can("edit", "edit"), true);
 	assert.equal(can(undefined, "view"), false);
 	assert.match(artefactPermissionSql("$1"), /artefact_organisation_permission/);
+	assert.match(artefactPermissionSql("$1"), /permission_grant/);
 });
 
 /** A fake database that answers the refresh queries and records writes. */

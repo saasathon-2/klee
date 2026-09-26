@@ -1303,10 +1303,10 @@ app.get("/api/artefacts/:id/organisations", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user || !(await ownedArtefact(req.params.id, user.id))) return res.sendStatus(404);
 	const { rows } = await pool.query(
-		`select grant.organisation_id as "organisationId", organisation.name, grant.permission
-		from artefact_organisation_permission grant
-		join organisation on organisation.id = grant.organisation_id
-		where grant.artefact_id = $1 order by lower(organisation.name)`,
+		`select permission_grant.organisation_id as "organisationId", organisation.name, permission_grant.permission
+		from artefact_organisation_permission permission_grant
+		join organisation on organisation.id = permission_grant.organisation_id
+		where permission_grant.artefact_id = $1 order by lower(organisation.name)`,
 		[req.params.id],
 	);
 	res.json(rows);
