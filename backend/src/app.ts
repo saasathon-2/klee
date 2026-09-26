@@ -859,29 +859,35 @@ app.get("/api/shared/artefacts/:id/comments", async (req, res) => {
 });
 
 app.post("/api/artefacts/:id/comments", async (req, res) => {
-	const user = await sessionUser(req, res);
+	const timing = requestTiming();
+	const user = await timing.measure("auth", () => sessionUser(req, res));
 	if (!user) return;
-	if (!(await commentableArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	if (!(await timing.measure("access", () => commentableArtefact(req.params.id, user.id)))) return res.sendStatus(404);
 	const body = typeof req.body?.body === "string" ? req.body.body.trim() : "";
 	const parentId = typeof req.body?.parentId === "string" ? req.body.parentId : null;
 	const anchor = req.body?.anchor;
 	if (!body || body.length > 5000)
 		return res.status(400).json({ error: "Comments must be between 1 and 5000 characters." });
 	if (parentId) {
-		const parent = await pool.query(
+		const parent = await timing.measure("parent", () => pool.query(
 			"select id from artefact_comment where id = $1 and artefact_id = $2",
 			[parentId, req.params.id],
-		);
+		));
 		if (!parent.rows[0]) return res.status(400).json({ error: "Comment thread not found." });
 	} else if (!validCommentAnchor(anchor)) {
 		return res.status(400).json({ error: "Select an area of the artefact for this comment." });
 	}
 	const id = randomUUID();
-	await pool.query(
-		"insert into artefact_comment (id, artefact_id, parent_id, author_id, body, anchor) values ($1, $2, $3, $4, $5, $6)",
+	const { rows } = await timing.measure("comment", () => pool.query(
+		"insert into artefact_comment (id, artefact_id, parent_id, author_id, body, anchor) values ($1, $2, $3, $4, $5, $6) returning id, parent_id as \"parentId\", body, anchor, created_at as \"createdAt\"",
 		[id, req.params.id, parentId, user.id, body, parentId ? null : anchor],
-	);
-	res.status(201).json({ id });
+	));
+	timing.apply(res);
+	res.status(201).json({
+		...rows[0],
+		author: { id: user.id, name: user.name ?? null, image: user.image ?? null },
+		reactions: [],
+	});
 });
 
 app.post("/api/artefacts/:id/comments/ai-reply", async (req, res) => {
