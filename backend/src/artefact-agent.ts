@@ -42,6 +42,18 @@ const actionSchema = z
 		action: shortText,
 	})
 	.strict();
+const artefactIconSchema = z.enum([
+	"git-pull-request",
+	"git-branch",
+	"workflow",
+	"message-square",
+	"calendar-check",
+	"rocket",
+	"chart-no-axes-combined",
+	"lightbulb",
+	"list-todo",
+	"file-text",
+]);
 
 const diffHunkSchema = z
 	.object({
@@ -206,6 +218,7 @@ const blockSchemas = [
 const generationSchema = z
 	.object({
 		title: z.string().trim().min(1).max(80),
+		icon: artefactIconSchema,
 		category: z.enum(["developer-page", "generic-page"]),
 		eyebrow: z.string().trim().min(1).max(48),
 		summary: z.string().trim().min(1).max(280),
@@ -336,6 +349,7 @@ export function toDocument(generation: Generation): ArtefactDocument {
 					template: generation.category,
 					data: {
 						eyebrow: generation.eyebrow,
+						icon: generation.icon,
 						title: generation.title,
 						summary: generation.summary,
 						tags: generation.tags,

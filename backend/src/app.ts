@@ -543,8 +543,10 @@ const artefactColumns = (
 	userParam: string,
 ) => `artefact.id, artefact.is_shared as "isShared", artefact.prompt, artefact.title,
     artefact.created_at as "createdAt", artefact.updated_at as "updatedAt",
-    artefact.owner_id = ${userParam} as "isOwner", project.account_login as "project",
-    artefact.github_installation_id as "installationId", folder_entry.folder_id as "folderId"`;
+	artefact.owner_id = ${userParam} as "isOwner", project.account_login as "project",
+	artefact.github_installation_id as "installationId", folder_entry.folder_id as "folderId",
+	artefact.content #>> '{root,children,0,data,summary}' as "description",
+	artefact.content #>> '{root,children,0,data,icon}' as "icon"`;
 
 /** Joins the project (GitHub org) and the folder the user filed the artefact in. */
 const artefactJoins = (
@@ -680,7 +682,30 @@ app.get("/api/artefacts/:id", async (req, res) => {
 	res.json({ ...artefact, revisions: revisions.rows });
 });
 
-const commentReactions = ["❤️"] as const;
+async function sendArtefactPreview(artefactId: string, res: Response, cacheControl: string) {
+	try {
+		const preview = await getArtefactPreview(artefactId);
+		if (preview) {
+			res.set({ "Content-Type": "image/png", "Cache-Control": cacheControl });
+			return res.send(Buffer.from(preview));
+		}
+	} catch (error) {
+		console.error("Artefact preview read failed", error);
+	}
+	res.set({ "Content-Type": "image/svg+xml", "Cache-Control": "no-store" });
+	return res.send(previewFallback);
+}
+
+/** Serves a sidebar preview only to a user who can already open the artefact. */
+app.get("/api/artefacts/:id/preview", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	await refreshAccess(user.id);
+	if (!(await accessibleArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	return sendArtefactPreview(req.params.id, res, "private, max-age=300");
+});
+
+const commentReactions = ["👍", "❤️", "🎉", "👀"] as const;
 type CommentAnchor = { x: number; y: number; width: number; height: number };
 
 function validCommentAnchor(value: unknown): value is CommentAnchor {
@@ -923,20 +948,7 @@ app.get("/api/shared/artefacts/:id/preview", async (req, res) => {
 		[req.params.id],
 	);
 	if (!rows[0]) return res.sendStatus(404);
-	try {
-		const preview = await getArtefactPreview(req.params.id);
-		if (preview) {
-			res.set({
-				"Content-Type": "image/png",
-				"Cache-Control": "public, max-age=300",
-			});
-			return res.send(Buffer.from(preview));
-		}
-	} catch (error) {
-		console.error("Artefact preview read failed", error);
-	}
-	res.set({ "Content-Type": "image/svg+xml", "Cache-Control": "no-store" });
-	res.send(previewFallback);
+	return sendArtefactPreview(req.params.id, res, "public, max-age=300");
 });
 
 app.post("/api/artefacts/:id/revisions", async (req, res) => {

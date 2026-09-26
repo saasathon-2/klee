@@ -115,6 +115,7 @@ export function createArtefactDocument(prompt: string): ArtefactDocument {
 					template: developer ? "developer-page" : "generic-page",
 					data: {
 						eyebrow: developer ? "Developer artefact" : "Generated artefact",
+						icon: developer ? "git-pull-request" : "file-text",
 						title,
 						summary: prompt,
 						tags: developer ? ["Engineering", "Decision brief", "Private"] : ["Brief", "Private"],

@@ -16,6 +16,7 @@ function schemaFormats(value: unknown): string[] {
 assert.deepEqual(schemaFormats(jsonSchema), []);
 const document = toDocument({
 	title: "PR review",
+	icon: "git-pull-request",
 	category: "developer-page",
 	eyebrow: "GitHub",
 	summary: "A review",
@@ -29,6 +30,7 @@ assert.equal(document.root.children?.[0]?.children?.length, 1);
 
 const richDocument = toDocument({
 	title: "Release brief",
+	icon: "rocket",
 	category: "generic-page",
 	eyebrow: "Update",
 	summary: "A release overview",
@@ -53,6 +55,7 @@ const originalFetch = globalThis.fetch;
 let requestBody: Record<string, unknown> | undefined;
 const output = JSON.stringify({
 	title: "PR review",
+	icon: "git-pull-request",
 	category: "developer-page",
 	eyebrow: "GitHub",
 	summary: "A review",
