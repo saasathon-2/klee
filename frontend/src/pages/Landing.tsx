@@ -5,6 +5,7 @@ import houseOnTheWater from "../assets/klee-house-on-the-water.jpg";
 import polyphony from "../assets/klee-polyphony.jpg";
 import { useSession } from "../lib/auth-client";
 import { useTheme } from "../lib/use-theme";
+import { useDocumentTitle } from "../useDocumentTitle";
 import { Scallop } from "../artefacts/templates/page/Scallop";
 import { GlueBand } from "../artefacts/templates/blocks/Glue";
 import { Footer } from "./landing/Footer";
@@ -25,6 +26,7 @@ const paintings = {
 const sectionGap = "mt-[clamp(4rem,12dvh,9rem)]";
 
 export function Landing() {
+	useDocumentTitle("Klee");
 	const navigate = useNavigate();
 	const { data: session } = useSession();
 	const { theme } = useTheme();

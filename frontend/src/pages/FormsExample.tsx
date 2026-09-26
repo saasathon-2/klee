@@ -8,8 +8,10 @@ import {
 	Select,
 	TextField,
 } from "@heroui/react";
+import { useDocumentTitle } from "../useDocumentTitle";
 
 export function FormsExample() {
+	useDocumentTitle("Account form - Klee");
 	return (
 		<main className="mx-auto max-w-5xl px-6 py-16">
 			<h1 className="mt-2 text-4xl font-semibold">Account form</h1>
