@@ -146,11 +146,11 @@ const api = (path: string, options?: RequestInit) =>
 
 function greetingFor(date: Date) {
 	const hour = date.getHours();
-	if (hour < 5) return { text: "Night studio", flair: "Keep it crisp." };
-	if (hour < 12) return { text: "Good morning", flair: "Start with a shape." };
-	if (hour < 17) return { text: "Good afternoon", flair: "Put the pieces in place." };
-	if (hour < 22) return { text: "Good evening", flair: "Make the composition count." };
-	return { text: "Late studio", flair: "One clean idea." };
+	if (hour < 5) return "Night shift";
+	if (hour < 12) return "Good morning";
+	if (hour < 17) return "Good afternoon";
+	if (hour < 22) return "Good evening";
+	return "Ready for the night shift";
 }
 
 function textareaCaretPoint(textarea: HTMLTextAreaElement) {
@@ -811,10 +811,10 @@ export function Artefacts() {
 						<div className="mb-8 text-center">
 							<KleeLogo className="mx-auto mb-4 size-16" lookAt={promptCaret} />
 							<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-								{greeting.text},{" "}
+								{greeting},{" "}
 								<span className="text-accent-text">
 									{user.name?.split(" ")[0] || "there"}
-								</span>. {greeting.flair}
+								</span>
 							</h1>
 						</div>
 						<form onSubmit={create} className="w-full">
