@@ -11,7 +11,6 @@ import {
 	Paragraph,
 	Popover,
 	Separator,
-	Skeleton,
 	Surface,
 	TextArea,
 	Toolbar,
@@ -59,6 +58,7 @@ import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsModal } from "./Integrations";
 import { useMediaQuery } from "../lib/use-media-query";
+import { ArtefactSkeleton } from "./artefact/ArtefactSkeleton";
 import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 import { ArtefactIcon, ArtefactNav } from "./artefact/ArtefactNav";
 import { acceptArtefactDrop, droppedArtefactId } from "./artefact/artefactDrag";
@@ -1338,40 +1338,36 @@ function ArtefactModal({
 									</div>
 								)
 							) : (
-								<div className="grid min-h-96 place-items-center p-8">
-									<div className="w-full max-w-xl space-y-5">
-										<p
-											className="text-center text-sm text-muted"
-											role="status"
-										>
-											{generationStatus ||
-												"Starting your artefact…"}
-										</p>
-										<p
-											className="text-center text-xs text-muted"
-											aria-hidden="true"
-										>
-											Elapsed{" "}
-											{Math.floor(generationSeconds / 60)}
-											:
-											{String(
-												generationSeconds % 60,
-											).padStart(2, "0")}
-										</p>
-										<p
-											className="mx-auto w-fit max-w-full overflow-hidden whitespace-nowrap text-center text-sm text-muted"
-											aria-label="AI commentary"
-											aria-live="off"
-										>
-											<GenerationCommentary
-												text={generationCommentary}
-											/>
-										</p>
-										<Skeleton className="h-8 w-2/3 rounded" />
-										<Skeleton className="h-4 w-full rounded" />
-										<Skeleton className="h-4 w-5/6 rounded" />
-										<Skeleton className="h-32 rounded-xl" />
-									</div>
+								<div className="min-h-0 flex-1 overflow-auto">
+									<ArtefactSkeleton>
+										<div className="space-y-1 text-sm text-muted">
+											<p role="status">
+												{generationStatus ||
+													"Starting your artefact…"}
+												<span
+													className="ml-2 text-xs tabular-nums"
+													aria-hidden="true"
+												>
+													{Math.floor(
+														generationSeconds / 60,
+													)}
+													:
+													{String(
+														generationSeconds % 60,
+													).padStart(2, "0")}
+												</span>
+											</p>
+											<p
+												className="max-w-full overflow-hidden whitespace-nowrap"
+												aria-label="AI commentary"
+												aria-live="off"
+											>
+												<GenerationCommentary
+													text={generationCommentary}
+												/>
+											</p>
+										</div>
+									</ArtefactSkeleton>
 								</div>
 							)}
 						</Modal.Body>
