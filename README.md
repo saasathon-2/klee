@@ -1,140 +1,85 @@
 # Klee
 
-Klee turns a prompt, a pull request, or pasted context into an artefact: a shareable page built from blocks such as code diffs, git graphs, flowcharts, check lists, and timelines. Artefacts are private until shared, can be edited by hand or revised with a follow-up prompt, and keep a version history and comments.
+Klee turns a prompt, pull request, or pasted context into a private, shareable artefact. Each artefact combines blocks such as code diffs, Git graphs, flowcharts, checklists, and timelines. You can edit an artefact, refine it with a follow-up prompt, review its version history, and comment on it.
 
-The GitHub, Slack, and Jira apps live in [saasathon-2/integrations](https://github.com/saasathon-2/integrations).
+The GitHub, Slack, and Jira integrations live in [saasathon-2/integrations](https://github.com/saasathon-2/integrations).
 
-## Structure
+## Stack
 
-| Path | What's there |
+| Directory | Purpose |
 | --- | --- |
-| `backend/` | Express API, Postgres access, the artefact agent (`src/artefact-agent.ts` and its instructions in `src/artefact-agent-instructions.md`), and migrations in `src/migrations` |
-| `frontend/` | React and Vite app using HeroUI. Blocks live in `src/artefacts/templates/blocks` and are registered in `src/artefacts/templates/catalogue.ts` |
-| `utils/dev.sh` | Starts the local stack |
-| `design_inspiration/` | Visual references |
+| `backend/` | Express API, Postgres access, migrations, and the artefact-generation agent |
+| `frontend/` | React, Vite, Tailwind, and HeroUI application |
+| `utils/dev.sh` | Local development launcher |
+| `design_inspiration/` | Product design references |
 
-## How an artefact is made
+## Run locally
 
-1. The API sends the prompt, the block schemas, and the agent instructions to the model with structured output.
-2. The model returns a title, a category page, and a list of blocks with their data. It never returns HTML.
-3. The API validates and repairs the result (`toDocument`), then stores it as a tree of nodes.
-4. The frontend renders each node with the component named by its `template`.
-
-Revisions, manual edits, and GitHub refreshes each save a new version as a JSON patch.
-
-### Adding a block
-
-1. Add the component in `frontend/src/artefacts/templates/blocks`, with its `template`, `info`, and `children` statics, and register it in `catalogue.ts` and the `ArtefactNode` template union in `model.ts`.
-2. Allow it on `developer-page` or `generic-page` in `categories/CategoryPage.tsx`.
-3. Add its schema to `blockSchemas` and the allowed sets in `backend/src/artefact-agent.ts`.
-4. Describe when to use it in `backend/src/artefact-agent-instructions.md`.
-
-## Development
-
-Run `./utils/dev.sh`. It installs dependencies, starts Postgres with Docker Compose, applies migrations, and runs the API on port 3000 and the web app on 5173.
+Install [Node.js 22.6+](https://nodejs.org/), [pnpm](https://pnpm.io/installation), and [Docker](https://docs.docker.com/get-docker/). Then start the stack:
 
 ```sh
-pnpm --dir backend test        # backend tests
-pnpm --dir backend typecheck   # backend types (also the API build)
-pnpm --dir frontend lint       # frontend lint
-pnpm --dir frontend build      # frontend types and build
+./utils/dev.sh
+```
+
+The script starts Postgres, installs dependencies, applies migrations, creates missing local environment files from their example files, and runs:
+
+| Service | URL |
+| --- | --- |
+| API | http://localhost:3000 |
+| Web app | http://localhost:5173 |
+
+Add credentials to the generated environment files when you need the related features. Keep these files out of version control.
+
+| File | Configuration |
+| --- | --- |
+| `backend/.env` | Authentication secret, OpenAI API key, and Google OAuth credentials |
+| `backend/.env.local` | Local database and server settings, GitHub OAuth credentials, and R2 preview storage |
+| `frontend/.env.local` | API URL and Google Picker credentials |
+
+## Verify changes
+
+```sh
+pnpm --dir backend test
+pnpm --dir backend typecheck
+pnpm --dir frontend lint
+pnpm --dir frontend build
 MIGRATIONS_BASE_REF=origin/main pnpm --dir backend migrations:check
 ```
 
-Create a migration with `pnpm --dir backend migrate:create -- <name>`. Never edit, rename, or delete a migration already on `main`.
+## Architecture
 
-## Deployment
+The API sends the prompt, block schemas, and generation instructions to the model through structured output. The model returns a title, category page, and block data. The API validates the result, stores it as a node tree, and the frontend renders each node through its named template. Klee stores prompt revisions, manual edits, and GitHub refreshes as JSON patches.
 
-This repository deploys as three Railway services:
+### Add a block
 
-| Service    | Source root              | Build / start                                                            |
-| ---------- | ------------------------ | ------------------------------------------------------------------------ |
-| `api`      | `/backend`               | Dockerfile; pre-deploy: `pnpm migrate` |
-| `web`      | `/frontend`              | uses the included Dockerfile (builds Vite and serves it with Caddy)      |
-| `Postgres` | Railway Postgres service | no source repository                                                     |
+1. Create the component in `frontend/src/artefacts/templates/blocks` and register it in `frontend/src/artefacts/templates/catalogue.ts` and `frontend/src/artefacts/model.ts`.
+2. Allow the template in `frontend/src/artefacts/templates/categories/CategoryPage.tsx`.
+3. Add its schema and allowed sets in `backend/src/artefact-agent.ts`.
+4. Describe its use in `backend/src/artefact-agent-instructions.md`.
 
-### Set up
+## Database migrations
 
-1. Create an empty Railway project and add a Postgres service.
-2. Add two GitHub services from this repository. Set their root directories to `/backend` and `/frontend`, then name them `api` and `web`.
-3. For `api`, set a public domain, healthcheck path to `/health`, and these variables:
+Create a migration with:
 
-    ```text
-    DATABASE_URL=${{Postgres.DATABASE_URL}}
-    BETTER_AUTH_SECRET=<a-long-random-secret>
-    CORS_ORIGIN=https://${{web.RAILWAY_PUBLIC_DOMAIN}}
-    OPENAI_API_KEY=<OpenAI-Platform-application-key>
-    ```
-
-    `OPENAI_MODEL` is optional; it defaults to `gpt-6-luna`.
-    Set `OPENAI_SERVICE_TIER=fast` to use Fast mode for user-initiated artefacts. It is billed at a premium; GitHub Action artefacts remain on standard processing.
-
-4. For `web`, set a public domain and add:
-
-    ```text
-    VITE_API_URL=https://${{api.RAILWAY_PUBLIC_DOMAIN}}
-    VITE_GOOGLE_PICKER_API_KEY=<restricted-google-picker-api-key>
-    VITE_GOOGLE_CLOUD_PROJECT_NUMBER=<google-cloud-project-number>
-    ```
-
-    All `VITE_*` values are compiled into the browser bundle, so redeploy `web` whenever any of them changes.
-
-5. Deploy. The API migration runs before each API release; if it fails, the release does not go live.
-
-`PORT` is supplied by Railway. Do not set it manually. `CORS_ORIGIN` should be the exact web origin (no trailing slash). The API Dockerfile installs the Chromium runtime libraries needed for artefact screenshots.
-
-### Google Docs and Sheets context
-
-Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on the API service. The Google OAuth client's callback URL is `https://<api-domain>/api/auth/callback/google` (local: `http://localhost:3000/api/auth/callback/google`). Enable the Google Docs API, Google Sheets API, Drive API, and Google Picker API in the same Google Cloud project as the OAuth client. Restrict the Picker API key to the web origins (including `https://docs.google.com/*`) and the Picker/Drive APIs. Users connect their existing Google account with the `drive.file` scope, then select up to five Docs or Sheets for one artefact request. Klee fetches those files only while generating that artefact and does not persist the selection or document text; the resulting rationale links to its source. Google consent-screen verification may be required before general release.
-
-### Migrations
-
-Create migrations with `pnpm --dir backend migrate:create -- <name>`. Migration files already present on `main` are immutable: never rename, edit, or delete them; add a new migration instead. Pull requests run a guard that enforces timestamp-style unique prefixes and rejects changes to existing migrations. Run it locally with `MIGRATIONS_BASE_REF=origin/main pnpm --dir backend migrations:check`.
-
-### GitHub App
-
-Set the GitHub App's setup URL and webhook URL to `https://<api-domain>/api/integrations/github/setup` and `https://<api-domain>/api/integrations/github/webhook`. The API service needs `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET` as Railway variables. A signed-in user connects GitHub from their profile; the API stores the resulting installation and verifies every webhook before processing it.
-
-#### GitHub login and project access
-
-Artefacts that belong to a GitHub org (a "project") can be viewed and edited by every member of that org. Pull request artefacts join their installation's org automatically, and an owner can move any artefact into one of their orgs from the artefact header. Membership comes from each user's GitHub login, so the API also needs a GitHub OAuth app (separate from the GitHub App):
-
-```text
-GITHUB_CLIENT_ID=<oauth-app-client-id>
-GITHUB_CLIENT_SECRET=<oauth-app-client-secret>
+```sh
+pnpm --dir backend migrate:create -- <name>
 ```
 
-Set the OAuth app's callback URL to `https://<api-domain>/api/auth/callback/github`. Users can sign in with GitHub or link it from their profile; Klee asks for `read:org` so private org membership counts. Without these variables the app still runs, and artefacts stay owner-only.
+Treat migrations on `main` as immutable. Add a new migration instead of changing an existing one. Run the migration check before you open a pull request.
 
-To create an artefact and comment its link on every pull request, add this to a repository where the App is installed:
+## Deploy
 
-```yaml
-on: pull_request
+Deploy the API, web app, and a PostgreSQL database as separate services. The included Dockerfiles build both applications. Set production environment variables in your hosting provider, point the API's CORS origin at the web app, and set `VITE_API_URL` to the API's public URL before building the frontend.
 
-permissions:
-    id-token: write
+For optional integrations, configure their provider credentials on the API service:
 
-jobs:
-  klee:
-    # List every test, lint, and build job from this workflow here.
-    needs: [test, lint]
-    if: always()
-    uses: saasathon-2/integrations/.github/workflows/klee.yml@main
-    with:
-      api-url: https://<api-domain>
-      pull-request: ${{ github.event.pull_request.number }}
-```
+- Google Docs and Sheets: `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+- GitHub sign-in: `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
+- GitHub App: `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET`
+- R2 preview storage: `R2_ENDPOINT`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, and `R2_SECRET_ACCESS_KEY`
 
-`api-url` must exactly match `BETTER_AUTH_URL` (without a trailing slash), which is how the API verifies the Action's OIDC audience. The GitHub App needs `Issues: Read and write` permission to post the pull request comment.
+Use secret storage for API credentials. Treat `VITE_*` variables as public because Vite includes them in the browser bundle.
 
-### Local environment files
+## Contribute
 
-Use `./utils/dev.sh`. Local settings are split into two files per app; production uses Railway variables and never reads them.
-
-| File                  | Holds                                                                                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `backend/.env`        | Shared secrets: auth secret, Google and OpenAI keys                                                                                                                            |
-| `backend/.env.local`  | Local only: port, local database, `localhost` URLs, and a local GitHub OAuth app (callback `http://localhost:3000/api/auth/callback/github`). Loaded after `.env`, so it wins. |
-| `frontend/.env.local` | Local only: API URL and Google Picker key/project number                                                                                                                      |
-
-`dev.sh` creates any missing file from its `.example` template. Both `.env.local` files are git-ignored.
+Keep TypeScript changes close to the existing patterns. Add backend tests beside the module you change, run the checks above, and use focused imperative commit subjects such as `fix: handle missing installation`.

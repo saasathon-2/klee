@@ -96,31 +96,31 @@ export function Docs() {
 					Klee docs
 				</Heading>
 				<Paragraph className="mt-4 text-lg text-muted">
-					How to create artefacts, share them, and connect GitHub, Slack, and Jira.
+					Create artefacts, share them with your team, and connect GitHub, Slack, and Jira.
 				</Paragraph>
 
 				<DocsSection id="overview" title="Overview">
 					<Paragraph>
-						An artefact is a page built from blocks: code diffs, git graphs, flowcharts, checklists, timelines, and more. Klee picks and fills the blocks from your prompt, the links you paste, and your connected apps.
+						Klee builds an artefact from your prompt, links, and connected apps. An artefact combines blocks such as code diffs, Git graphs, flowcharts, checklists, and timelines.
 					</Paragraph>
 					<DocsList
 						title="Terms"
 						items={[
-							"Artefact: a generated page you can edit, version, share, and comment on.",
-							"Block: one section of an artefact, such as a code diff or a check list.",
-							"Organisation: a group of Klee accounts you can share with at once.",
-							"Project: the GitHub org an artefact belongs to. Its members can edit it.",
+							"Artefact: a page you can edit, version, share, and comment on.",
+							"Block: one section of an artefact, such as a code diff or checklist.",
+							"Organisation: a group of Klee accounts that share access.",
+							"Project: a GitHub organisation. Its members can edit the artefacts it owns.",
 						]}
 					/>
 				</DocsSection>
 
 				<DocsSection id="start" title="Create and edit">
 					<ol className="list-decimal space-y-2 pl-5">
-						<li>Write what you need in the prompt. Paste links to pull requests, issues, or pages; they show as chips and are sent with the prompt.</li>
-						<li>Klee streams the artefact in. Its reasoning shows under the loading bar.</li>
-						<li>Ask for changes in the bar at the bottom of the artefact. Changed blocks are highlighted when the update lands.</li>
-						<li>Press Edit to change any text by hand, then Save.</li>
-						<li>History shows every version. Pick one to view it.</li>
+						<li>Describe the page you need. Paste pull request, issue, or web links for source context.</li>
+						<li>Review the generated blocks as Klee builds the artefact.</li>
+						<li>Enter a follow-up prompt in the bar at the bottom of the artefact. Klee highlights each changed block.</li>
+						<li>Press Edit to change text by hand, then press Save.</li>
+						<li>Open History and select a version to review it.</li>
 					</ol>
 				</DocsSection>
 
@@ -129,11 +129,11 @@ export function Docs() {
 						title="For engineering work"
 						items={[
 							"Code diff: changed lines for one file.",
-							"Git graph: branches, merges, and commits. Used when commits have parent SHAs; otherwise a commit list.",
-							"Check list: CI checks. Checks linked to GitHub runs update live while you have the page open.",
-							"Flowchart: steps and decisions, top to bottom.",
-							"Dependency graph: packages, modules, and services, with versions and health.",
-							"Software diagram and change impact map: components and what depends on what.",
+							"Git graph: branches, merges, and commits. Klee uses a commit list when source commits lack parent SHAs.",
+							"Checklist: CI checks. Klee refreshes checks linked to GitHub runs while you keep the page open.",
+							"Flowchart: steps and decisions from top to bottom.",
+							"Dependency graph: packages, modules, services, versions, and health.",
+							"Software diagram and change-impact map: components and their dependencies.",
 							"Release timeline, incident timeline, sprint timeline, and work item board.",
 						]}
 					/>
@@ -141,43 +141,43 @@ export function Docs() {
 						title="For anything"
 						items={[
 							"Prose, metric row, decision record, evidence table, activity trend, and handoff brief.",
-							"Next steps: buttons. Link buttons open the linked page for everyone; prompt buttons are only shown to the owner.",
+							"Next steps: link buttons open a linked page; prompt buttons remain with the artefact owner.",
 						]}
 					/>
 					<Paragraph>
-						Diagram nodes with a link open their source, such as a repository or service page, when clicked.
+						Click a linked diagram node to open its source, such as a repository or service page.
 					</Paragraph>
 				</DocsSection>
 
 				<DocsSection id="sharing" title="Sharing and comments">
-					<Paragraph>Artefacts are private until you share them. Press Share on an artefact you own.</Paragraph>
+					<Paragraph>Press Share on an artefact you own to grant access.</Paragraph>
 					<DocsList
 						title="Share options"
 						items={[
-							"Invite people: enter the email of a Klee account and pick view, comment, or edit.",
-							"Organisation: share with every member at the level you pick.",
-							"Anyone with the link: turns on public, view-only access.",
-							"Stop sharing: removes every invite and organisation and turns the link off.",
+							"Invite people: enter a Klee account email and choose view, comment, or edit.",
+							"Organisation: grant each organisation member the access level you choose.",
+							"Anyone with the link: grant public, view-only access.",
+							"Stop sharing: remove invitations and organisation access, then turn off the link.",
 						]}
 					/>
 					<Paragraph>
-						To comment, press Comments to turn on comment mode and drag across part of the page. Press Esc or Comments again to leave comment mode and select text normally.
+						Press Comments, then drag across text to add a comment. Press Esc or Comments to leave comment mode.
 					</Paragraph>
 				</DocsSection>
 
 				<DocsSection id="github" title="GitHub">
 					<Paragraph>
-						Connect GitHub from Integrations in your workspace. This installs the Klee GitHub App on the repositories you choose.
+						Open Integrations in your workspace and connect GitHub. Install the Klee GitHub App on the repositories you choose.
 					</Paragraph>
 					<DocsList
 						title="App permissions"
 						items={[
-							"Pull requests (read): metadata, files, reviews, and commits.",
-							"Checks (read): CI status, including the live status shown on artefacts.",
-							"Issues (read and write): Klee posts and updates the artefact comment.",
+							"Pull requests, read: metadata, files, reviews, and commits.",
+							"Checks, read: CI status for live check blocks.",
+							"Issues, read and write: the artefact link and its updates.",
 						]}
 					/>
-					<Paragraph>Add this workflow to build a page for every pull request:</Paragraph>
+					<Paragraph>Add this workflow to create an artefact for each pull request:</Paragraph>
 					<pre className="overflow-x-auto rounded-xl border border-border bg-surface-secondary p-4 font-mono text-sm leading-6 text-foreground">
 						<code>{`on: pull_request
 
@@ -207,16 +207,16 @@ jobs:
 						title="Slack"
 						items={[
 							"Install the Klee app from Integrations.",
-							"Paste a shared artefact link in a channel to unfurl a preview.",
-							"Use /klee followed by an artefact link or id to post a preview.",
+							"Paste a shared artefact link in a channel to show a preview.",
+							"Run /klee with an artefact link or ID to post a preview.",
 						]}
 					/>
 					<DocsList
 						title="Jira"
 						items={[
 							"Install the Klee app from the Atlassian Marketplace.",
-							"Paste a shared artefact link into an issue description or comment.",
-							"Open the Klee panel on the issue to see the artefact.",
+							"Paste a shared artefact link in an issue description or comment.",
+							"Open the Klee panel in the issue to view the artefact.",
 						]}
 					/>
 					<div className="flex gap-4 text-sm">
@@ -233,20 +233,20 @@ jobs:
 					<DocsList
 						title="A pull request page didn't update"
 						items={[
-							"Check the workflow has id-token: write permission.",
-							"Check the GitHub App is installed on the repository and subscribed to check run events.",
-							"Check api-url matches the API's address exactly, without a trailing slash.",
+							"Add id-token: write to the workflow permissions.",
+							"Install the GitHub App on the repository and subscribe it to check run events.",
+							"Set api-url to the API address without a trailing slash.",
 						]}
 					/>
 					<DocsList
 						title="A check isn't showing live status"
 						items={[
-							"Live status needs the check to link to a GitHub run or Actions job.",
-							"The artefact owner must have the GitHub App installed on that repository's account.",
+							"Link the check to a GitHub run or Actions job.",
+							"Install the GitHub App on the artefact owner's repository account.",
 						]}
 					/>
 					<Paragraph>
-						Anyone with a public link can view the artefact. Turn link sharing off when it's no longer needed.
+						Anyone with a public link can view the artefact. Turn off link sharing after you finish.
 					</Paragraph>
 				</DocsSection>
 			</article>
