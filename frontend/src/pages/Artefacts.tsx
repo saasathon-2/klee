@@ -18,11 +18,13 @@ import {
 	ArrowUp,
 	BrainCog,
 	Building2,
+	Check,
+	Copy,
+	ExternalLink,
+	House,
 	History,
 	LogOut,
-	Maximize2,
 	MessageCircle,
-	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
 	Pencil,
@@ -159,6 +161,7 @@ export function Artefacts() {
 		path: string;
 		artefact: Artefact;
 	}>();
+	const [failedPath, setFailedPath] = useState<string>();
 	const [prompt, setPrompt] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
@@ -177,13 +180,13 @@ export function Artefacts() {
 	const [notShared, setNotShared] = useState(false);
 	const [sharedCommentsOpen, setSharedCommentsOpen] = useState(false);
 	const [sharedCommentCount, setSharedCommentCount] = useState(0);
+	const [copiedSharedLinkId, setCopiedSharedLinkId] = useState<string>();
 	const [sharedAccess, setSharedAccess] = useState<{
 		artefactId: string;
 		viewerId: string;
 		isOwner: boolean;
 		permission?: Artefact["permission"];
 	}>();
-	const [isFullscreen, setFullscreen] = useState(false);
 	// Phones get the sidebar as a drawer, closed until the toggle is pressed.
 	const isDesktop = useMediaQuery(desktopQuery);
 	const [isSidebarOpen, setSidebarOpen] = useState(
@@ -210,6 +213,9 @@ export function Artefacts() {
 			: undefined;
 	const current =
 		loaded?.path === artefactPath ? loaded?.artefact : undefined;
+	const isLoadingArtefact = Boolean(
+		artefactPath && !current && failedPath !== artefactPath,
+	);
 	useDocumentTitle(
 		current
 			? `${artefactHeading(current)} - Klee`
@@ -259,6 +265,7 @@ export function Artefacts() {
 				setLoaded({ path: artefactPath, artefact });
 			})
 			.catch((error: Error) => {
+				setFailedPath(artefactPath);
 				if (error.message === "not_shared") return setNotShared(true);
 				setNotShared(false);
 				setError("This artefact could not be found.");
@@ -463,10 +470,10 @@ export function Artefacts() {
 			setIsRevising(false);
 		}
 	}
-	function markShared() {
+	function setShared(isShared: boolean) {
 		if (!current) return;
-		setLoaded({ path: artefactPath!, artefact: { ...current, isShared: true } });
-		setArtefacts((items) => items.map((item) => item.id === current.id ? { ...item, isShared: true } : item));
+		setLoaded({ path: artefactPath!, artefact: { ...current, isShared } });
+		setArtefacts((items) => items.map((item) => item.id === current.id ? { ...item, isShared } : item));
 	}
 	function updateCurrent(update: Partial<Artefact>) {
 		if (!current) return;
@@ -523,10 +530,10 @@ export function Artefacts() {
 	}
 	function reload() {
 		// Clearing the loaded artefact makes the loading effect fetch it again.
+		setFailedPath(undefined);
 		setLoaded(undefined);
 	}
 	function close() {
-		setFullscreen(false);
 		navigate("/");
 	}
 	async function leave() {
@@ -544,12 +551,85 @@ export function Artefacts() {
 		return <Navigate to="/?auth=signin" replace />;
 	if (isShared)
 		return (
-			<main className="flex min-h-screen flex-col bg-background">
+			<main className="relative flex min-h-screen flex-col bg-background">
 				{error && <p className="p-10 text-sm text-danger">{error}</p>}
 				{notShared && (
 					<p className="p-10 text-sm text-muted">
 						This artefact hasn't been shared.
 					</p>
+				)}
+				{current && !isPreview && (
+					<div className="fixed inset-x-0 top-2 z-10 flex items-center justify-between px-4">
+								<Button
+									aria-label="Artefact home"
+									variant="ghost"
+									size="sm"
+									className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+									onPress={() => navigate("/")}
+								>
+									<House size={15} />
+									Artefact home
+								</Button>
+								<div className="flex items-center gap-2">
+									{currentSharedAccess?.permission === "edit" && (
+										<Button
+											aria-label="Edit artefact"
+											variant="ghost"
+											size="sm"
+											className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+											onPress={() => navigate(`/?artefact=${current.id}`)}
+										>
+											<Pencil size={15} />
+											Edit
+										</Button>
+									)}
+									<Button
+										aria-label="Copy artefact link"
+										variant="ghost"
+										size="sm"
+										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+										onPress={() =>
+											void navigator.clipboard
+												.writeText(
+													`${window.location.origin}/artefacts/shared/${current.id}`,
+												)
+												.then(() => setCopiedSharedLinkId(current.id))
+												.catch(() =>
+													setError("Could not copy the artefact link."),
+												)
+										}
+									>
+										{copiedSharedLinkId === current.id ? (
+											<Check size={15} />
+										) : (
+											<Copy size={15} />
+										)}
+										{copiedSharedLinkId === current.id
+											? "Link copied"
+											: "Copy link"}
+									</Button>
+									<Button
+										aria-label={`Comments, ${sharedCommentCount}`}
+										variant={
+											sharedCommentsOpen
+												? "secondary"
+												: "ghost"
+										}
+										size="sm"
+										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+										onPress={() =>
+											setSharedCommentsOpen(
+												!sharedCommentsOpen,
+											)
+										}
+									>
+										<MessageCircle size={15} />
+										Comments
+										{sharedCommentCount > 0 &&
+											` ${sharedCommentCount}`}
+									</Button>
+								</div>
+					</div>
 				)}
 				{current &&
 					(isPreview ? (
@@ -560,39 +640,7 @@ export function Artefacts() {
 							compactHeader
 						/>
 					) : (
-						<>
-							<div className="flex justify-end gap-2 px-4 py-2">
-								{currentSharedAccess?.permission === "edit" && (
-									<Button
-										variant="ghost"
-										size="sm"
-										onPress={() => navigate(`/?artefact=${current.id}`)}
-									>
-										<Pencil size={15} />
-										Edit
-									</Button>
-								)}
-								<Button
-									aria-label={`Comments, ${sharedCommentCount}`}
-									variant={
-										sharedCommentsOpen
-											? "secondary"
-											: "ghost"
-									}
-									size="sm"
-									onPress={() =>
-										setSharedCommentsOpen(
-											!sharedCommentsOpen,
-										)
-									}
-								>
-									<MessageCircle size={15} />
-									Comments
-									{sharedCommentCount > 0 &&
-										` ${sharedCommentCount}`}
-								</Button>
-							</div>
-							<ArtefactComments
+						<ArtefactComments
 								key={current.id}
 								artefactId={current.id}
 								isOwner={currentSharedAccess?.isOwner ?? false}
@@ -610,7 +658,6 @@ export function Artefacts() {
 									compactHeader={isPreview}
 								/>
 							</ArtefactComments>
-						</>
 					))}
 			</main>
 		);
@@ -782,18 +829,20 @@ export function Artefacts() {
 					</p>
 				)}
 			</section>
-			{(current || isCreating) && (
+			{(current || isCreating || isLoadingArtefact) && (
 				<ArtefactModal
-					key={current?.id ?? "creating"}
+					key={current?.id ?? (isCreating ? "creating" : "loading")}
 					artefact={current}
 					isCreating={isCreating}
+					isLoading={isLoadingArtefact}
 					generationStatus={generationStatus}
 					generationCommentary={generationCommentary}
 					isCommentaryStarting={isCommentaryStarting}
-					isFullscreen={isFullscreen}
 					userId={user.id}
-					onClose={current ? close : cancelGeneration}
-					onFullscreen={() => setFullscreen(!isFullscreen)}
+					onClose={isCreating ? cancelGeneration : close}
+					onOpenShared={(artefactId) =>
+						navigate(`/artefacts/shared/${artefactId}`)
+					}
 					onShare={() => setShareOpen(true)}
 					followUp={followUp}
 					setFollowUp={setFollowUp}
@@ -813,7 +862,7 @@ export function Artefacts() {
 				<OrganisationsModal onClose={() => navigate("/")} />
 			)}
 			{shareOpen && current?.isOwner && (
-				<ShareDialog artefactId={current.id} isShared={Boolean(current.isShared)} onShared={markShared} onClose={() => setShareOpen(false)} />
+				<ShareDialog artefactId={current.id} isShared={Boolean(current.isShared)} onSharingChange={setShared} onClose={() => setShareOpen(false)} />
 			)}
 		</Surface>
 	);
@@ -965,13 +1014,13 @@ function WorkspaceSidebar({
 function ArtefactModal({
 	artefact,
 	isCreating,
+	isLoading,
 	generationStatus,
 	generationCommentary,
 	isCommentaryStarting,
-	isFullscreen,
 	userId,
 	onClose,
-	onFullscreen,
+	onOpenShared,
 	onShare,
 	followUp,
 	setFollowUp,
@@ -985,13 +1034,13 @@ function ArtefactModal({
 }: {
 	artefact?: Artefact;
 	isCreating: boolean;
+	isLoading: boolean;
 	generationStatus: string;
 	generationCommentary: string;
 	isCommentaryStarting: boolean;
-	isFullscreen: boolean;
 	userId: string;
 	onClose: () => void;
-	onFullscreen: () => void;
+	onOpenShared: (artefactId: string) => void;
 	onShare: () => void;
 	followUp: string;
 	setFollowUp: (value: string) => void;
@@ -1006,6 +1055,7 @@ function ArtefactModal({
 	onError: (message: string) => void;
 }) {
 	const [generationStartedAt] = useState(() => Date.now());
+	const loadingLabel = isLoading ? "Loading artefact" : "Creating artefact";
 	const [generationSeconds, setGenerationSeconds] = useState(0);
 	useEffect(() => {
 		if (!isCreating) return;
@@ -1032,7 +1082,7 @@ function ArtefactModal({
 	const isDirty =
 		isEditing &&
 		JSON.stringify(draft) !== JSON.stringify(artefact?.content);
-	const historyOpen = isFullscreen && showHistory && !isEditing;
+	const historyOpen = showHistory && !isEditing;
 	const canEdit = artefact?.permission === "edit";
 	const canComment = Boolean(artefact && !isEditing && !historyOpen && (canEdit || artefact.permission === "comment"));
 	const breadcrumb =
@@ -1082,26 +1132,22 @@ function ArtefactModal({
 				onOpenChange={(open) => {
 					if (!open) onClose();
 				}}
-				variant={isFullscreen ? "transparent" : "blur"}
+				variant="blur"
 			>
 				<Modal.Container
 					placement="center"
 					scroll="inside"
-					size={isFullscreen ? "full" : "cover"}
+					size="cover"
 				>
 					<Modal.Dialog
-						aria-label={
-							artefact
-								? artefactHeading(artefact)
-								: "Creating artefact"
+							aria-label={
+								artefact
+									? artefactHeading(artefact)
+									: loadingLabel
 						}
-						className={
-							isFullscreen
-								? "h-dvh min-h-dvh w-screen max-w-none rounded-none p-0"
-								: "overflow-hidden rounded-2xl p-0"
-						}
+						className="w-full max-w-[1100px] overflow-hidden rounded-2xl p-0"
 					>
-						{/* Phones: title with fullscreen/close on top, the other actions on a second row. */}
+						{/* Phones: title and close control on top, the other actions on a second row. */}
 						<Modal.Header className="z-10 shrink-0 flex-row flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-surface px-4 py-3 sm:flex-nowrap sm:px-6">
 							<Modal.Heading className="order-1 flex min-w-0 flex-1 items-center gap-2">
 								{artefact ? (
@@ -1123,7 +1169,7 @@ function ArtefactModal({
 										</span>
 									</>
 								) : (
-									<span>Creating artefact</span>
+									<span>{loadingLabel}</span>
 								)}
 							</Modal.Heading>
 							<Toolbar
@@ -1142,7 +1188,7 @@ function ArtefactModal({
 										onError={onError}
 									/>
 								)}
-								{artefact && !isEditing && isFullscreen && (
+								{artefact && !isEditing && (
 									<Button
 										aria-label="History"
 										variant={
@@ -1214,27 +1260,21 @@ function ArtefactModal({
 							<div className="order-2 flex items-center gap-1 sm:order-3">
 								{artefact && (
 									<Button
-										aria-label={
-											isFullscreen
-												? "Exit fullscreen"
-												: "Fullscreen"
-										}
+										aria-label="Open shared artefact"
 										variant="ghost"
 										className="size-8 min-w-8 p-0"
-										onPress={onFullscreen}
+										onPress={() => onOpenShared(artefact.id)}
 									>
-										{isFullscreen ? (
-											<Minimize2 size={17} />
-										) : (
-											<Maximize2 size={17} />
-										)}
+										<ExternalLink size={17} />
 									</Button>
 								)}
 								<Button
 									aria-label={
 										artefact
 											? "Close artefact"
-											: "Cancel generation"
+											: isCreating
+												? "Cancel generation"
+												: "Close artefact"
 									}
 									variant="ghost"
 									className="size-8 min-w-8 p-0"
@@ -1274,30 +1314,30 @@ function ArtefactModal({
 									<ArtefactSkeleton>
 										<div className="space-y-1 text-sm text-muted">
 											<p role="status">
-												{generationStatus ||
-													"Starting your artefact…"}
-												<span
-													className="ml-2 text-xs tabular-nums"
-													aria-hidden="true"
+												{isCreating ? (
+													<>
+														{generationStatus || "Starting your artefact…"}
+														<span
+															className="ml-2 text-xs tabular-nums"
+															aria-hidden="true"
+														>
+															{Math.floor(generationSeconds / 60)}:
+															{String(generationSeconds % 60).padStart(2, "0")}
+														</span>
+													</>
+												) : (
+													"Loading artefact…"
+												)}
+											</p>
+											{isCreating && (
+												<p
+													className="max-w-full overflow-hidden whitespace-nowrap"
+													aria-label="AI commentary"
+													aria-live="off"
 												>
-													{Math.floor(
-														generationSeconds / 60,
-													)}
-													:
-													{String(
-														generationSeconds % 60,
-													).padStart(2, "0")}
-												</span>
-											</p>
-											<p
-												className="max-w-full overflow-hidden whitespace-nowrap"
-												aria-label="AI commentary"
-												aria-live="off"
-											>
-												<GenerationCommentary
-													text={generationCommentary}
-												/>
-											</p>
+													<GenerationCommentary text={generationCommentary} />
+												</p>
+											)}
 										</div>
 									</ArtefactSkeleton>
 								</div>
