@@ -28,7 +28,6 @@ export function Landing() {
 	const navigate = useNavigate();
 	const { data: session } = useSession();
 	const { theme } = useTheme();
-	const painting = paintings[theme];
 	const start = () => navigate(session?.user ? "/" : "?auth=signup");
 
 	return (
@@ -40,11 +39,17 @@ export function Landing() {
 					<br />
 
 					<div className="absolute inset-x-0 top-0 h-[54rem] overflow-hidden rounded-3xl sm:h-[54rem]">
-						<img
-							src={painting.src}
-							alt=""
-							className={`absolute inset-0 size-full object-cover ${theme === "light" ? "opacity-60" : "opacity-80"}`}
-						/>
+						{/* Both paintings stay mounted so switching theme is instant; the
+						 * hidden one loads at low priority after the visible one. */}
+						{(["light", "dark"] as const).map((mode) => (
+							<img
+								key={mode}
+								src={paintings[mode].src}
+								alt=""
+								fetchPriority={mode === theme ? "high" : "low"}
+								className={`absolute inset-0 size-full object-cover ${mode !== theme ? "opacity-0" : mode === "light" ? "opacity-60" : "opacity-80"}`}
+							/>
+						))}
 					</div>
 					<div className="relative flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
 						<div className="max-w-3xl text-center">
