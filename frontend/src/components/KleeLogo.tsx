@@ -1,46 +1,41 @@
 import { useEffect, useId, useRef } from "react";
+import { kleeLogoArt } from "./kleeLogoArt";
 
-const size = 2215;
-const background = "#FBF463";
-const ink = "#1E1E1E";
-const eyes = [
-	{ pupil: { cx: 663.2, cy: 689.8, rx: 186.9, ry: 209.4 }, reach: { x: 157.6, y: 30.6 } },
-	{ pupil: { cx: 1500.7, cy: 871.2, rx: 167.6, ry: 187.8 }, reach: { x: 139.7, y: 32.5 } },
-];
+const { size, background, ink, linework, eyes } = kleeLogoArt;
 
-export function KleeLogo({
-	className,
-	alt = "Klee",
-}: {
-	className?: string;
-	alt?: string;
-}) {
+/**
+ * The Klee logo, drawn inline so its pupils can follow the pointer around the
+ * page. Each pupil is clipped to its eye opening and slides toward the cursor,
+ * further the further away the cursor is. Still for reduced motion.
+ */
+export function KleeLogo({ className }: { className?: string }) {
 	const svg = useRef<SVGSVGElement>(null);
 	const pupils = useRef<(SVGEllipseElement | null)[]>([]);
+	// useId can contain characters that break url(#...) references.
 	const id = `klee-logo-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
 	useEffect(() => {
 		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 		let frame = 0;
-		const follow = (event: PointerEvent) => {
+		function follow(event: PointerEvent) {
 			cancelAnimationFrame(frame);
 			frame = requestAnimationFrame(() => {
 				const box = svg.current?.getBoundingClientRect();
 				if (!box?.width) return;
-				eyes.forEach((eye, index) => {
-					const dx = event.clientX - (box.left + (eye.pupil.cx / size) * box.width);
-					const dy = event.clientY - (box.top + (eye.pupil.cy / size) * box.height);
+				const scale = box.width / size;
+				eyes.forEach(({ pupil, reach }, index) => {
+					const dx = event.clientX - (box.left + pupil.cx * scale);
+					const dy = event.clientY - (box.top + pupil.cy * scale);
 					const distance = Math.hypot(dx, dy) || 1;
+					// Full reach once the cursor is a logo-width or so away.
 					const pull = Math.min(1, distance / (box.width * 1.2));
-					const pupil = pupils.current[index];
-					if (pupil)
-						pupil.setAttribute(
-							"transform",
-							`translate(${(dx / box.width) * eye.reach.x * pull} ${(dy / box.height) * eye.reach.y * pull})`,
-						);
+					const x = (dx / distance) * reach.x * pull;
+					const y = (dy / distance) * reach.y * pull;
+					const element = pupils.current[index];
+					if (element) element.style.transform = `translate(${x}px, ${y}px)`;
 				});
 			});
-		};
+		}
 		window.addEventListener("pointermove", follow);
 		return () => {
 			window.removeEventListener("pointermove", follow);
@@ -54,29 +49,42 @@ export function KleeLogo({
 			viewBox={`0 0 ${size} ${size}`}
 			className={className}
 			role="img"
-			aria-label={alt}
+			aria-label="Klee"
 		>
 			<defs>
 				{eyes.map((eye, index) => (
 					<clipPath key={index} id={`${id}-eye-${index}`}>
-						<ellipse {...eye.pupil} />
+						{eye.opening.map((d) => (
+							<path key={d} d={d} />
+						))}
 					</clipPath>
 				))}
+				{/* Hides the original pupils so only the moving ones show. */}
+				<mask id={`${id}-lines`} maskUnits="userSpaceOnUse" x="0" y="0" width={size} height={size}>
+					<rect width={size} height={size} fill="#fff" />
+					{eyes.flatMap((eye) => eye.opening.map((d) => <path key={d} d={d} fill="#000" />))}
+				</mask>
 			</defs>
-			<image href="/kleelogo.svg" width={size} height={size} />
+			<rect width={size} height={size} rx="230" fill={background} />
 			{eyes.map((eye, index) => (
-				<g key={index} clipPath={`url(#${id}-eye-${index})`}>
-					<ellipse {...eye.pupil} fill={background} />
-					<ellipse
-						ref={(element) => {
-							pupils.current[index] = element;
-						}}
-						{...eye.pupil}
-						fill={ink}
-						style={{ transition: "transform 120ms ease-out" }}
-					/>
+				<g key={index}>
+					{/* Eye openings show the background, as in the original; the stroke hides seams. */}
+					{eye.opening.map((d) => (
+						<path key={d} d={d} fill={background} stroke={background} strokeWidth="6" />
+					))}
+					<g clipPath={`url(#${id}-eye-${index})`}>
+						<ellipse
+							ref={(element) => {
+								pupils.current[index] = element;
+							}}
+							{...eye.pupil}
+							fill={ink}
+							style={{ transition: "transform 120ms ease-out" }}
+						/>
+					</g>
 				</g>
 			))}
+			<path d={linework} fill={ink} mask={`url(#${id}-lines)`} />
 		</svg>
 	);
 }

@@ -143,10 +143,7 @@ export function SlackChannelStory() {
 							inert={!botVisible}
 							className={`flex gap-4 bg-slack-canvas-highlight px-4 py-4 sm:px-8 ${pop(botVisible)}`}
 						>
-							<KleeLogo
-								alt="klee (local) profile picture"
-								className="size-14 shrink-0 rounded-2xl sm:size-[4.5rem]"
-							/>
+							<KleeLogo className="size-14 shrink-0 rounded-2xl sm:size-[4.5rem]" />
 							<div className="min-w-0 flex-1">
 								<div className="flex flex-wrap items-baseline gap-x-3">
 									<p className="text-lg font-bold text-slack-foreground-strong sm:text-2xl">

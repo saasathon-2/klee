@@ -218,10 +218,7 @@ export function GitHubPullRequestStory() {
 								pop(botVisible)
 							}
 						>
-							<KleeLogo
-								alt="orca-klee profile picture"
-								className="size-10 shrink-0 rounded-xl sm:size-[4.5rem] sm:rounded-2xl"
-							/>
+							<KleeLogo className="size-10 shrink-0 rounded-xl sm:size-[4.5rem] sm:rounded-2xl" />
 							<article className="min-w-0 flex-1 overflow-hidden rounded-lg border border-github-border">
 								<header className="flex flex-wrap items-baseline gap-x-2 border-b border-github-border bg-github-canvas-subtle px-4 py-3 sm:px-6">
 									<strong className="text-sm sm:text-lg">
