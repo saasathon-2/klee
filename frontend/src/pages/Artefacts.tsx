@@ -59,9 +59,8 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsModal } from "./Integrations";
 import { useMediaQuery } from "../lib/use-media-query";
 import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
-import { ArtefactNav } from "./artefact/ArtefactNav";
+import { ArtefactIcon, ArtefactNav } from "./artefact/ArtefactNav";
 import { acceptArtefactDrop, droppedArtefactId } from "./artefact/artefactDrag";
-import { FolderSelect } from "./artefact/FolderSelect";
 import { ProjectSelect } from "./artefact/ProjectSelect";
 import { useFolders, type Folder } from "./artefact/useFolders";
 import { VersionHistory } from "./artefact/VersionHistory";
@@ -78,6 +77,8 @@ type Artefact = {
 	isShared?: boolean;
 	prompt: string;
 	title: string;
+	description?: string;
+	icon?: string;
 	createdAt: string;
 	content?: ArtefactDocument;
 	revisions?: Revision[];
@@ -102,6 +103,18 @@ function artefactHeading(artefact: Artefact) {
 	)
 		? "Change brief"
 		: "Working brief";
+}
+
+function artefactDescription(artefact: Artefact) {
+	if (artefact.description) return artefact.description;
+	const summary = artefact.content?.root.children?.[0]?.data.summary;
+	return typeof summary === "string" && summary ? summary : artefact.prompt;
+}
+
+function artefactIcon(artefact: Artefact) {
+	if (artefact.icon) return artefact.icon;
+	const icon = artefact.content?.root.children?.[0]?.data.icon;
+	return typeof icon === "string" ? icon : undefined;
 }
 
 const godPrompt = developerExamplePrompts.find(
@@ -734,7 +747,6 @@ export function Artefacts() {
 					onReload={reload}
 					onProjectChange={updateCurrent}
 					folders={folders}
-					onFolderChange={(folderId) => current && moveArtefact(current.id, folderId)}
 					onError={setError}
 				/>
 			)}
@@ -788,6 +800,15 @@ function WorkspaceSidebar({
 					: "sticky top-0 flex h-screen w-[288px] shrink-0 flex-col border-r border-border px-4 py-5"
 			}
 		>
+			<button
+				type="button"
+				aria-label="Klee home"
+				className="mb-5 flex h-10 items-center gap-2 px-2 text-left"
+				onClick={onCreate}
+			>
+				<img src="/kleelogo.svg" alt="" className="size-8" />
+				<span className="text-lg font-semibold tracking-tight">Klee</span>
+			</button>
 			<ListBox
 				aria-label="Workspace navigation"
 				selectedKeys={isIntegrations ? ["integrations"] : []}
@@ -806,7 +827,11 @@ function WorkspaceSidebar({
 			</ListBox>
 			<Separator className="my-5" />
 			<ArtefactNav
-				artefacts={artefacts}
+				artefacts={artefacts.map((artefact) => ({
+					...artefact,
+					description: artefactDescription(artefact),
+					icon: artefactIcon(artefact),
+				}))}
 				folders={folders}
 				selectedId={selectedId}
 				onOpen={onOpenArtefact}
@@ -895,7 +920,6 @@ function ArtefactModal({
 	onReload,
 	onProjectChange,
 	folders,
-	onFolderChange,
 	onError,
 }: {
 	artefact?: Artefact;
@@ -919,7 +943,6 @@ function ArtefactModal({
 		update: Pick<Artefact, "installationId" | "project">,
 	) => void;
 	folders: Folder[];
-	onFolderChange: (folderId: string | null) => void;
 	onError: (message: string) => void;
 }) {
 	const [generationStartedAt] = useState(() => Date.now());
@@ -951,6 +974,7 @@ function ArtefactModal({
 		JSON.stringify(draft) !== JSON.stringify(artefact?.content);
 	const historyOpen = isFullscreen && showHistory && !isEditing;
 	const canComment = Boolean(artefact && !isEditing && !historyOpen);
+	const breadcrumb = folders.find((folder) => folder.id === artefact?.folderId)?.name ?? "Artefacts";
 	const renderedArtefact = artefact && (
 		<ArtefactBody
 			artefact={artefact}
@@ -1019,7 +1043,7 @@ function ArtefactModal({
 								{artefact ? (
 									<>
 										<span className="hidden shrink-0 text-muted sm:inline">
-											Artefacts
+											{breadcrumb}
 										</span>
 										<span
 											aria-hidden
@@ -1027,6 +1051,7 @@ function ArtefactModal({
 										>
 											/
 										</span>
+										<ArtefactIcon icon={artefactIcon(artefact)} />
 										<span className="truncate">
 											{artefactHeading(artefact)}
 										</span>
@@ -1049,13 +1074,6 @@ function ArtefactModal({
 										isOwner={artefact.isOwner ?? true}
 										onChange={onProjectChange}
 										onError={onError}
-									/>
-								)}
-								{artefact && !isEditing && (
-									<FolderSelect
-										folderId={artefact.folderId ?? null}
-										folders={folders}
-										onChange={onFolderChange}
 									/>
 								)}
 								{artefact && !isEditing && isFullscreen && (

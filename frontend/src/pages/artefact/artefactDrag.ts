@@ -28,6 +28,7 @@ export async function droppedArtefactId(items: DropItem[]) {
 export function useArtefactDragAndDrop(onDropArtefact?: (id: string) => void) {
 	const { dragAndDropHooks } = useDragAndDrop({
 		getItems: (keys) => [...keys].map((key) => ({ [artefactDragType]: String(key) })),
+		getAllowedDropOperations: () => ["move"],
 		...(onDropArtefact && {
 			acceptedDragTypes: [artefactDragType],
 			onRootDrop: async ({ items }) => {

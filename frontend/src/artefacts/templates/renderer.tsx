@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ArtefactDocument, ArtefactNode } from "../model";
 import { templateDefinitions } from "./catalogue";
 import type { EditPath, RenderContext } from "./types";
@@ -5,18 +6,21 @@ import type { EditPath, RenderContext } from "./types";
 function RenderNode({
 	node,
 	context,
+	renderNode,
 }: {
 	node: ArtefactNode;
 	context: RenderContext;
+	renderNode?: (node: ArtefactNode, rendered: ReactNode) => ReactNode;
 }) {
 	const TemplateComponent = templateDefinitions[node.template].component;
-	return (
+	const rendered = (
 		<TemplateComponent node={node} context={context}>
 			{node.children?.map((child) => (
-				<RenderNode key={child.id} node={child} context={context} />
+				<RenderNode key={child.id} node={child} context={context} renderNode={renderNode} />
 			))}
 		</TemplateComponent>
 	);
+	return renderNode?.(node, rendered) ?? rendered;
 }
 
 export function ArtefactRenderer({
@@ -29,6 +33,7 @@ export function ArtefactRenderer({
 	isEditing = false,
 	onAction,
 	onEdit,
+	renderNode,
 }: {
 	document: ArtefactDocument;
 	createdAt: string;
@@ -41,6 +46,7 @@ export function ArtefactRenderer({
 	isEditing?: boolean;
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
+	renderNode?: (node: ArtefactNode, rendered: ReactNode) => ReactNode;
 }) {
 	return (
 		<RenderNode
@@ -55,6 +61,7 @@ export function ArtefactRenderer({
 				onAction,
 				onEdit,
 			}}
+			renderNode={renderNode}
 		/>
 	);
 }

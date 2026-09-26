@@ -3,13 +3,28 @@ import {
 	Button,
 	Disclosure,
 	Dropdown,
-	Header,
 	Label,
 	ListBox,
 	Paragraph,
 } from "@heroui/react";
-import { FileText, Folder as FolderIcon, FolderPlus, MoreHorizontal } from "lucide-react";
+import {
+	CalendarCheck,
+	ChartNoAxesCombined,
+	FileText,
+	Folder as FolderIcon,
+	FolderOpen,
+	FolderPlus,
+	GitBranch,
+	GitPullRequest,
+	Lightbulb,
+	ListTodo,
+	MessageSquare,
+	MoreHorizontal,
+	Rocket,
+	Workflow,
+} from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useDrop } from "react-aria-components";
 import {
 	acceptArtefactDrop,
@@ -22,9 +37,58 @@ import type { Folder } from "./useFolders";
 type NavArtefact = {
 	id: string;
 	title: string;
+	description?: string;
+	icon?: string;
 	project?: string | null;
 	folderId?: string | null;
 };
+
+type Preview = { artefact: NavArtefact; x: number; y: number };
+
+const artefactIcons = {
+	"git-pull-request": GitPullRequest,
+	"git-branch": GitBranch,
+	workflow: Workflow,
+	"message-square": MessageSquare,
+	"calendar-check": CalendarCheck,
+	rocket: Rocket,
+	"chart-no-axes-combined": ChartNoAxesCombined,
+	lightbulb: Lightbulb,
+	"list-todo": ListTodo,
+};
+
+export function ArtefactIcon({ icon }: { icon?: string }) {
+	const Icon = artefactIcons[icon as keyof typeof artefactIcons] ?? FileText;
+	return <Icon size={16} className="shrink-0" />;
+}
+
+function ArtefactListItem({
+	artefact,
+	onPreview,
+	onMovePreview,
+	onHidePreview,
+}: {
+	artefact: NavArtefact;
+	onPreview: (artefact: NavArtefact, x: number, y: number) => void;
+	onMovePreview: (x: number, y: number) => void;
+	onHidePreview: () => void;
+}) {
+	return (
+		<ListBox.Item
+			id={artefact.id}
+			textValue={artefact.title}
+			className="h-10 min-h-10 max-h-10 min-w-0 overflow-hidden rounded-xl px-3 data-[dragging]:scale-[.98] data-[dragging]:opacity-55"
+			onPointerEnter={(event) => onPreview(artefact, event.clientX, event.clientY)}
+			onPointerMove={(event) => onMovePreview(event.clientX, event.clientY)}
+			onPointerLeave={onHidePreview}
+		>
+			<ArtefactIcon icon={artefact.icon} />
+			<Label className="min-w-0 flex-1 truncate whitespace-nowrap text-left">
+				{artefact.title}
+			</Label>
+		</ListBox.Item>
+	);
+}
 
 /** A folder in the sidebar that files artefacts dropped onto it. */
 function FolderDropTarget({
@@ -47,7 +111,7 @@ function FolderDropTarget({
 		<div
 			ref={ref}
 			{...dropProps}
-			className={`rounded-xl transition-colors ${isDropTarget ? "bg-accent-soft ring-1 ring-accent-text" : ""}`}
+			className={`rounded-xl transition-colors ${isDropTarget ? "bg-accent-soft ring-2 ring-accent-text" : ""}`}
 		>
 			{children}
 		</div>
@@ -69,11 +133,17 @@ function ArtefactItems({
 	artefacts,
 	selectedId,
 	onOpen,
+	onPreview,
+	onMovePreview,
+	onHidePreview,
 }: {
 	label: string;
 	artefacts: NavArtefact[];
 	selectedId?: string;
 	onOpen: (id: string) => void;
+	onPreview: (artefact: NavArtefact, x: number, y: number) => void;
+	onMovePreview: (x: number, y: number) => void;
+	onHidePreview: () => void;
 }) {
 	const dragAndDropHooks = useArtefactDragAndDrop();
 	return (
@@ -84,10 +154,7 @@ function ArtefactItems({
 			dragAndDropHooks={dragAndDropHooks}
 		>
 			{artefacts.map((artefact) => (
-				<ListBox.Item key={artefact.id} id={artefact.id} textValue={artefact.title}>
-					<FileText size={16} />
-					<Label>{artefact.title}</Label>
-				</ListBox.Item>
+				<ArtefactListItem key={artefact.id} artefact={artefact} onPreview={onPreview} onMovePreview={onMovePreview} onHidePreview={onHidePreview} />
 			))}
 		</ListBox>
 	);
@@ -100,32 +167,42 @@ function UnfiledGroup({
 	selectedId,
 	onOpen,
 	onUnfile,
+	onPreview,
+	onMovePreview,
+	onHidePreview,
 }: {
 	project: string | null;
 	artefacts: NavArtefact[];
 	selectedId?: string;
 	onOpen: (id: string) => void;
 	onUnfile: (id: string) => void;
-}) {
+	onPreview: (artefact: NavArtefact, x: number, y: number) => void;
+	onMovePreview: (x: number, y: number) => void;
+	onHidePreview: () => void;
+	}) {
 	const dragAndDropHooks = useArtefactDragAndDrop(onUnfile);
 	return (
-		<ListBox
-			aria-label={project ?? "Artefacts"}
-			className="mt-3 rounded-xl transition-colors data-[drop-target]:bg-accent-soft data-[drop-target]:ring-1 data-[drop-target]:ring-accent-text"
-			selectedKeys={selectedId ? [selectedId] : []}
-			onAction={(key) => onOpen(String(key))}
-			dragAndDropHooks={dragAndDropHooks}
-		>
-			<ListBox.Section>
-				<Header>{project ?? "Artefacts"}</Header>
+		<div className="mt-3">
+			<Paragraph size="xs" color="muted" weight="medium" className="px-2 py-1.5">
+				{project ?? "Artefacts"}
+			</Paragraph>
+			<ListBox
+				aria-label={project ?? "Artefacts"}
+				className="rounded-xl transition-colors data-[drop-target]:bg-accent-soft data-[drop-target]:ring-2 data-[drop-target]:ring-accent-text"
+				selectedKeys={selectedId ? [selectedId] : []}
+				onAction={(key) => onOpen(String(key))}
+				dragAndDropHooks={dragAndDropHooks}
+			>
 				{artefacts.map((artefact) => (
-					<ListBox.Item key={artefact.id} id={artefact.id} textValue={artefact.title}>
-						<FileText size={16} />
-						<Label>{artefact.title}</Label>
-					</ListBox.Item>
+					<ArtefactListItem key={artefact.id} artefact={artefact} onPreview={onPreview} onMovePreview={onMovePreview} onHidePreview={onHidePreview} />
 				))}
-			</ListBox.Section>
-		</ListBox>
+			</ListBox>
+			{!artefacts.length && (
+				<Paragraph size="xs" color="muted" className="px-2 py-1.5">
+					No unfiled artefacts.
+				</Paragraph>
+			)}
+		</div>
 	);
 }
 
@@ -157,6 +234,12 @@ export function ArtefactNav({
 	const [dialog, setDialog] = useState<
 		{ kind: "create" } | { kind: "rename" | "delete"; folder: Folder }
 	>();
+	const [preview, setPreview] = useState<Preview>();
+	const showPreview = (artefact: NavArtefact, x: number, y: number) => {
+		setPreview({ artefact, x, y });
+	};
+	const movePreview = (x: number, y: number) =>
+		setPreview((current) => current && { ...current, x, y });
 	const folderIds = new Set(folders.map((folder) => folder.id));
 	const unfiled = artefacts.filter(
 		(artefact) => !artefact.folderId || !folderIds.has(artefact.folderId),
@@ -178,6 +261,11 @@ export function ArtefactNav({
 					<FolderPlus size={16} />
 				</Button>
 			</div>
+			{!folders.length && (
+				<Paragraph size="xs" color="muted" className="px-2 py-1.5">
+					No folders yet.
+				</Paragraph>
+			)}
 
 			{folders.map((folder) => {
 				const contents = artefacts.filter((artefact) => artefact.folderId === folder.id);
@@ -187,11 +275,17 @@ export function ArtefactNav({
 						onDropArtefact={(id) => onMoveArtefact(id, folder.id)}
 					>
 						<Disclosure defaultExpanded>
-							<Disclosure.Heading className="flex items-center gap-1">
-								<Disclosure.Trigger className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm hover:bg-default">
+							{({ isExpanded }) => (
+								<>
+							<Disclosure.Heading className="group/folder flex h-10 items-center rounded-xl hover:bg-default focus-within:bg-default">
+								<Disclosure.Trigger className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left text-sm">
 									<Disclosure.Indicator />
-									<FolderIcon size={16} className="shrink-0 text-muted" />
-									<span className="min-w-0 flex-1 truncate">{folder.name}</span>
+									{isExpanded ? (
+										<FolderOpen size={16} className="shrink-0 text-muted" />
+									) : (
+										<FolderIcon size={16} className="shrink-0 text-muted" />
+									)}
+									<span className="min-w-0 flex-1 truncate whitespace-nowrap">{folder.name}</span>
 									<span className="text-xs text-muted">{contents.length}</span>
 								</Disclosure.Trigger>
 								<Dropdown>
@@ -199,7 +293,7 @@ export function ArtefactNav({
 										aria-label={`${folder.name} actions`}
 										variant="ghost"
 										size="sm"
-										className="size-7 min-w-7 p-0"
+										className="h-7 !w-0 !min-w-0 overflow-hidden p-0 opacity-0 pointer-events-none transition-[width,opacity] duration-150 group-hover/folder:!w-7 group-hover/folder:!min-w-7 group-hover/folder:pointer-events-auto group-hover/folder:opacity-100 group-focus-within/folder:!w-7 group-focus-within/folder:!min-w-7 group-focus-within/folder:pointer-events-auto group-focus-within/folder:opacity-100 focus:!w-7 focus:!min-w-7 focus:pointer-events-auto focus:opacity-100"
 									>
 										<MoreHorizontal size={16} />
 									</Button>
@@ -225,17 +319,22 @@ export function ArtefactNav({
 									{contents.length ? (
 										<ArtefactItems
 											label={folder.name}
-											artefacts={contents}
-											selectedId={selectedId}
-											onOpen={onOpen}
+										artefacts={contents}
+										selectedId={selectedId}
+										onOpen={onOpen}
+										onPreview={showPreview}
+										onMovePreview={movePreview}
+										onHidePreview={() => setPreview(undefined)}
 										/>
 									) : (
 										<Paragraph size="xs" color="muted" className="px-2 py-1.5">
 											Drag artefacts here to file them.
 										</Paragraph>
 									)}
-								</Disclosure.Body>
-							</Disclosure.Content>
+									</Disclosure.Body>
+								</Disclosure.Content>
+								</>
+							)}
 						</Disclosure>
 					</FolderDropTarget>
 				);
@@ -249,8 +348,28 @@ export function ArtefactNav({
 					selectedId={selectedId}
 					onOpen={onOpen}
 					onUnfile={(id) => onMoveArtefact(id, null)}
+					onPreview={showPreview}
+					onMovePreview={movePreview}
+					onHidePreview={() => setPreview(undefined)}
 				/>
 			))}
+			{preview &&
+				createPortal(
+					<div
+						aria-hidden
+						className="pointer-events-none fixed z-50 w-64 rounded-xl border border-divider bg-surface p-3 shadow-xl"
+						style={{ left: preview.x + 16, top: preview.y + 16 }}
+					>
+						<div className="flex items-center gap-2">
+							<ArtefactIcon icon={preview.artefact.icon} />
+							<p className="truncate text-sm font-semibold">{preview.artefact.title}</p>
+						</div>
+						<p className="line-clamp-2 text-xs leading-5 text-muted">
+							{preview.artefact.description || "No description available."}
+						</p>
+					</div>,
+					document.body,
+				)}
 
 			{(dialog?.kind === "create" || dialog?.kind === "rename") && (
 				<FolderDialog

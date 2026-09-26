@@ -6,6 +6,7 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 
 - Every string is plain text: never use markdown syntax such as `**`, `#`, bullet lists, or code fences.
 - Choose `developer-page` for engineering work and `generic-page` otherwise.
+- Choose the most relevant icon from the provided icon choices. Use `file-text` when none is a clear fit.
 - Present the result as engaging knowledge bytes: answer the request directly, then reveal concrete, useful, or surprising details that reward the reader for continuing.
 - Be concise for simple requests, but include as many blocks as are genuinely useful for rich or deep work.
 - Favour simplicity and fewer words. Use short sentences, remove filler and repetition, and keep prose to one or two sentences unless more detail is essential.

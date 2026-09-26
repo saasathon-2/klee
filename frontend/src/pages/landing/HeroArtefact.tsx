@@ -2,6 +2,7 @@ import { Card, Paragraph, Surface } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 import type { ArtefactDocument, ArtefactNode } from "../../artefacts/model";
 import { ArtefactRenderer } from "../../artefacts/templates/renderer";
+import { LandingCodeDiffStory } from "./LandingCodeDiffStory";
 import { landingSamples } from "./samples";
 
 const blocksOf = (document: ArtefactDocument) =>
@@ -95,6 +96,11 @@ export function HeroArtefact() {
 					canInteract
 					edgeToEdge
 					showFooter={false}
+					renderNode={(node, rendered) =>
+						node === codeDiff ? (
+							<LandingCodeDiffStory>{rendered}</LandingCodeDiffStory>
+						) : rendered
+					}
 				/>
 			</div>
 		</Card>
