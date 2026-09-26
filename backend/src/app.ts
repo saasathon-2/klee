@@ -753,13 +753,25 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
 	if (!content) return res.status(400).json({ error: "content is required" });
 	const artefact = await accessibleArtefact(req.params.id, user.id);
 	if (!artefact) return res.sendStatus(404);
+	res.status(200).set({
+		"Cache-Control": "no-cache",
+		Connection: "keep-alive",
+		"Content-Type": "text/event-stream",
+	});
+	res.flushHeaders();
+	const send = (event: string, data: unknown) =>
+		res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 	let generated;
 	try {
 		generated = await generateArtefact(
 			`Update the artefact below according to the requested change. Keep useful existing details unless the request replaces them.\n\nRequested change:\n${content}\n\nExisting artefact JSON:\n${JSON.stringify(artefact.content)}`,
 			env.openAiApiKey,
 			env.openAiModel,
-			{ serviceTier: env.openAiServiceTier },
+			{
+				serviceTier: env.openAiServiceTier,
+				onProgress: (message) => send("progress", { message }),
+				onCommentary: (text) => send("commentary", { text }),
+			},
 		);
 	} catch (error) {
 		if (!(error instanceof ArtefactAgentError)) throw error;
@@ -767,7 +779,8 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
 			kind: error.kind,
 			...error.details,
 		});
-		return res.status(502).json({ error: "Could not revise artefact." });
+		send("error", { error: "Could not revise artefact." });
+		return res.end();
 	}
 	const revision = {
 		id: randomUUID(),
@@ -803,7 +816,8 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
 		return { ...rows[0], version };
 	});
 	await uploadArtefactSnapshot(req.params.id, Boolean(artefact.isShared));
-	res.status(201).json({ revision, artefact: updated });
+	send("complete", { revision, artefact: updated });
+	res.end();
 });
 
 app.put("/api/artefacts/:id/content", async (req, res) => {
