@@ -146,11 +146,11 @@ const api = (path: string, options?: RequestInit) =>
 
 function greetingFor(date: Date) {
 	const hour = date.getHours();
-	if (hour < 5) return { text: "Hello, night owl", icon: "✦", note: "One more idea before the day begins." };
-	if (hour < 12) return { text: "Good morning", icon: "☀", note: "A fresh page is a good place to start." };
-	if (hour < 17) return { text: "Good afternoon", icon: "✦", note: "Turn the moving pieces into something clear." };
-	if (hour < 22) return { text: "Good evening", icon: "☾", note: "Bring the day’s context together." };
-	return { text: "Hello, night owl", icon: "✦", note: "One more idea before you call it." };
+	if (hour < 5) return "Hello, night owl";
+	if (hour < 12) return "Good morning";
+	if (hour < 17) return "Good afternoon";
+	if (hour < 22) return "Good evening";
+	return "Hello, night owl";
 }
 
 function textareaCaretPoint(textarea: HTMLTextAreaElement) {
@@ -811,15 +811,11 @@ export function Artefacts() {
 						<div className="mb-8 text-center">
 							<KleeLogo className="mx-auto mb-4 size-16" lookAt={promptCaret} />
 							<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-								{greeting.text},{" "}
+								{greeting},{" "}
 								<span className="text-accent-text">
 									{user.name?.split(" ")[0] || "there"}
-								</span>{" "}
-								<span aria-hidden>{greeting.icon}</span>
+								</span>
 							</h1>
-							<p className="mt-2 text-sm text-muted">
-								{greeting.note}
-							</p>
 						</div>
 						<form onSubmit={create} className="w-full">
 							<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
