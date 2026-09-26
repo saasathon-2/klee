@@ -895,6 +895,7 @@ async function readArtefactComments(artefactId: string, userId: string | null) {
 
 async function publishGitHubArtefactComment(
 	artefactId: string,
+	commentId: string,
 	authorName: string,
 	body: string,
 ) {
@@ -916,7 +917,11 @@ async function publishGitHubArtefactComment(
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
-						body: githubArtefactDiscussionComment(authorName, body),
+						body: githubArtefactDiscussionComment(
+							authorName,
+							body,
+							`${env.corsOrigin}/artefacts/shared/${artefactId}#comment-${commentId}`,
+						),
 					}),
 				},
 			),
@@ -999,6 +1004,7 @@ app.post("/api/artefacts/:id/comments", async (req, res) => {
 	timing.apply(res);
 	void publishGitHubArtefactComment(
 		req.params.id,
+		id,
 		user.name ?? "A teammate",
 		body,
 	).catch((error) => console.error("GitHub artefact comment sync failed", error));
