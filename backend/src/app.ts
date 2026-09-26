@@ -34,6 +34,7 @@ import { addNoteEvidence, googleDevelopmentNotes, googleDriveAccessToken } from 
 import {
 	githubActionsClaims,
 	githubArtefactComment,
+	githubArtefactDiscussionComment,
 	githubAppSlug,
 	githubInstallation,
 	removeGitHubInstallation,
@@ -892,6 +893,37 @@ async function readArtefactComments(artefactId: string, userId: string | null) {
 	}));
 }
 
+async function publishGitHubArtefactComment(
+	artefactId: string,
+	authorName: string,
+	body: string,
+) {
+	const { rows } = await pool.query<{
+		repository: string;
+		pullRequest: number;
+		installationId: string;
+	}>(
+		`select repository, pull_request as "pullRequest", installation_id as "installationId"
+		from github_pull_request_artefact where artefact_id = $1`,
+		[artefactId],
+	);
+	await Promise.all(
+		rows.map(({ repository, pullRequest, installationId }) =>
+			githubInstallationRequest(
+				installationId,
+				`/repos/${repository}/issues/${pullRequest}/comments`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						body: githubArtefactDiscussionComment(authorName, body),
+					}),
+				},
+			),
+		),
+	);
+}
+
 app.get("/api/artefacts/:id/comments", async (req, res) => {
 	const timing = requestTiming();
 	const user = await timing.measure("auth", () => sessionUser(req, res));
@@ -965,6 +997,11 @@ app.post("/api/artefacts/:id/comments", async (req, res) => {
 		[id, req.params.id, parentId, user.id, body, parentId ? null : anchor],
 	));
 	timing.apply(res);
+	void publishGitHubArtefactComment(
+		req.params.id,
+		user.name ?? "A teammate",
+		body,
+	).catch((error) => console.error("GitHub artefact comment sync failed", error));
 	res.status(201).json({
 		...rows[0],
 		author: { id: user.id, name: user.name ?? null, image: user.image ?? null },

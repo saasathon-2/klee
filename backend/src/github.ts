@@ -295,6 +295,12 @@ export function githubArtefactComment(url: string, previewUrl: string) {
 	return `<a href="${url}" target="_blank"><img src="${previewUrl}" alt="Klee artefact"></a>`;
 }
 
+export function githubArtefactDiscussionComment(authorName: string, body: string) {
+	const author = authorName.replace(/\s+/g, " ").trim() || "A teammate";
+	const quotedBody = body.trim().split(/\r?\n/).map((line) => `> ${line}`).join("\n");
+	return `**${author} commented:**\n\n${quotedBody}`;
+}
+
 export function validActionsClaims(claims: Record<string, unknown>) {
 	const now = Math.floor(Date.now() / 1000);
 	const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];

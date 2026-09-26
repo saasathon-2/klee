@@ -7,7 +7,7 @@ process.env.GITHUB_WEBHOOK_SECRET = "test-secret";
 process.env.GITHUB_APP_ID = "test-app";
 process.env.GITHUB_PRIVATE_KEY = generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey.export({ type: "pkcs8", format: "pem" }).toString();
 
-const { githubArtefactComment, githubInstallationRequest, githubPullRequestFingerprint, githubPullRequestPrompt, isGitHubBot, validActionsClaims, validGitHubWebhook } = await import("./github.ts");
+const { githubArtefactComment, githubArtefactDiscussionComment, githubInstallationRequest, githubPullRequestFingerprint, githubPullRequestPrompt, isGitHubBot, validActionsClaims, validGitHubWebhook } = await import("./github.ts");
 const body = Buffer.from('{"action":"created"}');
 const signature = `sha256=${createHmac("sha256", "test-secret").update(body).digest("hex")}`;
 assert.equal(validGitHubWebhook(body, signature), true);
@@ -41,6 +41,7 @@ assert.equal(validActionsClaims({ iss: "wrong", aud: "klee-github-actions", repo
 const artefactUrl = "https://klee.work/artefacts/shared/example";
 const previewUrl = "https://klee.work/api/shared/artefacts/example/preview?v=1";
 assert.equal(githubArtefactComment(artefactUrl, previewUrl), `<a href="${artefactUrl}" target="_blank"><img src="${previewUrl}" alt="Klee artefact"></a>`);
+assert.equal(githubArtefactDiscussionComment("Jane Doe", "Please rename this.\nIt is unclear."), "**Jane Doe commented:**\n\n> Please rename this.\n> It is unclear.");
 const prompt = githubPullRequestPrompt("acme/repo", 12, {
 	headSha: "abcdef",
 	title: "Add context",
