@@ -5,5 +5,5 @@ export function KleeLogo({
 	className?: string;
 	alt?: string;
 }) {
-	return <img src="/klee1.svg" alt={alt} className={className} />;
+	return <img src="/kleelogo.svg" alt={alt} className={className} />;
 }
