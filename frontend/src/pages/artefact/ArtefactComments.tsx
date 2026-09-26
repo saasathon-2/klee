@@ -1,5 +1,5 @@
 import { Button, TextArea } from "@heroui/react";
-import { ArrowLeft, MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { ArrowLeft, MessageCircle, Reply, Send, Sparkles, X } from "lucide-react";
 import { HiOutlineEye, HiOutlineHandThumbUp, HiOutlineHeart, HiOutlineSparkles } from "react-icons/hi2";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, PointerEvent, ReactNode } from "react";
@@ -31,8 +31,8 @@ function userColor(id: string) {
 	return `hsl(${(hash >>> 0) % 360} 68% 48%)`;
 }
 
-function commentApi(artefactId: string, suffix = "", options?: RequestInit, shared = false) {
-	const path = shared ? `/api/shared/artefacts/${artefactId}/comments` : `/api/artefacts/${artefactId}/comments`;
+function commentApi(artefactId: string, suffix = "", options?: RequestInit, publicView = false) {
+	const path = publicView ? `/api/shared/artefacts/${artefactId}/comments` : `/api/artefacts/${artefactId}/comments`;
 	return fetch(`${path}${suffix}`, {
 		credentials: "include",
 		headers: { "Content-Type": "application/json", ...options?.headers },
@@ -44,12 +44,18 @@ function bounded(value: number, max: number) {
 	return Math.min(max, Math.max(0, value));
 }
 
-function regionStyle(anchor: Anchor, color: string, highlighted = false) {
+function regionBounds(anchor: Anchor) {
 	return {
 		left: `${anchor.x * 100}%`,
 		top: `${anchor.y * 100}%`,
 		width: `${anchor.width * 100}%`,
 		height: `${anchor.height * 100}%`,
+	};
+}
+
+function regionStyle(anchor: Anchor, color: string, highlighted = false) {
+	return {
+		...regionBounds(anchor),
 		borderColor: color,
 		backgroundColor: `color-mix(in srgb, ${color} ${highlighted ? 28 : 12}%, transparent)`,
 		boxShadow: highlighted ? `0 0 0 2px ${color}` : undefined,
@@ -94,16 +100,16 @@ export function ArtefactComments({
 	const [isDrafting, setDrafting] = useState(false);
 
 	const loadComments = useCallback(async () => {
-		const response = await commentApi(artefactId, "", undefined, isShared);
+		const response = await commentApi(artefactId, "", undefined, isShared && !canComment);
 		if (!response.ok) throw new Error("Could not load comments.");
 		const next = (await response.json()) as Comment[];
 		setComments(next);
 		onCountChange(next.length);
-	}, [artefactId, isShared, onCountChange]);
+	}, [artefactId, isShared, canComment, onCountChange]);
 
 	useEffect(() => {
 		let current = true;
-		commentApi(artefactId, "", undefined, isShared)
+		commentApi(artefactId, "", undefined, isShared && !canComment)
 			.then(async (response) => {
 				if (!response.ok) throw new Error();
 				return (await response.json()) as Comment[];
@@ -119,7 +125,7 @@ export function ArtefactComments({
 		return () => {
 			current = false;
 		};
-	}, [artefactId, isShared, onCountChange]);
+	}, [artefactId, isShared, canComment, onCountChange]);
 
 	useEffect(() => {
 		if (isOpen || !draftAnchor) return;
@@ -191,7 +197,7 @@ export function ArtefactComments({
 	}
 
 	function canAdjustAnchor(comment: Comment) {
-		return canComment && !isShared && comment.parentId === null && (isOwner || comment.author.id === userId);
+		return canComment && comment.parentId === null && (isOwner || comment.author.id === userId);
 	}
 
 	function startAnchorAdjustment(event: PointerEvent<HTMLButtonElement>, comment: Comment) {
@@ -288,7 +294,7 @@ export function ArtefactComments({
 					body: body.trim(),
 					...(threadId ? { parentId: threadId } : { anchor: draftAnchor }),
 				}),
-			}, isShared);
+			}, isShared && !canComment);
 			if (!response.ok) throw new Error("Could not post your comment.");
 			const result = (await response.json()) as { id: string };
 			setBody("");
@@ -309,7 +315,7 @@ export function ArtefactComments({
 			const response = await commentApi(artefactId, `/${commentId}/reactions`, {
 				method: "POST",
 				body: JSON.stringify({ emoji }),
-			}, isShared);
+			}, isShared && !canComment);
 			if (!response.ok) throw new Error("Could not add reaction.");
 			await loadComments();
 		} catch (error) {
@@ -363,35 +369,57 @@ export function ArtefactComments({
 					{children}
 					{comments.filter((comment) => comment.anchor).map((comment) => {
 						const color = userColor(comment.author.id);
+						const anchor = adjustingAnchor?.id === comment.id ? adjustingAnchor.anchor : comment.anchor!;
+						const highlighted = hoveredCommentId === comment.id || threadId === comment.id;
+						const { left, top, width, height, ...boxStyle } = regionStyle(anchor, color, highlighted);
 						return (
-							<button
+							<div
 								key={comment.id}
-								type="button"
-								data-comment-id={comment.id}
-								data-comment-overlay
-								aria-label={`Open comment by ${comment.author.name || "teammate"}`}
-								title={comment.author.name || "Comment"}
-								className={canAdjustAnchor(comment) ? "absolute z-[5] cursor-move select-none rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow]" : "absolute z-[5] rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow]"}
-								style={{ ...regionStyle(adjustingAnchor?.id === comment.id ? adjustingAnchor.anchor : comment.anchor!, color, hoveredCommentId === comment.id || threadId === comment.id), ...(canAdjustAnchor(comment) ? { touchAction: "none" } : {}) }}
+								className="pointer-events-none absolute z-[5]"
+								style={{ left, top, width, height }}
 								onMouseEnter={() => setHoveredCommentId(comment.id)}
 								onMouseLeave={() => setHoveredCommentId(undefined)}
-								onPointerDown={(event) => startAnchorAdjustment(event, comment)}
-								onPointerMove={moveAnchorAdjustment}
-								onPointerUp={finishAnchorAdjustment}
-								onPointerCancel={cancelAnchorAdjustment}
-								onClick={() => {
-									if (suppressOverlayClick.current) {
-										suppressOverlayClick.current = false;
-										return;
-									}
-									openThread(comment.id);
-								}}
+								onFocusCapture={() => setHoveredCommentId(comment.id)}
+								onBlurCapture={() => setHoveredCommentId(undefined)}
 							>
-								<span className="absolute -right-2 -top-3 leading-none rounded-2xl border-2 border-surface bg-surface shadow-sm">
-									<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
-								</span>
-								{canAdjustAnchor(comment) && <span data-comment-resize className="absolute -bottom-1.5 -right-1.5 size-3.5 cursor-se-resize rounded-sm border-2 border-surface bg-current" style={{ color }} />}
-							</button>
+								<button
+									type="button"
+									data-comment-id={comment.id}
+									data-comment-overlay
+									aria-label={"Open comment by " + (comment.author.name || "teammate")}
+									title={comment.author.name || "Comment"}
+									className={canAdjustAnchor(comment) ? "pointer-events-auto absolute inset-0 cursor-move select-none rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow]" : "pointer-events-auto absolute inset-0 rounded-lg border-2 border-dashed text-left transition-[background-color,box-shadow]"}
+									style={{ ...boxStyle, ...(canAdjustAnchor(comment) ? { touchAction: "none" } : {}) }}
+									onPointerDown={(event) => startAnchorAdjustment(event, comment)}
+									onPointerMove={moveAnchorAdjustment}
+									onPointerUp={finishAnchorAdjustment}
+									onPointerCancel={cancelAnchorAdjustment}
+									onClick={() => {
+										if (suppressOverlayClick.current) {
+											suppressOverlayClick.current = false;
+											return;
+										}
+										openThread(comment.id);
+									}}
+								>
+									<span className="absolute -right-2 -top-3 leading-none rounded-2xl border-2 border-surface bg-surface shadow-sm">
+										<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
+									</span>
+									{canAdjustAnchor(comment) && <span data-comment-resize className="absolute -bottom-1.5 -right-1.5 size-3.5 cursor-se-resize rounded-sm border-2 border-surface bg-current" style={{ color }} />}
+								</button>
+								{canComment && hoveredCommentId === comment.id && (
+									<button
+										type="button"
+										aria-label={"Reply to comment by " + (comment.author.name || "teammate")}
+										title="Reply to comment"
+										className="pointer-events-auto absolute left-1/2 top-full z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-surface px-2 py-1 text-xs shadow-md hover:bg-surface-secondary"
+										onPointerDown={(event) => event.stopPropagation()}
+										onClick={() => openThread(comment.id)}
+									>
+										<Reply size={14} /> Reply
+									</button>
+								)}
+							</div>
 						);
 					})}
 					{(draftAnchor || dragAnchor) && (
