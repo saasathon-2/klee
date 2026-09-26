@@ -973,18 +973,41 @@ app.post("/api/artefacts/:id/share", async (req, res) => {
 	res.json(rows[0]);
 });
 
+app.delete("/api/artefacts/:id/share", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user || !(await ownedArtefact(req.params.id, user.id)))
+		return res.sendStatus(404);
+	await transaction(async (client) => {
+		await client.query(
+			"update artefact set is_shared = false where id = $1",
+			[req.params.id],
+		);
+		await client.query(
+			"delete from artefact_organisation_permission where artefact_id = $1",
+			[req.params.id],
+		);
+	});
+	res.sendStatus(204);
+});
+
 app.get("/api/shared/artefacts/:id", async (req, res) => {
 	const { rows } = await pool.query(
-		'select id, is_shared as "isShared", prompt, title, content, created_at as "createdAt", updated_at as "updatedAt" from artefact where id = $1',
+		'select id, owner_id, is_shared as "isShared", prompt, title, content, created_at as "createdAt", updated_at as "updatedAt" from artefact where id = $1',
 		[req.params.id],
 	);
 	if (!rows[0]) return res.sendStatus(404);
-	if (!rows[0].isShared) return res.status(403).json({ error: "not_shared" });
+	if (!rows[0].isShared) {
+		const user = await sessionUser(req, res);
+		if (!user) return;
+		if (rows[0].owner_id !== user.id)
+			return res.sendStatus(404);
+	}
 	const revisions = await pool.query(
 		'select id, content, generated_content as "generatedContent", created_at as "createdAt" from artefact_revision where artefact_id = $1 order by created_at',
 		[rows[0].id],
 	);
-	res.json({ ...rows[0], revisions: revisions.rows });
+	const { owner_id: _, ...artefact } = rows[0];
+	res.json({ ...artefact, revisions: revisions.rows });
 });
 
 /** Private data is available to the screenshot browser only via a short-lived signature. */
