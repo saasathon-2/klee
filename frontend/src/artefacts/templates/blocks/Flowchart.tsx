@@ -3,7 +3,8 @@ import { Handle, Position } from "@xyflow/react";
 import type { Node as XYFlowNode, NodeProps } from "@xyflow/react";
 import type { FlowchartStep, SoftwareDiagramEdge } from "../../model";
 import { BlockSection } from "../page/BlockSection";
-import { DiagramCanvas } from "../page/DiagramCanvas";
+import { useMemo } from "react";
+import { DiagramCanvas, type DiagramDirection } from "../page/DiagramCanvas";
 import { SourceLink } from "../page/SourceLink";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
@@ -38,7 +39,10 @@ function StepShape({ kind }: { kind: FlowchartStep["kind"] }) {
 	);
 }
 
-function FlowchartNode({ data }: NodeProps<XYFlowNode<FlowchartStep, "step">>) {
+type FlowchartNodeData = FlowchartStep & { direction: DiagramDirection };
+
+function FlowchartNode({ data }: NodeProps<XYFlowNode<FlowchartNodeData, "step">>) {
+	const across = data.direction === "LR";
 	const content = (
 		<>
 			<StepShape kind={data.kind} />
@@ -63,14 +67,14 @@ function FlowchartNode({ data }: NodeProps<XYFlowNode<FlowchartStep, "step">>) {
 			title={data.detail ?? undefined}
 			className="relative flex h-24 w-[216px] text-surface-foreground"
 		>
-			<Handle type="target" position={Position.Top} className={handleClass} />
+			<Handle type="target" position={across ? Position.Left : Position.Top} className={handleClass} />
 			<SourceLink
 				href={data.url}
 				className="relative flex size-full flex-col items-center justify-center px-5 text-center"
 			>
 				{content}
 			</SourceLink>
-			<Handle type="source" position={Position.Bottom} className={handleClass} />
+			<Handle type="source" position={across ? Position.Right : Position.Bottom} className={handleClass} />
 		</div>
 	);
 }
@@ -78,12 +82,15 @@ function FlowchartNode({ data }: NodeProps<XYFlowNode<FlowchartStep, "step">>) {
 const nodeTypes = { step: FlowchartNode };
 
 export function Flowchart({ node, context }: TemplateProps) {
-	const { title, description, steps, edges } = node.data as {
+	const { title, description, steps, edges, direction = "TB" } = node.data as {
 		title: string;
 		description: string;
 		steps: FlowchartStep[];
 		edges: SoftwareDiagramEdge[];
+		/** Left to right suits short, architecture-style flows. */
+		direction?: DiagramDirection;
 	};
+	const nodes = useMemo(() => steps.map((step) => ({ ...step, direction })), [steps, direction]);
 	const decisions = steps.filter((step) => step.kind === "decision").length;
 	return (
 		<BlockSection title={title} description={description} edit={{ node, context }}>
@@ -94,13 +101,13 @@ export function Flowchart({ node, context }: TemplateProps) {
 			)}
 			<DiagramCanvas
 				title={title}
-				nodes={steps}
+				nodes={nodes}
 				edges={edges}
 				type="step"
 				nodeTypes={nodeTypes}
 				nodeSize={nodeSize}
-				direction="TB"
-				minHeight={360}
+				direction={direction}
+				minHeight={direction === "LR" ? 240 : 360}
 			/>
 		</BlockSection>
 	);
