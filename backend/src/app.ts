@@ -717,8 +717,15 @@ app.get("/api/artefacts/:id/preview", async (req, res) => {
 	return sendArtefactPreview(req.params.id, res, "private, max-age=300");
 });
 
-const commentReactions = ["👍", "❤️", "🎉", "👀"] as const;
-type CommentAnchor = { x: number; y: number; width: number; height: number };
+const commentReactions = ["❤️"] as const;
+type CommentAnchor = {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+	basisWidth?: number;
+	basisHeight?: number;
+};
 
 function validCommentAnchor(value: unknown): value is CommentAnchor {
 	if (!value || typeof value !== "object") return false;
@@ -731,9 +738,19 @@ function validCommentAnchor(value: unknown): value is CommentAnchor {
 	)
 		return false;
 	const { x, y, width, height } = anchor as CommentAnchor;
+	const { basisWidth, basisHeight } = anchor as CommentAnchor;
+	const hasBasis = basisWidth !== undefined || basisHeight !== undefined;
 	return [x, y, width, height].every(Number.isFinite) &&
 		x >= 0 && y >= 0 && width > 0 && height > 0 &&
-		x + width <= 1.001 && y + height <= 1.001;
+		x + width <= 1.001 && y + height <= 1.001 &&
+		(!hasBasis ||
+			[basisWidth, basisHeight].every(
+				(size) =>
+					typeof size === "number" &&
+					Number.isFinite(size) &&
+					size > 0 &&
+					size <= 100_000,
+			));
 }
 
 async function readArtefactComments(artefactId: string, userId: string | null) {
@@ -780,13 +797,23 @@ app.get("/api/artefacts/:id/comments", async (req, res) => {
 app.patch("/api/artefacts/:id/comments/:commentId", async (req, res) => {
 	const user = await sessionUser(req, res);
 	if (!user) return;
-	const artefact = await commentableArtefact(req.params.id, user.id);
-	if (!artefact) return res.sendStatus(404);
+	if (!(await commentableArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	if (typeof req.body?.body === "string") {
+		const body = req.body.body.trim();
+		if (!body || body.length > 5000)
+			return res.status(400).json({ error: "Comments must be between 1 and 5000 characters." });
+		const { rows } = await pool.query(
+			"update artefact_comment set body = $1 where id = $2 and artefact_id = $3 and author_id = $4 returning id",
+			[body, req.params.commentId, req.params.id, user.id],
+		);
+		if (!rows[0]) return res.sendStatus(404);
+		return res.sendStatus(204);
+	}
 	const anchor = req.body?.anchor;
 	if (!validCommentAnchor(anchor)) return res.status(400).json({ error: "Select a valid area of the artefact." });
 	const { rows } = await pool.query(
-		"update artefact_comment set anchor = $1::jsonb where id = $2 and artefact_id = $3 and parent_id is null and (author_id = $4 or $5::boolean) returning id",
-		[JSON.stringify(anchor), req.params.commentId, req.params.id, user.id, artefact.isOwner],
+		"update artefact_comment set anchor = $1::jsonb where id = $2 and artefact_id = $3 and parent_id is null and author_id = $4 returning id",
+		[JSON.stringify(anchor), req.params.commentId, req.params.id, user.id],
 	);
 	if (!rows[0]) return res.sendStatus(404);
 	res.sendStatus(204);
