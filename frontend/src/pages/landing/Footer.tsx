@@ -1,7 +1,9 @@
 import { Link, Paragraph, Separator } from "@heroui/react";
 import { useSession } from "../../lib/auth-client";
 import { useTheme } from "../../lib/use-theme";
+import { Scallop } from "../../artefacts/templates/page/Scallop";
 import { navMenus, pricingPath } from "./links";
+import { KleeLogo } from "../../components/KleeLogo";
 
 export function Footer() {
 	const { data: session } = useSession();
@@ -33,11 +35,16 @@ export function Footer() {
 	];
 
 	return (
+		<>
+			<div aria-hidden className="relative z-10">
+				<Scallop edge="top" />
+				<div className="h-16 bg-brand" />
+			</div>
 		<footer>
 			<div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[2fr_repeat(4,1fr)]">
 				<div className="flex h-full flex-col">
 					<div className="flex items-center gap-2">
-						<img src="/kleelogo.svg" alt="" className="size-10" />
+						<KleeLogo alt="" className="size-10" />
 						<img
 							src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
 							alt="Klee"
@@ -82,5 +89,6 @@ export function Footer() {
 				© 2026 Klee. All rights reserved.
 			</Paragraph>
 		</footer>
+		</>
 	);
 }

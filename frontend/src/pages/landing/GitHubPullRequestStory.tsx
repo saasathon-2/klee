@@ -10,6 +10,7 @@ import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
 import { GitHubIcon } from "../../components/BrandIcons";
+import { KleeLogo } from "../../components/KleeLogo";
 import { UserAvatar } from "../../components/UserAvatar";
 
 const shareUrl =
@@ -219,8 +220,7 @@ export function GitHubPullRequestStory() {
 								pop(botVisible)
 							}
 						>
-							<img
-								src="/kleelogo.svg"
+							<KleeLogo
 								alt="orca-klee profile picture"
 								className="size-10 shrink-0 rounded-xl sm:size-[4.5rem] sm:rounded-2xl"
 							/>

@@ -9,13 +9,41 @@ export const orgRefreshMs = 15 * 60 * 1000;
  * GitHub account (org or personal) that the artefact's installation is for.
  * Keep in step with `canAccessArtefact`.
  */
-export function accessibleArtefactSql(userParam: string, alias = "artefact") {
-	return `(${alias}.owner_id = ${userParam} or exists (
+export const artefactPermissions = ["view", "comment", "edit"] as const;
+export type ArtefactPermission = (typeof artefactPermissions)[number];
+
+function githubAccessSql(userParam: string, alias: string) {
+	return `exists (
 		select 1 from github_installation access_installation
 		join github_user_org access_org on lower(access_org.org_login) = lower(access_installation.account_login)
 		where access_installation.installation_id = ${alias}.github_installation_id
 			and access_org.user_id = ${userParam}
-	))`;
+	)`;
+}
+
+/** The most permissive grant for a user; GitHub project access remains edit access. */
+export function artefactPermissionSql(userParam: string, alias = "artefact") {
+	return `(case
+		when ${alias}.owner_id = ${userParam} then 'edit'
+		when ${githubAccessSql(userParam, alias)} then 'edit'
+		else (
+			select grant.permission
+			from artefact_organisation_permission grant
+			join organisation_member member on member.organisation_id = grant.organisation_id
+			where grant.artefact_id = ${alias}.id and member.user_id = ${userParam}
+			order by case grant.permission when 'edit' then 3 when 'comment' then 2 else 1 end desc
+			limit 1
+		)
+	end)`;
+}
+
+export function accessibleArtefactSql(userParam: string, alias = "artefact") {
+	return `${artefactPermissionSql(userParam, alias)} is not null`;
+}
+
+export function can(available: ArtefactPermission | null | undefined, required: ArtefactPermission) {
+	return available !== null && available !== undefined &&
+		artefactPermissions.indexOf(available) >= artefactPermissions.indexOf(required);
 }
 
 /** The access rule `accessibleArtefactSql` applies, for code that has the rows in hand. */

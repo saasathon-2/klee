@@ -2,7 +2,6 @@ import {
 	Alert,
 	AlertDialog,
 	Button,
-	Card,
 	Drawer,
 	Input,
 	Label,
@@ -18,8 +17,8 @@ import {
 import {
 	ArrowUp,
 	BrainCog,
+	Building2,
 	CircuitBoard,
-	Check,
 	History,
 	LogOut,
 	Maximize2,
@@ -32,7 +31,6 @@ import {
 	Plug,
 	Plus,
 	Share2,
-	UserRound,
 	X,
 	FlaskConical,
 	HardHat,
@@ -45,7 +43,6 @@ import { isFileDropItem, useDrop, type DragTypes } from "react-aria-components";
 import {
 	Navigate,
 	Link,
-	useLocation,
 	useNavigate,
 	useParams,
 	useSearchParams,
@@ -63,9 +60,9 @@ import type { EditPath, FigureRequest } from "../artefacts/templates/types";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsModal } from "./Integrations";
+import { OrganisationsModal } from "./Organisations";
 import { useMediaQuery } from "../lib/use-media-query";
 import { ArtefactSkeleton } from "./artefact/ArtefactSkeleton";
-import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 import { ArtefactIcon, ArtefactNav } from "./artefact/ArtefactNav";
 import { acceptArtefactDrop, droppedArtefactId } from "./artefact/artefactDrag";
 import { AttachmentChips } from "./artefact/AttachmentChips";
@@ -74,6 +71,7 @@ import { ProjectSelect } from "./artefact/ProjectSelect";
 import { useFolders, type Folder } from "./artefact/useFolders";
 import { VersionHistory } from "./artefact/VersionHistory";
 import { ArtefactComments } from "./artefact/ArtefactComments";
+import { ShareDialog } from "./artefact/ShareDialog";
 import { useDocumentTitle } from "../useDocumentTitle";
 
 type Revision = {
@@ -95,6 +93,7 @@ type Artefact = {
 	/** Latest version number; manual saves must be based on it. */
 	version?: number;
 	isOwner?: boolean;
+	permission?: "view" | "comment" | "edit";
 	/** GitHub org (project) whose members can view and edit this artefact. */
 	project?: string | null;
 	installationId?: string | null;
@@ -168,7 +167,6 @@ const api = (path: string, options?: RequestInit) =>
 
 export function Artefacts() {
 	const navigate = useNavigate();
-	const location = useLocation();
 	const { id: routeId, shareId } = useParams();
 	const [searchParams] = useSearchParams();
 	const id = routeId ?? searchParams.get("artefact") ?? undefined;
@@ -177,8 +175,9 @@ export function Artefacts() {
 	const { data: session, isPending } = useSession();
 	const viewerId = session?.user?.id;
 	const isShared = Boolean(shareId);
-	const isProfile = location.pathname === "/profile";
-	const isIntegrations = location.pathname === "/integrations";
+	const panel = searchParams.get("panel");
+	const isIntegrations = panel === "integrations";
+	const isOrganisations = panel === "organisations";
 	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
 	const [loaded, setLoaded] = useState<{
 		path: string;
@@ -200,9 +199,7 @@ export function Artefacts() {
 		rename: renameFolder,
 		remove: removeFolder,
 	} = useFolders(Boolean(session?.user) && !isShared, setError);
-	const [hasGitHubInstallation, setHasGitHubInstallation] =
-		useState<boolean>();
-	const [copied, setCopied] = useState(false);
+	const [shareOpen, setShareOpen] = useState(false);
 	const [notShared, setNotShared] = useState(false);
 	const [sharedCommentsOpen, setSharedCommentsOpen] = useState(false);
 	const [sharedCommentCount, setSharedCommentCount] = useState(0);
@@ -210,6 +207,7 @@ export function Artefacts() {
 		artefactId: string;
 		viewerId: string;
 		isOwner: boolean;
+		permission?: Artefact["permission"];
 	}>();
 	const [isFullscreen, setFullscreen] = useState(false);
 	// Phones get the sidebar as a drawer, closed until the toggle is pressed.
@@ -240,7 +238,8 @@ export function Artefacts() {
 				if (files.length) {
 					const rejected = pdfs.add(files);
 					setError(rejected ?? "");
-					if (isProfile || isIntegrations) navigate("/");
+					// Close any open panel so the new attachments are in view.
+					if (panel) navigate("/");
 					return;
 				}
 				const artefactId = await droppedArtefactId(items);
@@ -259,10 +258,10 @@ export function Artefacts() {
 	useDocumentTitle(
 		current
 			? `${artefactHeading(current)} - Klee`
-			: isProfile
-				? "Profile - Klee"
-				: isIntegrations
-					? "Integrations - Klee"
+			: isIntegrations
+				? "Integrations - Klee"
+				: isOrganisations
+					? "Organisations - Klee"
 					: isShared
 						? "Shared artefact - Klee"
 						: "Artefacts - Klee",
@@ -275,23 +274,14 @@ export function Artefacts() {
 			: undefined;
 
 	useEffect(() => {
-		if (isShared || !session?.user) return;
+		if (isShared || !viewerId) return;
 		api("/artefacts")
 			.then((response) =>
 				response.ok ? response.json() : Promise.reject(),
 			)
 			.then(setArtefacts)
 			.catch(() => setError("Could not load artefacts."));
-	}, [isShared, session?.user]);
-	useEffect(() => {
-		if (!isProfile || !session?.user) return;
-		api("/integrations/github")
-			.then((response) => (response.ok ? response.json() : []))
-			.then((installations: unknown[]) =>
-				setHasGitHubInstallation(installations.length > 0),
-			)
-			.catch(() => setHasGitHubInstallation(false));
-	}, [isProfile, session?.user]);
+	}, [isShared, viewerId]);
 	useEffect(() => {
 		if (!artefactPath || loaded?.path === artefactPath) return;
 		api(artefactPath)
@@ -330,6 +320,7 @@ export function Artefacts() {
 								artefactId: shareId,
 								viewerId,
 								isOwner: Boolean(artefact.isOwner),
+								permission: artefact.permission,
 							}
 						: undefined,
 				);
@@ -393,8 +384,9 @@ export function Artefacts() {
 			}
 			if (!artefact) throw new Error("create incomplete");
 			const path = `/artefacts/${artefact.id}`;
-			setArtefacts((currentArtefacts) => [artefact, ...currentArtefacts]);
-			setLoaded({ path, artefact });
+			const ownedArtefact = { ...artefact, isOwner: true, permission: "edit" as const };
+			setArtefacts((currentArtefacts) => [ownedArtefact, ...currentArtefacts]);
+			setLoaded({ path, artefact: ownedArtefact });
 			setPrompt("");
 			pdfs.clear();
 			navigate(`/?artefact=${artefact.id}`);
@@ -532,23 +524,10 @@ export function Artefacts() {
 			setIsRevising(false);
 		}
 	}
-	async function share() {
+	function markShared() {
 		if (!current) return;
-		if (!current.isShared) {
-			const response = await api(`/artefacts/${current.id}/share`, {
-				method: "POST",
-			});
-			if (!response.ok) return setError("Could not share artefact.");
-			setLoaded({
-				path: artefactPath!,
-				artefact: { ...current, isShared: true },
-			});
-		}
-		await navigator.clipboard.writeText(
-			`${window.location.origin}/artefacts/shared/${current.id}`,
-		);
-		setCopied(true);
-		window.setTimeout(() => setCopied(false), 1500);
+		setLoaded({ path: artefactPath!, artefact: { ...current, isShared: true } });
+		setArtefacts((items) => items.map((item) => item.id === current.id ? { ...item, isShared: true } : item));
 	}
 	function updateCurrent(update: Partial<Artefact>) {
 		if (!current) return;
@@ -671,9 +650,7 @@ export function Artefacts() {
 								isOwner={currentSharedAccess?.isOwner ?? false}
 								userId={session?.user?.id ?? ""}
 								isShared
-								canComment={Boolean(
-									session?.user && current.isShared,
-								)}
+								canComment={currentSharedAccess?.permission === "comment" || currentSharedAccess?.permission === "edit"}
 								isOpen={sharedCommentsOpen}
 								onOpenChange={setSharedCommentsOpen}
 								onCountChange={setSharedCommentCount}
@@ -709,10 +686,11 @@ export function Artefacts() {
 			selectedId={id}
 			user={user}
 			isIntegrations={isIntegrations}
-			onIntegrations={() => go("/integrations")}
+			isOrganisations={isOrganisations}
+			onIntegrations={() => go("/?panel=integrations")}
+			onOrganisations={() => go("/?panel=organisations")}
 			onCreate={() => go("/")}
 			onOpenArtefact={(artefactId) => go(`/?artefact=${artefactId}`)}
-			onProfile={() => go("/profile")}
 			onSignOut={leave}
 		/>
 	);
@@ -762,76 +740,8 @@ export function Artefacts() {
 							<PanelLeftOpen size={19} />
 						)}
 					</Button>
-					{isProfile && (
-						<h1 className="text-2xl font-semibold tracking-tight">
-							Profile
-						</h1>
-					)}
 					<ThemeToggle className="ml-auto" />
 				</header>
-				{isProfile ? (
-					<div className="mx-auto flex w-full max-w-lg flex-1 items-center px-8 pb-20">
-						<Card className="w-full">
-							<Card.Header className="flex items-center gap-4">
-								<UserAvatar
-									image={user.image}
-									name={user.name || user.email}
-									size="lg"
-								/>
-								<div>
-									<Card.Title>
-										{user.name || "Unnamed"}
-									</Card.Title>
-									<Card.Description>
-										{user.email}
-									</Card.Description>
-								</div>
-							</Card.Header>
-							<Card.Content>
-								<dl className="divide-y divide-border text-sm">
-									<div className="flex items-center justify-between py-3">
-										<dt className="text-muted">
-											Email verified
-										</dt>
-										<dd>
-											{user.emailVerified ? "Yes" : "No"}
-										</dd>
-									</div>
-									<div className="flex items-center justify-between py-3">
-										<dt className="text-muted">
-											Member since
-										</dt>
-										<dd>
-											{new Date(
-												user.createdAt,
-											).toLocaleDateString()}
-										</dd>
-									</div>
-								</dl>
-								<div className="mt-5">
-									{hasGitHubInstallation === false && (
-										<Button
-											onPress={() =>
-												window.location.assign(
-													"/api/integrations/github/install",
-												)
-											}
-										>
-											Connect GitHub
-										</Button>
-									)}
-									{searchParams.get("github") ===
-										"connected" && (
-										<p className="mt-2 text-sm text-success">
-											GitHub connected.
-										</p>
-									)}
-									<GitHubAccountLink />
-								</div>
-							</Card.Content>
-						</Card>
-					</div>
-				) : (
 					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 						<div className="mx-auto w-full max-w-2xl">
 							<div className="mb-8 text-center">
@@ -918,7 +828,7 @@ export function Artefacts() {
 								<Button
 									variant="ghost"
 									className="h-auto max-w-full rounded-xl justify-center border border-border bg-surface px-4 py-3 hover:bg-surface-secondary"
-									onPress={() => navigate("/integrations")}
+									onPress={() => navigate("/?panel=integrations")}
 								>
 									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
 										<Plug size={16} />
@@ -951,7 +861,6 @@ export function Artefacts() {
 							</div>
 						</div>
 					</div>
-				)}
 				{error && (
 					<p className="absolute bottom-8 left-8 text-sm text-danger">
 						{error}
@@ -970,8 +879,7 @@ export function Artefacts() {
 					userId={user.id}
 					onClose={current ? close : cancelGeneration}
 					onFullscreen={() => setFullscreen(!isFullscreen)}
-					onShare={share}
-					copied={copied}
+					onShare={() => setShareOpen(true)}
 					followUp={followUp}
 					setFollowUp={setFollowUp}
 					isRevising={isRevising}
@@ -985,6 +893,12 @@ export function Artefacts() {
 			)}
 			{isIntegrations && (
 				<IntegrationsModal onClose={() => navigate("/")} />
+			)}
+			{isOrganisations && (
+				<OrganisationsModal onClose={() => navigate("/")} />
+			)}
+			{shareOpen && current?.isOwner && (
+				<ShareDialog artefactId={current.id} isShared={Boolean(current.isShared)} onShared={markShared} onClose={() => setShareOpen(false)} />
 			)}
 		</Surface>
 	);
@@ -1001,10 +915,11 @@ function WorkspaceSidebar({
 	selectedId,
 	user,
 	isIntegrations,
+	isOrganisations,
 	onIntegrations,
+	onOrganisations,
 	onCreate,
 	onOpenArtefact,
-	onProfile,
 	onSignOut,
 }: {
 	/** Fills the phone drawer instead of sitting beside the page. */
@@ -1018,10 +933,11 @@ function WorkspaceSidebar({
 	selectedId?: string;
 	user: { name?: string | null; email: string; image?: string | null };
 	isIntegrations: boolean;
+	isOrganisations: boolean;
 	onIntegrations: () => void;
+	onOrganisations: () => void;
 	onCreate: () => void;
 	onOpenArtefact: (id: string) => void;
-	onProfile: () => void;
 	onSignOut: () => void;
 }) {
 	const displayName = user.name || user.email;
@@ -1038,17 +954,15 @@ function WorkspaceSidebar({
 				aria-label="Klee home"
 				className="mb-5 flex h-10 items-center gap-2 px-2 text-left"
 			>
-				<img src="/kleelogo.svg" alt="" className="size-8" />
+				<KleeLogo alt="" className="size-8" />
 				<span className="text-lg font-semibold tracking-tight">
 					Klee
 				</span>
 			</Link>
 			<ListBox
 				aria-label="Workspace navigation"
-				selectedKeys={isIntegrations ? ["integrations"] : []}
-				onAction={(key) =>
-					key === "integrations" ? onIntegrations() : onCreate()
-				}
+				selectedKeys={isIntegrations ? ["integrations"] : isOrganisations ? ["organisations"] : []}
+				onAction={(key) => key === "integrations" ? onIntegrations() : key === "organisations" ? onOrganisations() : onCreate()}
 			>
 				<ListBox.Item id="new" textValue="New artefact">
 					<Plus size={18} />
@@ -1057,6 +971,10 @@ function WorkspaceSidebar({
 				<ListBox.Item id="integrations" textValue="Integrations">
 					<Plug size={18} />
 					<Label>Integrations</Label>
+				</ListBox.Item>
+				<ListBox.Item id="organisations" textValue="Organisations">
+					<Building2 size={18} />
+					<Label>Organisations</Label>
 				</ListBox.Item>
 			</ListBox>
 			<Separator className="my-5" />
@@ -1113,14 +1031,6 @@ function WorkspaceSidebar({
 						<Separator className="my-1" />
 						<Button
 							variant="ghost"
-							className="w-full justify-start"
-							onPress={onProfile}
-						>
-							<UserRound size={16} />
-							Profile
-						</Button>
-						<Button
-							variant="ghost"
 							className="w-full justify-start text-danger"
 							onPress={onSignOut}
 						>
@@ -1145,7 +1055,6 @@ function ArtefactModal({
 	onClose,
 	onFullscreen,
 	onShare,
-	copied,
 	followUp,
 	setFollowUp,
 	isRevising,
@@ -1166,7 +1075,6 @@ function ArtefactModal({
 	onClose: () => void;
 	onFullscreen: () => void;
 	onShare: () => void;
-	copied: boolean;
 	followUp: string;
 	setFollowUp: (value: string) => void;
 	isRevising: boolean;
@@ -1207,7 +1115,8 @@ function ArtefactModal({
 		isEditing &&
 		JSON.stringify(draft) !== JSON.stringify(artefact?.content);
 	const historyOpen = isFullscreen && showHistory && !isEditing;
-	const canComment = Boolean(artefact && !isEditing && !historyOpen);
+	const canEdit = artefact?.permission === "edit";
+	const canComment = Boolean(artefact && !isEditing && !historyOpen && (canEdit || artefact.permission === "comment"));
 	const breadcrumb =
 		folders.find((folder) => folder.id === artefact?.folderId)?.name ??
 		"Artefacts";
@@ -1215,7 +1124,7 @@ function ArtefactModal({
 		<ArtefactBody
 			artefact={artefact}
 			document={draft ?? (historyOpen ? pastVersion : undefined)}
-			canInteract
+			canInteract={canEdit}
 			edgeToEdge
 			onAction={setFollowUp}
 			isEditing={isEditing}
@@ -1303,7 +1212,7 @@ function ArtefactModal({
 								aria-label="Artefact actions"
 								className="order-3 flex w-full flex-wrap items-center gap-1 sm:order-2 sm:ml-auto sm:w-auto sm:flex-nowrap"
 							>
-								{artefact && !isEditing && (
+								{artefact && !isEditing && canEdit && (
 									<ProjectSelect
 										artefactId={artefact.id}
 										installationId={
@@ -1333,7 +1242,7 @@ function ArtefactModal({
 										</span>
 									</Button>
 								)}
-								{artefact && !isEditing && (
+								{artefact && !isEditing && canEdit && (
 									<Button
 										aria-label="Edit"
 										variant="ghost"
@@ -1370,22 +1279,16 @@ function ArtefactModal({
 										)}
 									</Button>
 								)}
-								{artefact && !isEditing && (
+								{artefact && !isEditing && artefact.isOwner && (
 									<Button
-										aria-label={
-											copied ? "Link copied" : "Share"
-										}
+										aria-label="Share"
 										variant="secondary"
 										size="sm"
 										onPress={onShare}
 									>
-										{copied ? (
-											<Check size={15} />
-										) : (
-											<Share2 size={15} />
-										)}
+										<Share2 size={15} />
 										<span className="hidden sm:inline">
-											{copied ? "Link copied" : "Share"}
+											Share
 										</span>
 									</Button>
 								)}
@@ -1437,22 +1340,17 @@ function ArtefactModal({
 						)}
 						<Modal.Body className="m-0 flex min-h-0 flex-1 bg-surface p-0">
 							{artefact ? (
-								canComment ? (
 									<ArtefactComments
 										artefactId={artefact.id}
 										isOwner={artefact.isOwner ?? false}
 										userId={userId}
+										canComment={canComment}
 										isOpen={commentsOpen}
 										onOpenChange={setCommentsOpen}
 										onCountChange={setCommentCount}
 									>
 										{renderedArtefact}
 									</ArtefactComments>
-								) : (
-									<div className="min-h-0 flex-1 overflow-auto">
-										{renderedArtefact}
-									</div>
-								)
 							) : (
 								<div className="min-h-0 flex-1 overflow-auto">
 									<ArtefactSkeleton>
@@ -1546,7 +1444,7 @@ function ArtefactModal({
 								</Toolbar>
 							</Modal.Footer>
 						)}
-						{artefact && !isCreating && !isEditing && (
+						{artefact && !isCreating && !isEditing && canEdit && (
 							<Modal.Footer className="z-10 m-0 shrink-0 border-t border-border bg-surface px-4 py-3 sm:px-6">
 								<div className="relative w-full">
 									<form
