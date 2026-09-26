@@ -244,6 +244,61 @@ export type ChartSeries = { name: string; points: { x: number; y: number }[] };
 /** Region of a page as fractions of its width and height, from the top left. */
 export type FigureCrop = { x: number; y: number; width: number; height: number };
 
+/*
+ * Engineering, chemistry and maths records. Every number is taken from the
+ * source; the renderer never computes engineering or chemical results.
+ */
+
+export type BeamSupport = { at: number; type: "pin" | "roller" | "fixed" };
+export type BeamLoad = {
+	kind: "point" | "udl" | "moment";
+	at: number;
+	/** End of a distributed load; null for point loads and moments. */
+	to: number | null;
+	magnitude: number;
+	label: string | null;
+};
+/** One point of a shear force or bending moment diagram. */
+export type BeamPoint = { x: number; value: number };
+
+export type SoilMaterial =
+	| "topsoil"
+	| "made-ground"
+	| "clay"
+	| "silt"
+	| "sand"
+	| "gravel"
+	| "peat"
+	| "rock";
+export type SoilLayer = {
+	from: number;
+	to: number;
+	material: SoilMaterial;
+	description: string;
+};
+export type SoilTest = { depth: number; value: number };
+
+export type ReactionStep = {
+	/** mhchem notation, e.g. "CH3COOH + C2H5OH <=> CH3COOC2H5 + H2O". */
+	equation: string;
+	conditions: string | null;
+	yield: number | null;
+	note: string | null;
+};
+
+export type SpectrumPeak = {
+	position: number;
+	/** Relative intensity 0-100; null when the source gives none. */
+	intensity: number | null;
+	label: string | null;
+	assignment: string | null;
+};
+
+export type DerivationStep = { latex: string; justification: string | null };
+
+export type PlotFunction = { expression: string; label: string };
+export type PlotPoint = { x: number; y: number; label: string };
+
 export type ArtefactNode = {
 	id: string;
 	template:
@@ -284,7 +339,13 @@ export type ArtefactNode = {
 		| "pinout"
 		| "curve-chart"
 		| "comparison-table"
-		| "source-figure";
+		| "source-figure"
+		| "beam-diagram"
+		| "soil-profile"
+		| "reaction-scheme"
+		| "spectrum"
+		| "derivation"
+		| "function-plot";
 	data: Record<string, unknown>;
 	children?: ArtefactNode[];
 };

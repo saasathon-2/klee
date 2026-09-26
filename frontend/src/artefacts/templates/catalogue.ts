@@ -1,6 +1,7 @@
 import type { ArtefactNode } from "../model";
 import { ActivityTrend } from "./blocks/ActivityTrend";
 import { ArchitectureFlow } from "./blocks/ArchitectureFlow";
+import { BeamDiagram } from "./blocks/BeamDiagram";
 import { ChangeImpactMap } from "./blocks/ChangeImpactMap";
 import { CheckList } from "./blocks/CheckList";
 import { CodeDiff } from "./blocks/CodeDiff";
@@ -11,7 +12,9 @@ import { DecisionRecord } from "./blocks/DecisionRecord";
 import { DeliveryProgress } from "./blocks/DeliveryProgress";
 import { DeliveryReadiness } from "./blocks/DeliveryReadiness";
 import { DependencyRiskRegister } from "./blocks/DependencyRiskRegister";
+import { Derivation } from "./blocks/Derivation";
 import { EvidenceTable } from "./blocks/EvidenceTable";
+import { FunctionPlot } from "./blocks/FunctionPlot";
 import { GitGraph } from "./blocks/GitGraph";
 import { Glue } from "./blocks/Glue";
 import { HandoffBrief } from "./blocks/HandoffBrief";
@@ -22,14 +25,17 @@ import { MetricRow } from "./blocks/MetricRow";
 import { NextSteps } from "./blocks/NextSteps";
 import { Pinout } from "./blocks/Pinout";
 import { Prose } from "./blocks/Prose";
+import { ReactionScheme } from "./blocks/ReactionScheme";
 import { ReleaseTimeline } from "./blocks/ReleaseTimeline";
 import { ReviewComments } from "./blocks/ReviewComments";
 import { RiskMatrix } from "./blocks/RiskMatrix";
 import { ServiceOwnership } from "./blocks/ServiceOwnership";
 import { SignOffGrid } from "./blocks/SignOffGrid";
 import { SoftwareDiagram } from "./blocks/SoftwareDiagram";
+import { SoilProfile } from "./blocks/SoilProfile";
 import { SourceFigure } from "./blocks/SourceFigure";
 import { SpecTable } from "./blocks/SpecTable";
+import { Spectrum } from "./blocks/Spectrum";
 import { SprintTimeline } from "./blocks/SprintTimeline";
 import { TaskList } from "./blocks/TaskList";
 import { TwoColumn } from "./blocks/TwoColumn";
@@ -96,6 +102,12 @@ export const templateDefinitions: Record<
 	"curve-chart": definition(CurveChart),
 	"comparison-table": definition(ComparisonTable),
 	"source-figure": definition(SourceFigure),
+	"beam-diagram": definition(BeamDiagram),
+	"soil-profile": definition(SoilProfile),
+	"reaction-scheme": definition(ReactionScheme),
+	"spectrum": definition(Spectrum),
+	"derivation": definition(Derivation),
+	"function-plot": definition(FunctionPlot),
 };
 
 function selectionInfo(definition: TemplateDefinition): TemplateSelectionInfo {

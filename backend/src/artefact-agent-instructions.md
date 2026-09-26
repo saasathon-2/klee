@@ -48,6 +48,12 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - `curve-chart`: one measured relationship, such as frequency against resistance, as one to six named series of x/y points with linear or log axes. Use one y-axis only; plot a second quantity (such as phase beside gain) as its own `curve-chart`. Set `approximate` to true when points are read off a figure rather than taken from a table, and name the source figure in `source`.
 - `comparison-table`: two to five items compared across rows of attributes, one value per item in column order.
 - `source-figure`: a figure copied from an attached PDF, for diagrams, schematics, or photos that no block can redraw faithfully. Give the file number from the attached file list, the page number, and a crop as fractions of the page (x, y, width, height from the top left, all 0–1) or `null` for the whole page. Crop generously around the figure and its title.
+- `beam-diagram`: a beam's span length and units, its supports (pin, roller, or fixed, by position), and its loads: point loads, distributed loads over a range, and moments, with positive magnitudes acting downwards or clockwise. Add shear force and bending moment points only when the source gives them; repeat an x value to show a jump. Never calculate reactions or diagram values yourself.
+- `soil-profile`: one borehole's strata as depth ranges with a material (topsoil, made-ground, clay, silt, sand, gravel, peat, or rock) and the logged description, the groundwater depth, and in-situ test values such as SPT N by depth.
+- `reaction-scheme`: one or more reaction steps written in mhchem notation, such as `CH3COOH + C2H5OH <=> CH3COOC2H5 + H2O`, with conditions as plain text, the supplied yield in per cent, and an optional note. Do not balance or complete equations the source leaves unbalanced.
+- `spectrum`: a technique (nmr-1h, nmr-13c, ir, ms, or uv-vis) and its peaks with position, relative intensity from 0 to 100 when given, a short label such as `3H, t` or `C=O`, and the assignment.
+- `derivation`: step-by-step working as one LaTeX expression per step, without `$` delimiters, each with a short justification, and the final result in LaTeX.
+- `function-plot`: one to four functions of x as plain expressions such as `x^2 - 2x + 1` or `sin(2x)/x`, each with a LaTeX label, the x range, an optional y range, and up to eight labelled points such as roots or turning points. Expressions may use numbers, x, pi, e, + - * / ^, brackets, and sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, exp, ln, log (base 10), sqrt, abs, floor, and ceil.
 
 ## Block selection
 
@@ -68,8 +74,11 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - When the user asks for two blocks beside each other, side by side, next to each other, or in two columns, you must return them as one `two-column` block with both as its children, never as two separate top-level blocks. Otherwise use `two-column` only when the two blocks are read together, for example a chart and the records behind it. Never nest it or use it to pair unrelated blocks; it counts as one block for glue placement.
 - Prefer `evidence-table` over prose when comparing or linking several heterogeneous records that no specialised block represents.
 - Risk assessments become a `risk-matrix` for where hazards sit and a `hazard-register` for the detail; add a `hierarchy-tree` when the source breaks the system into parts.
+- Structural calculations become a `beam-diagram`; site investigations become a `soil-profile` per borehole.
+- Chemistry uses `reaction-scheme` for reactions and `spectrum` for characterisation data; a `spec-table` or `comparison-table` suits physical properties.
+- Maths uses `derivation` for working and `function-plot` for graphs. Plotted points must lie on the plotted functions, and every value in a derivation must follow from the previous step.
 - Datasheets become a `spec-table` for specifications, a `pinout` for pin assignments, `curve-chart` for performance graphs, and `comparison-table` for differences between part variants. Use `metric-row` for the few headline limits.
-- `developer-page` supports every block. `generic-page` supports prose, metric-row, glue, next-steps, decision-record, evidence-table, activity-trend, handoff-brief, two-column (whose children must also be generic-page blocks), and the document blocks: risk-matrix, hazard-register, hierarchy-tree, sign-off-grid, spec-table, pinout, curve-chart, comparison-table, and source-figure.
+- `developer-page` supports every block. `generic-page` supports prose, metric-row, glue, next-steps, decision-record, evidence-table, activity-trend, handoff-brief, two-column (whose children must also be generic-page blocks), and the document blocks: risk-matrix, hazard-register, hierarchy-tree, sign-off-grid, spec-table, pinout, curve-chart, comparison-table, source-figure, beam-diagram, soil-profile, reaction-scheme, spectrum, derivation, and function-plot.
 
 ## Accuracy
 

@@ -34,6 +34,10 @@ import {
 	Share2,
 	UserRound,
 	X,
+	FlaskConical,
+	HardHat,
+	Sigma,
+	type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
@@ -134,7 +138,23 @@ const starterPromptIds = new Set([
 	"on-call-handoff",
 	"two-column",
 	"electrical-god-prompt",
+	"civil-god-prompt",
+	"chemistry-god-prompt",
+	"maths-god-prompt",
 ]);
+/** Icons for the discipline starter prompts. */
+const starterIcons: Partial<Record<(typeof developerExamplePrompts)[number]["id"], LucideIcon>> = {
+	"god-prompt": BrainCog,
+	"electrical-god-prompt": CircuitBoard,
+	"civil-god-prompt": HardHat,
+	"chemistry-god-prompt": FlaskConical,
+	"maths-god-prompt": Sigma,
+};
+
+function StarterIcon({ id }: { id: (typeof developerExamplePrompts)[number]["id"] }) {
+	const Icon = starterIcons[id];
+	return Icon ? <Icon size={15} /> : null;
+}
 const starterPrompts = developerExamplePrompts.filter((template) =>
 	starterPromptIds.has(template.id),
 );
@@ -924,13 +944,7 @@ export function Artefacts() {
 										isDisabled={isCreating}
 										onPress={() => void applyExample(template)}
 									>
-										{template.attachment ? (
-											<CircuitBoard size={15} />
-										) : (
-											template.id === "god-prompt" && (
-												<BrainCog size={15} />
-											)
-										)}
+										<StarterIcon id={template.id} />
 										{template.label}
 									</Button>
 								))}

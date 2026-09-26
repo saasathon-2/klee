@@ -177,6 +177,16 @@ const cropSchema = z
 	.strict();
 
 
+// Engineering, chemistry and maths blocks. Every number comes from the
+// source; the app draws it but never computes engineering or chemical results.
+const beamPointSchema = z.object({ x: z.number(), value: z.number() }).strict();
+const soilMaterialSchema = z.enum(["topsoil", "made-ground", "clay", "silt", "sand", "gravel", "peat", "rock"]);
+const plotFunctionNames = new Set(["x", "pi", "e", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "exp", "ln", "log", "sqrt", "abs", "floor", "ceil"]);
+/** Matches the frontend plotter's grammar: numbers, x, known names, + - * / ^ and brackets. */
+const plottable = (expression: string) =>
+	/^[\d\s.a-z+\-*/^()]+$/i.test(expression) &&
+	(expression.match(/[a-z]+/gi) ?? []).every((name) => plotFunctionNames.has(name.toLowerCase()));
+
 /*
  * Delivery and operations records. Every shape is source-agnostic: the
  * integration layer (or the user's pasted prompt) supplies normalised records
@@ -861,6 +871,154 @@ const blockSchemas = [
 				.strict(),
 		})
 		.strict(),
+	z
+		.object({
+			template: z.literal("beam-diagram"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					length: z.number(),
+					lengthUnit: shortText,
+					forceUnit: shortText,
+					supports: z
+						.array(z.object({ at: z.number(), type: z.enum(["pin", "roller", "fixed"]) }).strict())
+						.min(1)
+						.max(6),
+					loads: z
+						.array(
+							z
+								.object({
+									kind: z.enum(["point", "udl", "moment"]),
+									at: z.number(),
+									to: z.number().nullable(),
+									magnitude: z.number(),
+									label: optionalText,
+								})
+								.strict(),
+						)
+						.max(12),
+					shear: z.array(beamPointSchema).max(60),
+					moment: z.array(beamPointSchema).max(60),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("soil-profile"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					borehole: shortText,
+					depthUnit: shortText,
+					layers: z
+						.array(
+							z
+								.object({ from: z.number(), to: z.number(), material: soilMaterialSchema, description: detailText })
+								.strict(),
+						)
+						.min(1)
+						.max(16),
+					waterTable: z.number().nullable(),
+					testLabel: optionalText,
+					tests: z.array(z.object({ depth: z.number(), value: z.number() }).strict()).max(40),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("reaction-scheme"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					steps: z
+						.array(
+							z
+								.object({
+									equation: z.string().trim().min(1).max(300),
+									conditions: optionalText,
+									yield: z.number().nullable(),
+									note: detailText.nullable(),
+								})
+								.strict(),
+						)
+						.min(1)
+						.max(6),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("spectrum"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					technique: z.enum(["nmr-1h", "nmr-13c", "ir", "ms", "uv-vis"]),
+					peaks: z
+						.array(
+							z
+								.object({
+									position: z.number(),
+									intensity: z.number().nullable(),
+									label: optionalText,
+									assignment: optionalText,
+								})
+								.strict(),
+						)
+						.min(1)
+						.max(30),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("derivation"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					steps: z
+						.array(
+							z
+								.object({ latex: z.string().trim().min(1).max(400), justification: optionalText })
+								.strict(),
+						)
+						.min(1)
+						.max(12),
+					result: z.string().trim().min(1).max(300).nullable(),
+				})
+				.strict(),
+		})
+		.strict(),
+	z
+		.object({
+			template: z.literal("function-plot"),
+			data: z
+				.object({
+					title: shortText,
+					description: shortText,
+					xMin: z.number(),
+					xMax: z.number(),
+					yMin: z.number().nullable(),
+					yMax: z.number().nullable(),
+					functions: z
+						.array(z.object({ expression: z.string().trim().min(1).max(120), label: shortText }).strict())
+						.min(1)
+						.max(4),
+					points: z
+						.array(z.object({ x: z.number(), y: z.number(), label: shortText }).strict())
+						.max(8),
+				})
+				.strict(),
+		})
+		.strict(),
 ] as const;
 
 /** Blocks compact enough to share a row, e.g. a trend chart beside a table. */
@@ -958,6 +1116,12 @@ const documentBlocks = [
 	"curve-chart",
 	"comparison-table",
 	"source-figure",
+	"beam-diagram",
+	"soil-profile",
+	"reaction-scheme",
+	"spectrum",
+	"derivation",
+	"function-plot",
 ];
 
 const fit = <T>(values: T[], length: number, fill: T) =>
@@ -1116,6 +1280,78 @@ function sourceFigure(data: BlockOf<"source-figure">["data"], attachments: Docum
 	return { ...rest, attachmentId: attachment.id, filename: attachment.filename };
 }
 
+const finite = (value: number) => Number.isFinite(value);
+
+/** Keeps supports and loads on the span; each diagram needs two ordered points. */
+function beamDiagram(data: BlockOf<"beam-diagram">["data"]) {
+	if (!(data.length > 0)) return;
+	const onSpan = (x: number) => finite(x) && x >= 0 && x <= data.length;
+	const supports = data.supports.filter((support) => onSpan(support.at));
+	if (!supports.length) return;
+	const loads = data.loads.filter(
+		(load) =>
+			onSpan(load.at) &&
+			finite(load.magnitude) &&
+			(load.kind !== "udl" || (load.to !== null && onSpan(load.to) && load.to > load.at)),
+	);
+	const diagram = (points: { x: number; value: number }[]) => {
+		// A stable sort keeps the order of repeated x values, which mark jumps.
+		const ordered = points.filter((point) => onSpan(point.x) && finite(point.value)).sort((a, b) => a.x - b.x);
+		return ordered.length >= 2 ? ordered : [];
+	};
+	return { ...data, supports, loads, shear: diagram(data.shear), moment: diagram(data.moment) };
+}
+
+/** Orders strata and drops layers with no thickness. */
+function soilProfile(data: BlockOf<"soil-profile">["data"]) {
+	const layers = data.layers
+		.filter((layer) => finite(layer.from) && finite(layer.to) && layer.from >= 0 && layer.to > layer.from)
+		.sort((a, b) => a.from - b.from);
+	if (!layers.length) return;
+	return {
+		...data,
+		layers,
+		waterTable: data.waterTable !== null && finite(data.waterTable) && data.waterTable >= 0 ? data.waterTable : null,
+		tests: data.tests.filter((test) => finite(test.depth) && test.depth >= 0 && finite(test.value)),
+	};
+}
+
+function reactionScheme(data: BlockOf<"reaction-scheme">["data"]) {
+	return {
+		...data,
+		steps: data.steps.map((step) => ({
+			...step,
+			yield: step.yield !== null && step.yield >= 0 && step.yield <= 100 ? step.yield : null,
+		})),
+	};
+}
+
+function spectrum(data: BlockOf<"spectrum">["data"]) {
+	const peaks = data.peaks
+		.filter((peak) => finite(peak.position))
+		.map((peak) => ({
+			...peak,
+			intensity: peak.intensity !== null && finite(peak.intensity) ? Math.min(100, Math.max(0, peak.intensity)) : null,
+		}));
+	if (!peaks.length) return;
+	return { ...data, peaks };
+}
+
+/** Drops functions the plotter can't read; a y-window needs both ends in order. */
+function functionPlot(data: BlockOf<"function-plot">["data"]) {
+	if (!(finite(data.xMin) && finite(data.xMax) && data.xMax > data.xMin)) return;
+	const functions = data.functions.filter((fn) => plottable(fn.expression));
+	if (!functions.length) return;
+	const window = data.yMin !== null && data.yMax !== null && data.yMax > data.yMin;
+	return {
+		...data,
+		functions,
+		yMin: window ? data.yMin : null,
+		yMax: window ? data.yMax : null,
+		points: data.points.filter((point) => finite(point.x) && finite(point.y)),
+	};
+}
+
 /** Cleans a document block's data, or returns undefined to drop the block. */
 function documentBlockData(block: ContentBlock, attachments: DocumentAttachment[]) {
 	switch (block.template) {
@@ -1137,6 +1373,16 @@ function documentBlockData(block: ContentBlock, attachments: DocumentAttachment[
 			return comparisonTable(block.data);
 		case "source-figure":
 			return sourceFigure(block.data, attachments);
+		case "beam-diagram":
+			return beamDiagram(block.data);
+		case "soil-profile":
+			return soilProfile(block.data);
+		case "reaction-scheme":
+			return reactionScheme(block.data);
+		case "spectrum":
+			return spectrum(block.data);
+		case "function-plot":
+			return functionPlot(block.data);
 	}
 	return block.data;
 }

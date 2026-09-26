@@ -187,6 +187,58 @@ assert.throws(() =>
 	blocksOf([{ template: "two-column", children: [trend, checks([passed])] }], "generic-page"),
 );
 
+// Engineering, chemistry and maths blocks: impossible values are dropped.
+const beam = blocksOf([
+	{
+		template: "beam-diagram",
+		data: {
+			title: "Beam", description: "Simply supported", length: 6, lengthUnit: "m", forceUnit: "kN",
+			supports: [{ at: 0, type: "pin" }, { at: 6, type: "roller" }, { at: 9, type: "roller" }],
+			loads: [
+				{ kind: "point", at: 3, to: null, magnitude: 20, label: null },
+				{ kind: "udl", at: 4, to: 2, magnitude: 5, label: null },
+			],
+			shear: [{ x: 6, value: -10 }, { x: 0, value: 10 }, { x: 3, value: 10 }, { x: 3, value: -10 }],
+			moment: [{ x: 3, value: 30 }],
+		},
+	},
+])[0];
+const beamData = beam?.data as { supports: unknown[]; loads: unknown[]; shear: { x: number; value: number }[]; moment: unknown[] };
+assert.equal(beamData.supports.length, 2, "supports off the span are dropped");
+assert.equal(beamData.loads.length, 1, "a backwards distributed load is dropped");
+assert.deepEqual(beamData.shear.map((point) => [point.x, point.value]), [[0, 10], [3, 10], [3, -10], [6, -10]], "shear is ordered, keeping the jump");
+assert.equal(beamData.moment.length, 0, "a one-point diagram is dropped");
+
+const soil = blocksOf([
+	{
+		template: "soil-profile",
+		data: {
+			title: "BH1", description: "Log", borehole: "BH1", depthUnit: "m",
+			layers: [
+				{ from: 1.2, to: 4, material: "clay", description: "Firm brown clay" },
+				{ from: 0, to: 1.2, material: "topsoil", description: "Topsoil" },
+				{ from: 4, to: 4, material: "sand", description: "Zero thickness" },
+			],
+			waterTable: -1, testLabel: "SPT N", tests: [{ depth: 1.5, value: 8 }],
+		},
+	},
+])[0]?.data as { layers: { from: number }[]; waterTable: number | null };
+assert.deepEqual(soil.layers.map((layer) => layer.from), [0, 1.2], "layers are ordered and zero-thickness ones dropped");
+assert.equal(soil.waterTable, null, "a negative water table is cleared");
+
+const plot = blocksOf([
+	{
+		template: "function-plot",
+		data: {
+			title: "Plot", description: "Curves", xMin: -3, xMax: 3, yMin: 5, yMax: 1,
+			functions: [{ expression: "x^2 - 2x + 1", label: "f(x)" }, { expression: "alert(1)", label: "g(x)" }],
+			points: [{ x: 1, y: 0, label: "Root" }],
+		},
+	},
+])[0]?.data as { functions: unknown[]; yMin: number | null };
+assert.equal(plot.functions.length, 1, "unplottable expressions are dropped");
+assert.equal(plot.yMin, null, "an inverted y-window falls back to automatic");
+
 const originalFetch = globalThis.fetch;
 let requestBody: Record<string, unknown> | undefined;
 const output = JSON.stringify({

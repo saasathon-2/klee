@@ -14,6 +14,12 @@ const documentBlocks = [
 	"curve-chart",
 	"comparison-table",
 	"source-figure",
+	"beam-diagram",
+	"soil-profile",
+	"reaction-scheme",
+	"spectrum",
+	"derivation",
+	"function-plot",
 ] satisfies TemplateSelectionInfo["children"]["allowed"];
 
 const CategoryPage: Template = ({ node, children, context }) => {
