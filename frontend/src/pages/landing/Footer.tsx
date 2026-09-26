@@ -1,17 +1,17 @@
 import { Link, Paragraph, Separator } from "@heroui/react";
 import { useSession } from "../../lib/auth-client";
 import { useTheme } from "../../lib/use-theme";
-import { navMenus, pricingSection } from "./links";
+import { navMenus, pricingPath } from "./links";
 
 export function Footer() {
 	const { data: session } = useSession();
 	const { theme } = useTheme();
 	const columns = [
-		...navMenus.slice(0, 2).map((menu) => ({
+		...navMenus.map((menu) => ({
 			label: menu.label,
 			links: menu.links.map((link) => ({
 				label: link.label,
-				to: `/welcome#${link.section}`,
+				to: link.to ?? `/welcome#${link.section}`,
 			})),
 		})),
 		{
@@ -28,7 +28,7 @@ export function Footer() {
 		},
 		{
 			label: "Pricing",
-			links: [{ label: "Pricing", to: `/welcome#${pricingSection}` }],
+			links: [{ label: "Pricing", to: pricingPath }],
 		},
 	];
 

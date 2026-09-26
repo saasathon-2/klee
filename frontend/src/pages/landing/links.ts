@@ -1,5 +1,5 @@
 /** Landing page sections, shared by the navbar menus and the footer. */
-export type LandingLink = { label: string; description: string; section: string };
+export type LandingLink = { label: string; description: string; section?: string; to?: string };
 
 export const navMenus: { label: string; links: LandingLink[] }[] = [
 	{
@@ -13,18 +13,19 @@ export const navMenus: { label: string; links: LandingLink[] }[] = [
 	{
 		label: "Developers",
 		links: [
-			{ label: "Developer templates", description: "Code diff, review, commit, and CI blocks", section: "review" },
-			{ label: "GitHub Action", description: "An artefact for every pull request", section: "integrate" },
-			{ label: "Slack and Jira", description: "Previews where your team works", section: "integrate" },
+			{ label: "For developers", description: "Bring context, code, and decisions together", to: "/developers" },
+			{ label: "Developer templates", description: "Start with a purpose-built artefact", to: "/developer-templates" },
+			{ label: "Integrations", description: "Connect Klee to the tools you already use", to: "/developer-integrations" },
 		],
 	},
 	{
 		label: "Enterprise",
 		links: [
-			{ label: "Access control", description: "Artefacts stay private by default", section: "share" },
-			{ label: "Team integrations", description: "Install once for your workspace", section: "integrate" },
+			{ label: "For business", description: "A shared view of the work that matters", to: "/business" },
+			{ label: "Access control", description: "Keep every artefact in the right hands", to: "/access-control" },
+			{ label: "Team integrations", description: "Bring the whole workspace into Klee", to: "/team-integrations" },
 		],
 	},
 ];
 
-export const pricingSection = "pricing";
+export const pricingPath = "/pricing";

@@ -16,6 +16,7 @@ import { SocialExample } from "./pages/SocialExample";
 import { SettingsExample } from "./pages/SettingsExample";
 import { Artefacts } from "./pages/Artefacts";
 import { Docs } from "./pages/Docs";
+import { MarketingPage } from "./pages/MarketingPage";
 import { useSession } from "./lib/auth-client";
 
 function RequireUser() {
@@ -46,6 +47,13 @@ function App() {
 					<Route path="/" element={<Home />} />
 					<Route path="/welcome" element={<Landing />} />
 					<Route path="/docs" element={<Docs />} />
+					<Route path="/developers" element={<MarketingPage page="developers" />} />
+					<Route path="/developer-templates" element={<MarketingPage page="developer-templates" />} />
+					<Route path="/developer-integrations" element={<MarketingPage page="developer-integrations" />} />
+					<Route path="/business" element={<MarketingPage page="business" />} />
+					<Route path="/access-control" element={<MarketingPage page="access-control" />} />
+					<Route path="/team-integrations" element={<MarketingPage page="team-integrations" />} />
+					<Route path="/pricing" element={<MarketingPage page="pricing" />} />
 					{/* Sign-in lives in a modal now; keep the old links working. */}
 					<Route path="/login" element={<Navigate to="/?auth=signin" replace />} />
 					<Route path="/register" element={<Navigate to="/?auth=signup" replace />} />
