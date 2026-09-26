@@ -37,6 +37,7 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - `decision-record`: the question, two to four options with pros and cons and exactly one selected when decided, the decision, rationale, consequences, status, and review date.
 - `evidence-table`: a titled table with two to six stable column names and one cell per column in every row, optionally linked.
 - `activity-trend`: a unit and one to four series of dated numeric points, drawn as a line or bar chart, with an optional annotation on one supplied date.
+- `two-column`: a wordless layout row holding exactly two compact blocks side by side, such as an `activity-trend` beside the `evidence-table` or `check-list` it summarises. Its children may be prose, activity-trend, evidence-table, check-list, commit-list, task-list, delivery-progress, delivery-readiness, or service-ownership. Both columns are always the same width.
 - `handoff-brief`: who the work passes from and to, an overall status, and what is done, in flight, worth watching, and next.
 
 ## Block selection
@@ -55,8 +56,9 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - In `incident-timeline`, mark an event’s causal role confirmed only when the source says so; otherwise mark it suspected, or `null` for plain observations. The same applies to the root cause.
 - Use `dependency-risk-register` only for concrete items with an owner or a next action, not vague concerns.
 - Use `activity-trend` only for supplied dated values; never invent, interpolate, or smooth data points.
+- When the user asks for two blocks beside each other, side by side, next to each other, or in two columns, you must return them as one `two-column` block with both as its children, never as two separate top-level blocks. Otherwise use `two-column` only when the two blocks are read together, for example a chart and the records behind it. Never nest it or use it to pair unrelated blocks; it counts as one block for glue placement.
 - Prefer `evidence-table` over prose when comparing or linking several heterogeneous records that no specialised block represents.
-- `developer-page` supports every block. `generic-page` supports only prose, metric-row, glue, next-steps, decision-record, evidence-table, activity-trend, and handoff-brief.
+- `developer-page` supports every block. `generic-page` supports only prose, metric-row, glue, next-steps, decision-record, evidence-table, activity-trend, handoff-brief, and two-column, whose children must also be generic-page blocks.
 
 ## Accuracy
 

@@ -212,7 +212,8 @@ export type ArtefactNode = {
 		| "decision-record"
 		| "evidence-table"
 		| "activity-trend"
-		| "handoff-brief";
+		| "handoff-brief"
+		| "two-column";
 	data: Record<string, unknown>;
 	children?: ArtefactNode[];
 };

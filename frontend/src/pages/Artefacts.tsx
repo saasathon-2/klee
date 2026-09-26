@@ -128,6 +128,7 @@ const starterPromptIds = new Set([
 	"incident-review",
 	"architecture-decision",
 	"on-call-handoff",
+	"two-column",
 ]);
 const starterPrompts = developerExamplePrompts.filter((template) =>
 	starterPromptIds.has(template.id),
