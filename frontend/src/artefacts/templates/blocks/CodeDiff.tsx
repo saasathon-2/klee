@@ -239,6 +239,8 @@ export function CodeDiff({ node, context }: TemplateProps) {
 									<a
 										className="underline decoration-muted underline-offset-4 hover:text-primary"
 										href={url}
+										target="_blank"
+										rel="noreferrer"
 									>
 										{file}
 									</a>

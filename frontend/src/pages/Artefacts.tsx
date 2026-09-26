@@ -116,6 +116,7 @@ export function Artefacts() {
 	const { id: routeId, shareId } = useParams();
 	const [searchParams] = useSearchParams();
 	const id = routeId ?? searchParams.get("artefact") ?? undefined;
+	const snapshotToken = searchParams.get("snapshot");
 	const { data: session, isPending } = useSession();
 	const isShared = Boolean(shareId);
 	const isProfile = location.pathname === "/profile";
@@ -147,7 +148,9 @@ export function Artefacts() {
 	);
 	const generationAbort = useRef<AbortController | undefined>(undefined);
 	const artefactPath = shareId
-		? `/shared/artefacts/${shareId}`
+		? snapshotToken
+			? `/artefacts/${shareId}/snapshot?token=${encodeURIComponent(snapshotToken)}`
+			: `/shared/artefacts/${shareId}`
 		: id
 			? `/artefacts/${id}`
 			: undefined;

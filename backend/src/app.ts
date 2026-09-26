@@ -18,6 +18,8 @@ import {
     type VersionSource,
 } from "./artefact-versions.ts";
 import { ArtefactAgentError, generateArtefact } from "./artefact-agent.ts";
+import { captureArtefactSnapshot, snapshotUrl, validSnapshotToken } from "./artefact-snapshot.ts";
+import { getArtefactPreview, putArtefactPreview } from "./r2.ts";
 import {
     githubActionsClaims,
     githubArtefactComment,
@@ -159,7 +161,17 @@ async function createGeneratedArtefact(
         blocks: content.root.children?.[0]?.children?.length ?? 0,
         totalMs: Math.round(performance.now() - startedAt),
     });
-    return artefact;
+    const previewReady = await uploadArtefactSnapshot(artefact.id, isShared);
+    return { ...artefact, previewReady };
+}
+
+async function uploadArtefactSnapshot(artefactId: string, isShared: boolean) {
+    return captureArtefactSnapshot(snapshotUrl(env.corsOrigin, artefactId, isShared))
+        .then((snapshot) => putArtefactPreview(artefactId, snapshot))
+        .catch((error) => {
+            console.error("Artefact snapshot upload failed", error);
+            return false;
+        });
 }
 
 async function reserveGitHubPullRequestArtefact(
@@ -226,18 +238,21 @@ async function refreshGitHubPullRequestArtefact(
             { authorId: null, source: "github", installationId },
         );
         const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
+        const previewUrl = artefact.previewReady
+            ? `${env.corsOrigin}/api/shared/artefacts/${artefact.id}/preview.png?v=${Date.now()}`
+            : undefined;
         let commentId = current?.commentId;
         if (commentId) {
             await githubInstallationRequest(
                 installationId,
                 `/repos/${repository}/issues/comments/${commentId}`,
-                { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url) }) },
+                { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url, previewUrl) }) },
             );
         } else {
             const comment = await githubInstallationRequest(
                 installationId,
                 `/repos/${repository}/issues/${pullRequest}/comments`,
-                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url) }) },
+                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: githubArtefactComment(url, previewUrl) }) },
             );
             commentId = String((await comment.json() as { id: number }).id);
         }
@@ -530,9 +545,13 @@ app.post("/api/artefacts/stream", async (req, res) => {
         });
         send("complete", { artefact });
     } catch (error) {
-        const kind = error instanceof ArtefactAgentError ? error.kind : "unknown";
+        const agentError = error instanceof ArtefactAgentError ? error : undefined;
+        const kind = agentError?.kind ?? "unknown";
         if (kind !== "cancelled") {
-            console.error("Artefact generation failed", { kind });
+            console.error("Artefact generation failed", {
+                kind,
+                ...agentError?.details,
+            });
             send("error", { error: "Could not generate artefact." });
         }
     } finally {
@@ -578,6 +597,40 @@ app.get("/api/shared/artefacts/:id", async (req, res) => {
     res.json({ ...rows[0], revisions: revisions.rows });
 });
 
+/** Private data is available to the screenshot browser only via a short-lived signature. */
+app.get("/api/artefacts/:id/snapshot", async (req, res) => {
+    const token = typeof req.query.token === "string" ? req.query.token : undefined;
+    if (!validSnapshotToken(req.params.id, token)) return res.sendStatus(404);
+    const { rows } = await pool.query(
+        'select id, is_shared as "isShared", prompt, title, content, created_at as "createdAt", updated_at as "updatedAt" from artefact where id = $1',
+        [req.params.id],
+    );
+    if (!rows[0]) return res.sendStatus(404);
+    const revisions = await pool.query(
+        'select id, content, generated_content as "generatedContent", created_at as "createdAt" from artefact_revision where artefact_id = $1 order by created_at',
+        [rows[0].id],
+    );
+    res.json({ ...rows[0], revisions: revisions.rows });
+});
+
+/** Proxies a private R2 preview after confirming its artefact is shared. */
+app.get("/api/shared/artefacts/:id/preview.png", async (req, res) => {
+    const { rows } = await pool.query(
+        "select id from artefact where id = $1 and is_shared = true",
+        [req.params.id],
+    );
+    if (!rows[0]) return res.sendStatus(404);
+    try {
+        const preview = await getArtefactPreview(req.params.id);
+        if (!preview) return res.sendStatus(404);
+        res.set({ "Content-Type": "image/png", "Cache-Control": "public, max-age=300" });
+        res.send(Buffer.from(preview));
+    } catch (error) {
+        console.error("Artefact preview read failed", error);
+        res.sendStatus(404);
+    }
+});
+
 app.post("/api/artefacts/:id/revisions", async (req, res) => {
     const user = await sessionUser(req, res);
     if (!user) return;
@@ -619,6 +672,7 @@ app.post("/api/artefacts/:id/revisions", async (req, res) => {
         });
         return { ...rows[0], version };
     });
+    await uploadArtefactSnapshot(req.params.id, Boolean(artefact.isShared));
     res.status(201).json({ revision, artefact: updated });
 });
 

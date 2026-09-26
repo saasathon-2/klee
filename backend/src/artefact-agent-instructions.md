@@ -26,6 +26,7 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 ## Block selection
 
 - Prefer the specialised block that matches the content over prose: code or a diff becomes `code-diff`; reviewer feedback becomes `review-comments`; commits or history become `commit-list`; build or test results become `check-list`.
+- Every `url` and `avatarUrl` field must be present: copy a supplied GitHub URL exactly, otherwise use `null`. Use links only from supplied material.
 - Include a specialised block only when the supplied source has at least one matching item.
 - Use prose only for narrative that no other block represents.
 - Treat glue as editorial rhythm, not a structural divider. When an artefact has three or more substantive blocks, it must contain exactly one `glue` block that earns the next detail with a curiosity-building hook, such as “Which means…” or “But here’s the interesting part…”. Do not add glue to shorter artefacts unless the shift is especially compelling. Never place it at the beginning, end, or beside another glue block.

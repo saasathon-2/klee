@@ -21,11 +21,12 @@ export function CommitList({ node, context }: TemplateProps) {
 						{index > 0 && <Separator />}
 						<div className="flex items-start gap-3 px-4 py-3">
 							<Avatar size="sm" className="shrink-0">
+								{commit.avatarUrl?.startsWith("https://") && <Avatar.Image src={commit.avatarUrl} alt="" />}
 								<Avatar.Fallback>{initials(commit.author)}</Avatar.Fallback>
 							</Avatar>
 							<div className="min-w-0 flex-1">
 								<Paragraph size="sm" weight="medium">
-									{text(["commits", index, "message"], commit.message, "Commit message")}
+									{commit.url?.startsWith("https://") ? <a className="underline decoration-muted underline-offset-4 hover:text-primary" href={commit.url} target="_blank" rel="noreferrer">{text(["commits", index, "message"], commit.message, "Commit message")}</a> : text(["commits", index, "message"], commit.message, "Commit message")}
 								</Paragraph>
 								<Paragraph size="xs" color="muted">
 									{commit.author}
@@ -35,9 +36,7 @@ export function CommitList({ node, context }: TemplateProps) {
 								</Paragraph>
 							</div>
 							{commit.sha && (
-								<Code className="shrink-0 text-xs">
-									{commit.sha.slice(0, 7)}
-								</Code>
+								commit.url?.startsWith("https://") ? <a href={commit.url} target="_blank" rel="noreferrer"><Code className="shrink-0 text-xs">{commit.sha.slice(0, 7)}</Code></a> : <Code className="shrink-0 text-xs">{commit.sha.slice(0, 7)}</Code>
 							)}
 						</div>
 					</Fragment>

@@ -25,6 +25,8 @@ export type DiffHunk = {
 };
 export type ReviewComment = {
 	author: string;
+	avatarUrl?: string;
+	url?: string;
 	verdict: "approved" | "changes-requested" | "commented";
 	body: string;
 };
@@ -32,6 +34,8 @@ export type Commit = {
 	sha: string;
 	message: string;
 	author: string;
+	avatarUrl?: string;
+	url?: string;
 	detail: string;
 };
 export type Check = {
