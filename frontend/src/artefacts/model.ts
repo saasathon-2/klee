@@ -236,6 +236,7 @@ export type ArtefactNode = {
 		| "evidence-table"
 		| "activity-trend"
 		| "handoff-brief"
+		| "note-evidence"
 		| "two-column";
 	data: Record<string, unknown>;
 	children?: ArtefactNode[];

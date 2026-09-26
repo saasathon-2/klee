@@ -127,6 +127,7 @@ DeveloperPage.children = {
 		"evidence-table",
 		"activity-trend",
 		"handoff-brief",
+		"note-evidence",
 		"two-column",
 	],
 } satisfies TemplateSelectionInfo["children"];

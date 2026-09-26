@@ -22,6 +22,7 @@ import {
 	Check,
 	Copy,
 	ExternalLink,
+	FileText,
 	House,
 	History,
 	LogOut,
@@ -62,7 +63,7 @@ import type { EditPath } from "../artefacts/templates/types";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { useTheme } from "../lib/use-theme";
-import { IntegrationsModal } from "./Integrations";
+import { IntegrationsModal, type GoogleFile } from "./Integrations";
 import { OrganisationsModal } from "./Organisations";
 import { useMediaQuery } from "../lib/use-media-query";
 import { ArtefactSkeleton } from "./artefact/ArtefactSkeleton";
@@ -149,6 +150,39 @@ const api = (path: string, options?: RequestInit) =>
 		...options,
 	});
 
+function greetingFor(date: Date) {
+	const hour = date.getHours();
+	if (hour < 5) return "Night shift";
+	if (hour < 12) return "Good morning";
+	if (hour < 17) return "Good afternoon";
+	if (hour < 22) return "Good evening";
+	return "Night shift";
+}
+
+function textareaCaretPoint(textarea: HTMLTextAreaElement) {
+	const styles = getComputedStyle(textarea);
+	const mirror = document.createElement("div");
+	const marker = document.createElement("span");
+	for (const property of [
+		"box-sizing", "width", "font-family", "font-size", "font-weight",
+		"letter-spacing", "line-height", "padding", "border", "text-transform",
+		"text-indent", "text-align", "word-break", "overflow-wrap", "tab-size",
+	]) mirror.style.setProperty(property, styles.getPropertyValue(property));
+	mirror.style.cssText += ";position:fixed;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;";
+	mirror.textContent = textarea.value.slice(0, textarea.selectionStart);
+	marker.textContent = textarea.value[textarea.selectionStart] || "\u200b";
+	mirror.append(marker);
+	document.body.append(mirror);
+	const inputBox = textarea.getBoundingClientRect();
+	const mirrorBox = mirror.getBoundingClientRect();
+	const markerBox = marker.getBoundingClientRect();
+	mirror.remove();
+	return {
+		x: inputBox.left + markerBox.left - mirrorBox.left - textarea.scrollLeft,
+		y: inputBox.top + markerBox.top - mirrorBox.top - textarea.scrollTop + markerBox.height / 2,
+	};
+}
+
 export function Artefacts() {
 	const navigate = useNavigate();
 	const { id: routeId, shareId } = useParams();
@@ -172,6 +206,9 @@ export function Artefacts() {
 	const [prompt, setPrompt] = useState("");
 	// Links pasted into the prompt, shown as chips and sent after the text.
 	const [promptLinks, setPromptLinks] = useState<string[]>([]);
+	const [promptCaret, setPromptCaret] = useState<{ x: number; y: number }>();
+	const [googleFiles, setGoogleFiles] = useState<GoogleFile[]>([]);
+	const [localTime, setLocalTime] = useState(() => new Date());
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
 	const [generationCommentary, setGenerationCommentary] = useState("");
@@ -203,6 +240,20 @@ export function Artefacts() {
 		() => window.matchMedia(desktopQuery).matches,
 	);
 	const generationAbort = useRef<AbortController | undefined>(undefined);
+	const promptCaretTimer = useRef<number | undefined>(undefined);
+	function followPromptCaret(textarea: HTMLTextAreaElement) {
+		setPromptCaret(textareaCaretPoint(textarea));
+		window.clearTimeout(promptCaretTimer.current);
+		promptCaretTimer.current = window.setTimeout(() => setPromptCaret(undefined), 1000);
+	}
+	useEffect(
+		() => () => window.clearTimeout(promptCaretTimer.current),
+		[],
+	);
+	useEffect(() => {
+		const timer = window.setInterval(() => setLocalTime(new Date()), 60_000);
+		return () => window.clearInterval(timer);
+	}, []);
 	// Dropping a sidebar artefact onto the main view opens it.
 	const mainRef = useRef<HTMLElement>(null);
 	const { dropProps: mainDropProps, isDropTarget: isMainDropTarget } =
@@ -334,10 +385,12 @@ export function Artefacts() {
 		setGenerationStatus("Starting your brief…");
 		setGenerationCommentary("");
 		setError("");
+		const googleFileIds = googleFiles.map((file) => file.id);
+		setGoogleFiles([]);
 		try {
 			const response = await api("/artefacts/stream", {
 				method: "POST",
-				body: JSON.stringify({ prompt: fullPrompt }),
+				body: JSON.stringify({ prompt: fullPrompt, googleFileIds }),
 				signal: controller.signal,
 			});
 			if (!response.ok || !response.body)
@@ -708,6 +761,7 @@ export function Artefacts() {
 		);
 
 	const user = session!.user;
+	const greeting = greetingFor(localTime);
 	// On phones, picking something also closes the drawer.
 	const go = (path: string) => {
 		navigate(path);
@@ -785,10 +839,12 @@ export function Artefacts() {
 				<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 					<div className="mx-auto w-full max-w-2xl">
 						<div className="mb-8 text-center">
-							<KleeLogo className="mx-auto mb-4 size-16" />
+							<KleeLogo className="mx-auto mb-4 size-16" lookAt={promptCaret} />
 							<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-								Good morning,{" "}
-								{user.name?.split(" ")[0] || "there"}
+								{greeting},{" "}
+								<span className="text-accent-text">
+									{user.name?.split(" ")[0] || "there"}
+								</span>{greeting === "Night shift" ? "?" : "!"}
 							</h1>
 						</div>
 						<form onSubmit={create} className="w-full">
@@ -815,16 +871,44 @@ export function Artefacts() {
 									variant="secondary"
 									rows={3}
 									value={prompt}
-									onChange={(event) =>
-										setPrompt(event.target.value)
-									}
+									onChange={(event) => {
+										setPrompt(event.target.value);
+										followPromptCaret(event.currentTarget);
+									}}
+									onSelect={(event) => followPromptCaret(event.currentTarget)}
 									placeholder="What would you like to make? Paste a PR, issue, or a question…"
 									className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
 								/>
 								<Toolbar
 									aria-label="Create artefact controls"
-									className="flex w-full justify-end px-1 pt-1"
+									className="flex w-full items-center justify-between px-1 pt-1"
 								>
+									{googleFiles.length ? (
+										<div className="flex min-w-0 items-center gap-2 text-xs text-muted">
+											<FileText size={15} />
+											<span className="truncate">
+												{googleFiles.length === 1
+													? `${googleFiles[0].name} will be used`
+													: `${googleFiles.length} Google files will be used`}
+											</span>
+											<Button
+												size="sm"
+												variant="ghost"
+												onPress={() => setGoogleFiles([])}
+											>
+												Clear
+											</Button>
+										</div>
+									) : (
+										<Button
+											size="sm"
+											variant="ghost"
+											onPress={() => navigate("/?panel=integrations")}
+										>
+											<FileText size={15} />
+											Add Google files
+										</Button>
+									)}
 									<Button
 										aria-label={
 											isCreating
@@ -921,7 +1005,10 @@ export function Artefacts() {
 				/>
 			)}
 			{isIntegrations && (
-				<IntegrationsModal onClose={() => navigate("/")} />
+				<IntegrationsModal
+					onClose={() => navigate("/")}
+					onGoogleFilesSelected={setGoogleFiles}
+				/>
 			)}
 			{isOrganisations && (
 				<OrganisationsModal onClose={() => navigate("/")} />

@@ -640,6 +640,27 @@ const blockSchemas = [
 				.strict(),
 		})
 		.strict(),
+	z
+		.object({
+			template: z.literal("note-evidence"),
+			data: z
+				.object({
+					items: z
+						.array(
+							z
+								.object({
+									sourceId: z.string().trim().min(1).max(200),
+									change: z.string().trim().min(1).max(120),
+									justification: z.string().trim().min(1).max(280),
+								})
+								.strict(),
+						)
+						.min(1)
+						.max(5),
+				})
+				.strict(),
+		})
+		.strict(),
 ] as const;
 
 /** Blocks compact enough to share a row, e.g. a trend chart beside a table. */
@@ -800,6 +821,7 @@ export function toDocument(generation: Generation): ArtefactDocument {
 					"evidence-table",
 					"activity-trend",
 					"handoff-brief",
+					"note-evidence",
 					"two-column",
 				])
 			: new Set([

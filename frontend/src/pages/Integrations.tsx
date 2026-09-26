@@ -10,10 +10,12 @@ import {
 	Separator,
 	Skeleton,
 } from "@heroui/react";
-import { ExternalLink, Plus, PlugZap } from "lucide-react";
+import { ExternalLink, FileText, Plus, PlugZap } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { GitHubIcon, JiraIcon, SlackIcon } from "../components/BrandIcons";
+import { authErrorMessage, linkGoogleDrive } from "../lib/auth-client";
 import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 
 type GitHubInstallation = {
@@ -21,6 +23,34 @@ type GitHubInstallation = {
 	accountLogin: string;
 	accountType: string;
 };
+
+export type GoogleFile = { id: string; name: string };
+type PickerDoc = { id: string; name?: string };
+type PickerData = { action: string; docs?: PickerDoc[] };
+type PickerBuilder = {
+	addView(view: string): PickerBuilder;
+	enableFeature(feature: string): PickerBuilder;
+	setMaxItems(count: number): PickerBuilder;
+	setOAuthToken(token: string): PickerBuilder;
+	setDeveloperKey(key: string): PickerBuilder;
+	setAppId(id: string): PickerBuilder;
+	setCallback(callback: (data: PickerData) => void): PickerBuilder;
+	build(): { setVisible(visible: boolean): void };
+};
+
+declare global {
+	interface Window {
+		gapi?: { load(name: string, callback: () => void): void };
+		google?: {
+			picker: {
+				PickerBuilder: new () => PickerBuilder;
+				ViewId: { DOCUMENTS: string; SPREADSHEETS: string };
+				Feature: { MULTISELECT_ENABLED: string };
+				Action: { PICKED: string };
+			};
+		};
+	}
+}
 
 const slackInstallUrl =
 	import.meta.env.VITE_SLACK_INSTALL_URL || "https://slack.com/apps";
@@ -153,10 +183,20 @@ function InstallationRow({
 	);
 }
 
-export function IntegrationsModal({ onClose }: { onClose: () => void }) {
+export function IntegrationsModal({
+	onClose,
+	onGoogleFilesSelected,
+}: {
+	onClose: () => void;
+	onGoogleFilesSelected: (files: GoogleFile[]) => void;
+}) {
+	const [searchParams] = useSearchParams();
 	const [installations, setInstallations] = useState<GitHubInstallation[]>();
 	const [revoking, setRevoking] = useState<string>();
 	const [error, setError] = useState("");
+	const [googleConnected, setGoogleConnected] = useState(false);
+	const [googleLoading, setGoogleLoading] = useState(true);
+	const [googleOAuthConfigured, setGoogleOAuthConfigured] = useState(false);
 
 	useEffect(() => {
 		fetch("/api/integrations/github", { credentials: "include" })
@@ -171,7 +211,31 @@ export function IntegrationsModal({ onClose }: { onClose: () => void }) {
 					"Couldn't load your GitHub connection. Refresh to try again.",
 				);
 			});
+		fetch("/api/integrations/google", { credentials: "include" })
+			.then((response) =>
+				response.ok
+					? response.json()
+					: { connected: false },
+			)
+			.then((data: { connected: boolean }) => {
+				setGoogleConnected(data.connected);
+			})
+			.catch(() => setError("Couldn't load your Google connection."))
+			.finally(() => setGoogleLoading(false));
+		fetch("/api/auth-providers")
+			.then((response) =>
+				response.ok ? response.json() : { google: false },
+			)
+			.then((providers: { google: boolean }) =>
+				setGoogleOAuthConfigured(providers.google),
+			)
+			.catch(() => setGoogleOAuthConfigured(false));
 	}, []);
+
+	useEffect(() => {
+		const oauthError = searchParams.get("error");
+		if (oauthError) setError(authErrorMessage(oauthError));
+	}, [searchParams]);
 
 	async function revokeGitHub(installationId: string) {
 		setRevoking(installationId);
@@ -194,6 +258,79 @@ export function IntegrationsModal({ onClose }: { onClose: () => void }) {
 	const connectGitHub = () =>
 		window.location.assign("/api/integrations/github/install");
 	const isConnected = Boolean(installations?.length);
+
+	async function connectGoogle() {
+		setError("");
+		const { error: linkError } = await linkGoogleDrive(
+			"/integrations?google=connected",
+		);
+		if (linkError)
+			setError(linkError.message ?? "Couldn't connect Google.");
+	}
+
+	async function selectGoogleFiles() {
+		setError("");
+		const apiKey = import.meta.env.VITE_GOOGLE_PICKER_API_KEY;
+		const appId = import.meta.env.VITE_GOOGLE_CLOUD_PROJECT_NUMBER;
+		if (!apiKey || !appId) {
+			setError("Google Picker is not configured yet.");
+			return;
+		}
+		try {
+			const tokenResponse = await fetch(
+				"/api/integrations/google/access-token",
+				{ credentials: "include" },
+			);
+			if (!tokenResponse.ok)
+				throw new Error("Reconnect Google Docs to continue.");
+			const { accessToken } = (await tokenResponse.json()) as {
+				accessToken: string;
+			};
+			if (!window.gapi) {
+				await new Promise<void>((resolve, reject) => {
+					const script = document.createElement("script");
+					script.src = "https://apis.google.com/js/api.js";
+					script.onload = () => resolve();
+					script.onerror = () =>
+						reject(new Error("Couldn't load Google Picker."));
+					document.head.append(script);
+				});
+			}
+			await new Promise<void>((resolve) =>
+				window.gapi!.load("picker", resolve),
+			);
+			const picker = new window.google!.picker.PickerBuilder()
+				.addView(window.google!.picker.ViewId.DOCUMENTS)
+				.addView(window.google!.picker.ViewId.SPREADSHEETS)
+				.enableFeature(window.google!.picker.Feature.MULTISELECT_ENABLED)
+				.setMaxItems(5)
+				.setOAuthToken(accessToken)
+				.setDeveloperKey(apiKey)
+				.setAppId(appId)
+				.setCallback(async (data) => {
+					if (
+						data.action !== window.google!.picker.Action.PICKED ||
+						!data.docs?.length
+					)
+						return;
+					onGoogleFilesSelected(
+						data.docs.map((doc) => ({
+							id: doc.id,
+							name: doc.name ?? "Google file",
+						})),
+					);
+				})
+				.build();
+			picker.setVisible(true);
+			onClose();
+		} catch (pickerError) {
+			setError(
+				pickerError instanceof Error
+					? pickerError.message
+					: "Couldn't open Google Picker.",
+			);
+		}
+	}
 
 	return (
 		<Modal>
@@ -230,6 +367,59 @@ export function IntegrationsModal({ onClose }: { onClose: () => void }) {
 									</Alert.Content>
 								</Alert>
 							)}
+							<IntegrationCard
+								icon={<FileText size={20} />}
+								name="Google Docs & Sheets"
+								summary={
+									googleConnected
+										? "Add context to your next artefact."
+										: "Use selected development notes to explain code changes."
+								}
+								status={
+									googleLoading ? (
+										<Skeleton
+											animationType="pulse"
+											className="h-5 w-16 rounded"
+										/>
+									) : googleConnected ? (
+										<Chip size="sm" color="success">
+											Connected
+										</Chip>
+									) : null
+								}
+								action={
+									googleLoading || !googleOAuthConfigured ? null : googleConnected ? (
+										<Button
+											size="sm"
+											variant="secondary"
+											onPress={() => void selectGoogleFiles()}
+										>
+											Select files
+										</Button>
+									) : (
+										<Button size="sm" onPress={() => void connectGoogle()}>
+											Connect
+										</Button>
+									)
+								}
+								setup={[
+									"Connect the Google account that owns your development notes.",
+									"Choose up to five Google Docs or Sheets for your next artefact.",
+									"Klee reads those files only while generating that artefact.",
+								]}
+							>
+								<Paragraph size="sm" color="muted">
+									Select up to five Docs or Sheets. Klee uses them for the next
+									artefact only, then discards the selection.
+								</Paragraph>
+								{!googleLoading && !googleOAuthConfigured && (
+									<Paragraph size="sm" color="muted" className="mt-2">
+										Google OAuth isn’t configured. Set GOOGLE_CLIENT_ID and
+										GOOGLE_CLIENT_SECRET on the API service, then reload
+										Integrations.
+									</Paragraph>
+								)}
+							</IntegrationCard>
 							<IntegrationCard
 								icon={<GitHubIcon size={20} />}
 								name="GitHub"

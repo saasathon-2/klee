@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import houseOnTheWater from "../assets/klee-house-on-the-water.jpg";
 import polyphony from "../assets/klee-polyphony.jpg";
+import starTwo from "../assets/star-2.png";
 import { useSession } from "../lib/auth-client";
 import { useTheme } from "../lib/use-theme";
 import { useDocumentTitle } from "../useDocumentTitle";
@@ -20,7 +21,16 @@ const paintings = {
 	dark: { src: polyphony, title: "Polyphony", year: 1932 },
 };
 
-/** Space between the hero demo and the stories, and the stories and the footer. */
+function BauhausShapes() {
+	return (
+		<div aria-hidden="true" className="bauhaus-shapes">
+			<div className="bauhaus-arch" />
+			<div className="bauhaus-bloom"><i /><i /><i /><i /></div>
+			<img className="bauhaus-star" src={starTwo} alt="" />
+			<div className="bauhaus-dot" />
+		</div>
+	);
+}
 
 export function Landing() {
 	useDocumentTitle("Klee");
@@ -32,7 +42,7 @@ export function Landing() {
 	return (
 		<main>
 			<section className="home-section mx-auto max-w-[108rem] px-6 pt-6">
-				<div className="relative">
+				<div className="bauhaus-hero relative">
 					{/* The painting stops short so the demo hangs off its bottom edge. */}
 					<br />
 					<br />
@@ -50,7 +60,8 @@ export function Landing() {
 							/>
 						))}
 					</div>
-					<div className="relative flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
+					<BauhausShapes />
+					<div className="relative z-10 flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
 						<div className="max-w-3xl text-center">
 							<Heading
 								level={1}
