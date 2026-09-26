@@ -244,6 +244,16 @@ export function Artefacts() {
 			? sharedAccess
 			: undefined;
 
+	// A shared artefact scrolls the window, so overscroll shows the page canvas;
+	// match it to the artefact's brand header and footer.
+	useEffect(() => {
+		if (!isShared) return;
+		const root = window.document.documentElement;
+		root.style.backgroundColor = "var(--brand)";
+		return () => {
+			root.style.backgroundColor = "";
+		};
+	}, [isShared]);
 	useEffect(() => {
 		if (isShared || !viewerId) return;
 		api("/artefacts")

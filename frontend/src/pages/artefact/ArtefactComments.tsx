@@ -477,7 +477,8 @@ export function ArtefactComments({
 
 	return (
 		<div className="relative flex min-h-0 flex-1 overflow-hidden">
-			<div className="relative min-w-0 flex-1 overflow-auto">
+			{/* Brand-coloured so overscrolling past the header or footer shows yellow, not a white gap. */}
+			<div className="relative min-w-0 flex-1 overflow-auto bg-brand">
 				{canDraw && (
 					<div className="pointer-events-none sticky top-3 z-[65] flex h-0 justify-center">
 						<Chip size="sm" variant="primary" className="h-7 shadow-lg">

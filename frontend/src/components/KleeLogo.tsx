@@ -17,15 +17,16 @@ export function KleeLogo({ className }: { className?: string }) {
 	useEffect(() => {
 		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 		let frame = 0;
-		function follow(event: PointerEvent) {
+		let pointer: { x: number; y: number } | undefined;
+		function aim() {
 			cancelAnimationFrame(frame);
 			frame = requestAnimationFrame(() => {
 				const box = svg.current?.getBoundingClientRect();
-				if (!box?.width) return;
+				if (!pointer || !box?.width) return;
 				const scale = box.width / size;
 				eyes.forEach(({ pupil, reach }, index) => {
-					const dx = event.clientX - (box.left + pupil.cx * scale);
-					const dy = event.clientY - (box.top + pupil.cy * scale);
+					const dx = pointer!.x - (box.left + pupil.cx * scale);
+					const dy = pointer!.y - (box.top + pupil.cy * scale);
 					const distance = Math.hypot(dx, dy) || 1;
 					// Full reach once the cursor is a logo-width or so away.
 					const pull = Math.min(1, distance / (box.width * 1.2));
@@ -36,9 +37,16 @@ export function KleeLogo({ className }: { className?: string }) {
 				});
 			});
 		}
+		function follow(event: PointerEvent) {
+			pointer = { x: event.clientX, y: event.clientY };
+			aim();
+		}
+		// The logo moves under a still cursor when the page scrolls, so re-aim then too.
 		window.addEventListener("pointermove", follow);
+		window.addEventListener("scroll", aim, { capture: true, passive: true });
 		return () => {
 			window.removeEventListener("pointermove", follow);
+			window.removeEventListener("scroll", aim, { capture: true });
 			cancelAnimationFrame(frame);
 		};
 	}, []);
