@@ -239,23 +239,31 @@ export function Artefacts() {
 	}, [isShared, viewerId]);
 	useEffect(() => {
 		if (!artefactPath || loaded?.path === artefactPath) return;
-		api(artefactPath)
-			.then((response) => {
-				if (response.ok) return response.json();
-				if (response.status === 403)
-					return Promise.reject("not_shared");
-				return Promise.reject("not_found");
-			})
+		const privatePath = isShared && viewerId && !snapshotToken
+			? `/artefacts/${shareId}`
+			: undefined;
+		const load = async () => {
+			const privateResponse = privatePath
+				? await api(privatePath)
+				: undefined;
+			const response = privateResponse?.ok
+				? privateResponse
+				: await api(artefactPath);
+			if (response.ok) return response.json() as Promise<Artefact>;
+			if (response.status === 403) throw new Error("not_shared");
+			throw new Error("not_found");
+		};
+		load()
 			.then((artefact: Artefact) => {
 				setNotShared(false);
 				setLoaded({ path: artefactPath, artefact });
 			})
-			.catch((reason) => {
-				if (reason === "not_shared") return setNotShared(true);
+			.catch((error: Error) => {
+				if (error.message === "not_shared") return setNotShared(true);
 				setNotShared(false);
 				setError("This artefact could not be found.");
 			});
-	}, [artefactPath, loaded?.path]);
+	}, [artefactPath, isShared, loaded?.path, shareId, snapshotToken, viewerId]);
 
 	useEffect(() => {
 		let active = true;
@@ -553,7 +561,17 @@ export function Artefacts() {
 						/>
 					) : (
 						<>
-							<div className="flex justify-end px-4 py-2">
+							<div className="flex justify-end gap-2 px-4 py-2">
+								{currentSharedAccess?.permission === "edit" && (
+									<Button
+										variant="ghost"
+										size="sm"
+										onPress={() => navigate(`/?artefact=${current.id}`)}
+									>
+										<Pencil size={15} />
+										Edit
+									</Button>
+								)}
 								<Button
 									aria-label={`Comments, ${sharedCommentCount}`}
 									variant={

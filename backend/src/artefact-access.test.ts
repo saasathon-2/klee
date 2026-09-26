@@ -18,8 +18,10 @@ test("organisation grants only allow their configured permission level", () => {
 	assert.equal(can("view", "view"), true);
 	assert.equal(can("view", "comment"), false);
 	assert.equal(can("comment", "comment"), true);
+	assert.equal(can("comment", "view"), true);
 	assert.equal(can("comment", "edit"), false);
 	assert.equal(can("edit", "edit"), true);
+	assert.equal(can("edit", "comment"), true);
 	assert.equal(can(undefined, "view"), false);
 	assert.match(artefactPermissionSql("$1"), /artefact_organisation_permission/);
 	assert.match(artefactPermissionSql("$1"), /permission_grant/);
