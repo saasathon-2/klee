@@ -151,13 +151,13 @@ export function ArtefactComments({
 		const rect = surfaceRef.current!.getBoundingClientRect();
 		return {
 			x: bounded(event.clientX - rect.left, surfaceRef.current!.clientWidth),
-			y: bounded(event.clientY - rect.top, surfaceRef.current!.scrollHeight),
+			y: bounded(event.clientY - rect.top, surfaceRef.current!.clientHeight),
 		};
 	}
 
 	function anchorBetween(start: { x: number; y: number }, end: { x: number; y: number }): Anchor {
 		const width = Math.max(1, surfaceRef.current!.clientWidth);
-		const height = Math.max(1, surfaceRef.current!.scrollHeight);
+		const height = Math.max(1, surfaceRef.current!.clientHeight);
 		const left = Math.min(start.x, end.x);
 		const top = Math.min(start.y, end.y);
 		return {
@@ -186,7 +186,7 @@ export function ArtefactComments({
 		if (!dragStart.current) return;
 		const end = point(event);
 		const selection = anchorBetween(dragStart.current, end);
-		if (selection.width * surfaceRef.current!.clientWidth > 5 || selection.height * surfaceRef.current!.scrollHeight > 5)
+		if (selection.width * surfaceRef.current!.clientWidth > 5 || selection.height * surfaceRef.current!.clientHeight > 5)
 			setDragAnchor(selection);
 	}
 
@@ -196,7 +196,7 @@ export function ArtefactComments({
 		const selection = anchorBetween(start, point(event));
 		dragStart.current = undefined;
 		setDragAnchor(undefined);
-		if (selection.width * surfaceRef.current!.clientWidth < 12 || selection.height * surfaceRef.current!.scrollHeight < 12) return;
+		if (selection.width * surfaceRef.current!.clientWidth < 12 || selection.height * surfaceRef.current!.clientHeight < 12) return;
 		setDraftAnchor(selection);
 		setThreadId(undefined);
 		setBody("");
@@ -225,7 +225,7 @@ export function ArtefactComments({
 			startX: event.clientX,
 			startY: event.clientY,
 			surfaceWidth: Math.max(1, surface.clientWidth),
-			surfaceHeight: Math.max(1, surface.scrollHeight),
+			surfaceHeight: Math.max(1, surface.clientHeight),
 			original: comment.anchor!,
 			moved: false,
 		};
@@ -373,7 +373,7 @@ export function ArtefactComments({
 			<div className="relative min-w-0 flex-1 overflow-auto">
 				<div
 					ref={surfaceRef}
-					className="relative min-h-full"
+					className="relative"
 					onPointerDown={startSelection}
 					onPointerMove={moveSelection}
 					onPointerUp={finishSelection}

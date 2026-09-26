@@ -529,7 +529,7 @@ export function Artefacts() {
 							isOwner={currentSharedAccess?.isOwner ?? false}
 							userId={session?.user?.id ?? ""}
 							isShared
-							canComment={Boolean(currentSharedAccess)}
+							canComment={Boolean(session?.user && current.isShared)}
 							isOpen={sharedCommentsOpen}
 							onOpenChange={setSharedCommentsOpen}
 							onCountChange={setSharedCommentCount}
