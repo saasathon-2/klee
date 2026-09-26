@@ -217,6 +217,7 @@ try {
 	});
 	assert.equal(commentary.join(""), "I’m outlining the key changes.");
 	assert.deepEqual(requestBody?.reasoning, { effort: "low", summary: "concise" });
+	assert.match(String(requestBody?.instructions), /choose one primary view/);
 } finally {
 	globalThis.fetch = originalFetch;
 }
