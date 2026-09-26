@@ -36,7 +36,7 @@ function App() {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { data: session, isPending } = useSession();
-	const isWorkspace = location.pathname.startsWith("/artefacts") || (["/", "/profile", "/integrations"].includes(location.pathname) && Boolean(session?.user));
+	const isWorkspace = location.pathname.startsWith("/artefacts") || (["/", "/profile", "/integrations", "/organisations"].includes(location.pathname) && Boolean(session?.user));
 
 	return (
 		// Lets HeroUI links and menu items navigate with react-router.
@@ -60,6 +60,7 @@ function App() {
 					<Route element={<RequireUser />}>
 						<Route path="/profile" element={<Artefacts />} />
 						<Route path="/integrations" element={<Artefacts />} />
+						<Route path="/organisations" element={<Artefacts />} />
 					</Route>
 					<Route path="/artefacts" element={<Navigate to="/" replace />} />
 					<Route path="/artefacts/:id" element={<Navigate to="/" replace />} />
