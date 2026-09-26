@@ -53,7 +53,8 @@ export function LandingCodeDiffStory({ children }: { children: ReactNode }) {
 		<div
 			ref={sectionRef}
 			// Wider than the demo, so it passes the pointer through to the landing shapes beside it.
-			className="pointer-events-none h-[calc(300vh+6rem)] lg:-mx-72 lg:w-[calc(100%+36rem)]"
+			// Too tight on phones, so it's left out there.
+			className="pointer-events-none h-[calc(300vh+6rem)] max-sm:hidden lg:-mx-72 lg:w-[calc(100%+36rem)]"
 		>
 			<div
 				ref={stageRef}

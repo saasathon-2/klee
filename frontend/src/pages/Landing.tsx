@@ -50,7 +50,7 @@ function BauhausShapes() {
 	const shapes = useRef<HTMLDivElement>(null);
 	useLiquidDrag(shapes);
 	return (
-		<div ref={shapes} aria-hidden="true" className="bauhaus-shapes">
+		<div ref={shapes} aria-hidden="true" className="bauhaus-shapes max-sm:hidden">
 			<div className="bauhaus-arch" />
 			<div className="hidden bauhaus-bloom">
 				<i />
@@ -90,13 +90,14 @@ export function Landing() {
 
 	return (
 		<main>
-			<section className="home-section mx-auto max-w-[108rem] px-6 pt-6">
+			<section className="home-section mx-auto max-w-[108rem] sm:px-6 sm:pt-6">
 				<div className="bauhaus-hero relative">
-					{/* The painting stops short so the demo hangs off its bottom edge. */}
-					<br />
-					<br />
+					{/* The painting stops short so the demo hangs off its bottom edge. On phones
+					 * the page is just the demo, edge to edge, and the stories below it. */}
+					<br className="max-sm:hidden" />
+					<br className="max-sm:hidden" />
 
-					<div className="absolute inset-x-0 top-0 h-[54rem] overflow-hidden rounded-3xl sm:h-[54rem]">
+					<div className="absolute inset-x-0 top-0 h-[54rem] overflow-hidden rounded-3xl max-sm:hidden">
 						{/* Both paintings stay mounted so switching theme is instant; the
 						 * hidden one loads at low priority after the visible one. */}
 						{(["light", "dark"] as const).map((mode) => (
@@ -111,8 +112,8 @@ export function Landing() {
 					</div>
 					<BauhausShapes />
 					{/* Decorative shapes stay behind the interactive content. */}
-					<div className="relative z-10 flex flex-col items-center gap-10 px-4 pt-16 sm:px-10 sm:pt-24">
-						<div className="max-w-3xl text-center">
+					<div className="relative z-10 flex flex-col items-center gap-10 sm:px-10 sm:pt-24">
+						<div className="max-w-3xl text-center max-sm:hidden">
 							<Heading
 								level={1}
 								align="center"
@@ -138,7 +139,9 @@ export function Landing() {
 			<SlackChannelStory />
 			<GitHubPullRequestStory />
 
-			<Footer />
+			<div className="max-sm:hidden">
+				<Footer />
+			</div>
 		</main>
 	);
 }

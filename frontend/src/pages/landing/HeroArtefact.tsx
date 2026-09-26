@@ -222,7 +222,7 @@ export function HeroArtefact() {
 	}, []);
 
 	return (
-		<Card className="w-full gap-0 overflow-x-visible overflow-y-clip p-0">
+		<Card className="w-full gap-0 overflow-x-visible overflow-y-clip p-0 max-sm:min-h-dvh max-sm:rounded-none max-sm:shadow-none">
 			<Surface className="flex items-center gap-3 border-b border-border px-5 py-4">
 				<Paragraph size="sm" truncate className="min-w-0 flex-1">
 					{prompt.slice(0, typed)}
