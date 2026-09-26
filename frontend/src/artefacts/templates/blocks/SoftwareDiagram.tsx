@@ -568,7 +568,11 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 					),
 			onStopEdit: () => setEditingNode(undefined),
 			onRemove: () => removeNode(flowNode.id),
-			onResizeEnd: (position, width, height) =>
+			onResizeEnd: (
+				position: { x: number; y: number },
+				width: number,
+				height: number,
+			) =>
 				updateNodes(
 					nodes.map((item) =>
 						item.id === flowNode.id

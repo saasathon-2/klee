@@ -89,7 +89,7 @@ export function isTextOnlyEdit(patch: PatchOp[], before: unknown) {
 	);
 }
 
-const isFiniteNumber = (value: unknown) =>
+const isFiniteNumber = (value: unknown): value is number =>
 	typeof value === "number" && Number.isFinite(value);
 
 function isSoftwareDiagram(value: unknown) {
