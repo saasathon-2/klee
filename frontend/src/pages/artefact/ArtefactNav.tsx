@@ -79,8 +79,12 @@ function ArtefactListItem({
 			id={artefact.id}
 			textValue={artefact.title}
 			className="h-10 min-h-10 max-h-10 min-w-0 overflow-hidden rounded-xl px-3 data-[dragging]:scale-[.98] data-[dragging]:opacity-55"
-			onPointerEnter={(event) => onPreview(artefact, event.clientX, event.clientY)}
-			onPointerMove={(event) => onMovePreview(event.clientX, event.clientY)}
+			onPointerEnter={(event) =>
+				onPreview(artefact, event.clientX, event.clientY)
+			}
+			onPointerMove={(event) =>
+				onMovePreview(event.clientX, event.clientY)
+			}
 			onPointerLeave={onHidePreview}
 		>
 			<ArtefactIcon icon={artefact.icon} />
@@ -126,7 +130,9 @@ function groupByProject(artefacts: NavArtefact[]) {
 		const project = artefact.project ?? null;
 		groups.set(project, [...(groups.get(project) ?? []), artefact]);
 	}
-	return [...groups].filter(([project, group]) => project === null || group.length);
+	return [...groups].filter(
+		([project, group]) => project === null || group.length,
+	);
 }
 
 function ArtefactItems({
@@ -155,7 +161,13 @@ function ArtefactItems({
 			dragAndDropHooks={dragAndDropHooks}
 		>
 			{artefacts.map((artefact) => (
-				<ArtefactListItem key={artefact.id} artefact={artefact} onPreview={onPreview} onMovePreview={onMovePreview} onHidePreview={onHidePreview} />
+				<ArtefactListItem
+					key={artefact.id}
+					artefact={artefact}
+					onPreview={onPreview}
+					onMovePreview={onMovePreview}
+					onHidePreview={onHidePreview}
+				/>
 			))}
 		</ListBox>
 	);
@@ -180,11 +192,16 @@ function UnfiledGroup({
 	onPreview: (artefact: NavArtefact, x: number, y: number) => void;
 	onMovePreview: (x: number, y: number) => void;
 	onHidePreview: () => void;
-	}) {
+}) {
 	const dragAndDropHooks = useArtefactDragAndDrop(onUnfile);
 	return (
 		<div className="mt-3">
-			<Paragraph size="xs" color="muted" weight="medium" className="px-2 py-1.5">
+			<Paragraph
+				size="xs"
+				color="muted"
+				weight="medium"
+				className="px-2 py-1.5"
+			>
 				{project ?? "Artefacts"}
 			</Paragraph>
 			<ListBox
@@ -195,7 +212,13 @@ function UnfiledGroup({
 				dragAndDropHooks={dragAndDropHooks}
 			>
 				{artefacts.map((artefact) => (
-					<ArtefactListItem key={artefact.id} artefact={artefact} onPreview={onPreview} onMovePreview={onMovePreview} onHidePreview={onHidePreview} />
+					<ArtefactListItem
+						key={artefact.id}
+						artefact={artefact}
+						onPreview={onPreview}
+						onMovePreview={onMovePreview}
+						onHidePreview={onHidePreview}
+					/>
 				))}
 			</ListBox>
 			{!artefacts.length && (
@@ -250,9 +273,18 @@ export function ArtefactNav({
 
 	if (isLoading)
 		return (
-			<div role="status" aria-label="Loading artefacts" className="min-h-0 flex-1 space-y-2 px-2">
+			<div
+				role="status"
+				aria-label="Loading artefacts"
+				className="min-h-0 flex-1 space-y-2 px-2"
+			>
 				{[70, 55, 80, 60, 45].map((width, index) => (
-					<Skeleton key={index} animationType="pulse" className="h-8 rounded-lg" style={{ width: `${width}%` }} />
+					<Skeleton
+						key={index}
+						animationType="pulse"
+						className="h-8 rounded-lg"
+						style={{ width: `${width}%` }}
+					/>
 				))}
 			</div>
 		);
@@ -280,7 +312,9 @@ export function ArtefactNav({
 			)}
 
 			{folders.map((folder) => {
-				const contents = artefacts.filter((artefact) => artefact.folderId === folder.id);
+				const contents = artefacts.filter(
+					(artefact) => artefact.folderId === folder.id,
+				);
 				return (
 					<FolderDropTarget
 						key={folder.id}
@@ -289,62 +323,92 @@ export function ArtefactNav({
 						<Disclosure defaultExpanded>
 							{({ isExpanded }) => (
 								<>
-							<Disclosure.Heading className="group/folder flex h-10 items-center rounded-xl hover:bg-default focus-within:bg-default">
-								<Disclosure.Trigger className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left text-sm">
-									<Disclosure.Indicator />
-									{isExpanded ? (
-										<FolderOpen size={16} className="shrink-0 text-muted" />
-									) : (
-										<FolderIcon size={16} className="shrink-0 text-muted" />
-									)}
-									<span className="min-w-0 flex-1 truncate whitespace-nowrap">{folder.name}</span>
-									<span className="text-xs text-muted">{contents.length}</span>
-								</Disclosure.Trigger>
-								<Dropdown>
-									<Button
-										aria-label={`${folder.name} actions`}
-										variant="ghost"
-										size="sm"
-										className="h-7 !w-0 !min-w-0 overflow-hidden p-0 opacity-0 pointer-events-none transition-[width,opacity] duration-150 group-hover/folder:!w-7 group-hover/folder:!min-w-7 group-hover/folder:pointer-events-auto group-hover/folder:opacity-100 group-focus-within/folder:!w-7 group-focus-within/folder:!min-w-7 group-focus-within/folder:pointer-events-auto group-focus-within/folder:opacity-100 focus:!w-7 focus:!min-w-7 focus:pointer-events-auto focus:opacity-100"
-									>
-										<MoreHorizontal size={16} />
-									</Button>
-									<Dropdown.Popover placement="bottom end">
-										<Dropdown.Menu
-											aria-label={`${folder.name} actions`}
-											onAction={(key) =>
-												setDialog({ kind: key === "delete" ? "delete" : "rename", folder })
-											}
-										>
-											<Dropdown.Item id="rename" textValue="Rename">
-												<Label>Rename</Label>
-											</Dropdown.Item>
-											<Dropdown.Item id="delete" textValue="Delete" variant="danger">
-												<Label>Delete</Label>
-											</Dropdown.Item>
-										</Dropdown.Menu>
-									</Dropdown.Popover>
-								</Dropdown>
-							</Disclosure.Heading>
-							<Disclosure.Content>
-								<Disclosure.Body className="pl-4">
-									{contents.length ? (
-										<ArtefactItems
-											label={folder.name}
-										artefacts={contents}
-										selectedId={selectedId}
-										onOpen={onOpen}
-										onPreview={showPreview}
-										onMovePreview={movePreview}
-										onHidePreview={() => setPreview(undefined)}
-										/>
-									) : (
-										<Paragraph size="xs" color="muted" className="px-2 py-1.5">
-											Drag artefacts here to file them.
-										</Paragraph>
-									)}
-									</Disclosure.Body>
-								</Disclosure.Content>
+									<Disclosure.Heading className="group/folder flex h-10 items-center rounded-xl hover:bg-default focus-within:bg-default">
+										<Disclosure.Trigger className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left text-sm">
+											<Disclosure.Indicator />
+											{isExpanded ? (
+												<FolderOpen
+													size={16}
+													className="shrink-0 text-muted"
+												/>
+											) : (
+												<FolderIcon
+													size={16}
+													className="shrink-0 text-muted"
+												/>
+											)}
+											<span className="min-w-0 flex-1 truncate whitespace-nowrap">
+												{folder.name}
+											</span>
+											<span className="text-xs text-muted">
+												{contents.length}
+											</span>
+										</Disclosure.Trigger>
+										<Dropdown>
+											<Button
+												aria-label={`${folder.name} actions`}
+												variant="ghost"
+												size="sm"
+												className="h-7 !w-0 !min-w-0 overflow-hidden p-0 opacity-0 pointer-events-none transition-[width,opacity] duration-150 group-hover/folder:!w-7 group-hover/folder:!min-w-7 group-hover/folder:pointer-events-auto group-hover/folder:opacity-100 group-focus-within/folder:!w-7 group-focus-within/folder:!min-w-7 group-focus-within/folder:pointer-events-auto group-focus-within/folder:opacity-100 focus:!w-7 focus:!min-w-7 focus:pointer-events-auto focus:opacity-100"
+											>
+												<MoreHorizontal size={16} />
+											</Button>
+											<Dropdown.Popover placement="bottom end">
+												<Dropdown.Menu
+													aria-label={`${folder.name} actions`}
+													onAction={(key) =>
+														setDialog({
+															kind:
+																key === "delete"
+																	? "delete"
+																	: "rename",
+															folder,
+														})
+													}
+												>
+													<Dropdown.Item
+														id="rename"
+														textValue="Rename"
+													>
+														<Label>Rename</Label>
+													</Dropdown.Item>
+													<Dropdown.Item
+														id="delete"
+														textValue="Delete"
+														variant="danger"
+													>
+														<Label>Delete</Label>
+													</Dropdown.Item>
+												</Dropdown.Menu>
+											</Dropdown.Popover>
+										</Dropdown>
+									</Disclosure.Heading>
+									<Disclosure.Content>
+										<Disclosure.Body className="pl-4">
+											{contents.length ? (
+												<ArtefactItems
+													label={folder.name}
+													artefacts={contents}
+													selectedId={selectedId}
+													onOpen={onOpen}
+													onPreview={showPreview}
+													onMovePreview={movePreview}
+													onHidePreview={() =>
+														setPreview(undefined)
+													}
+												/>
+											) : (
+												<Paragraph
+													size="xs"
+													color="muted"
+													className="px-2 py-1.5"
+												>
+													Drag artefacts here to file
+													them.
+												</Paragraph>
+											)}
+										</Disclosure.Body>
+									</Disclosure.Content>
 								</>
 							)}
 						</Disclosure>
@@ -374,10 +438,13 @@ export function ArtefactNav({
 					>
 						<div className="flex items-center gap-2">
 							<ArtefactIcon icon={preview.artefact.icon} />
-							<p className="truncate text-sm font-semibold">{preview.artefact.title}</p>
+							<p className="truncate text-sm font-semibold">
+								{preview.artefact.title}
+							</p>
 						</div>
 						<p className="line-clamp-2 text-xs leading-5 text-muted">
-							{preview.artefact.description || "No description available."}
+							{preview.artefact.description ||
+								"No description available."}
 						</p>
 					</div>,
 					document.body,
@@ -386,10 +453,13 @@ export function ArtefactNav({
 			{(dialog?.kind === "create" || dialog?.kind === "rename") && (
 				<FolderDialog
 					isOpen
-					initialName={dialog.kind === "rename" ? dialog.folder.name : ""}
+					initialName={
+						dialog.kind === "rename" ? dialog.folder.name : ""
+					}
 					onClose={() => setDialog(undefined)}
 					onSubmit={async (name) => {
-						if (dialog.kind === "rename") await onRenameFolder(dialog.folder.id, name);
+						if (dialog.kind === "rename")
+							await onRenameFolder(dialog.folder.id, name);
 						else await onCreateFolder(name);
 					}}
 				/>
@@ -406,22 +476,33 @@ export function ArtefactNav({
 							<AlertDialog.Header>
 								<AlertDialog.Icon status="danger" />
 								<AlertDialog.Heading>
-									Delete “{dialog?.kind === "delete" ? dialog.folder.name : ""}”?
+									Delete “
+									{dialog?.kind === "delete"
+										? dialog.folder.name
+										: ""}
+									”?
 								</AlertDialog.Heading>
 							</AlertDialog.Header>
 							<AlertDialog.Body>
 								<Paragraph size="sm" color="muted">
-									The artefacts inside aren't deleted; they move back to your main list.
+									The artefacts inside aren't deleted; they
+									move back to your main list.
 								</Paragraph>
 							</AlertDialog.Body>
 							<AlertDialog.Footer>
-								<Button variant="ghost" onPress={() => setDialog(undefined)}>
+								<Button
+									variant="ghost"
+									onPress={() => setDialog(undefined)}
+								>
 									Cancel
 								</Button>
 								<Button
 									variant="danger"
 									onPress={async () => {
-										if (dialog?.kind === "delete") await onDeleteFolder(dialog.folder.id);
+										if (dialog?.kind === "delete")
+											await onDeleteFolder(
+												dialog.folder.id,
+											);
 										setDialog(undefined);
 									}}
 								>

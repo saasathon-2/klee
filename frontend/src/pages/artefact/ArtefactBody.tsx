@@ -46,7 +46,9 @@ export function ArtefactBody({
 				changedIds?.size
 					? (node, rendered) =>
 							changedIds.has(node.id) ? (
-								<div className="artefact-changed">{rendered}</div>
+								<div className="artefact-changed">
+									{rendered}
+								</div>
 							) : (
 								rendered
 							)
