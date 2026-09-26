@@ -1,8 +1,9 @@
 import { Card, Chip, Code } from "@heroui/react";
 import { GitBranch, GitMerge } from "lucide-react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import type { GraphBranch, GraphCommit } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { SelectedCommitContext } from "../page/commitSelection";
 import { ExternalLink } from "../page/ExternalLink";
 import { formatDateTime } from "../page/dates";
 import { editableFor } from "../page/editableFor";
@@ -24,7 +25,9 @@ export function GitGraph({ node, context }: TemplateProps) {
 	};
 	const text = editableFor(node, context);
 	const [selectedSha, setSelectedSha] = useState(commits[0]?.sha);
-	const selected = commits.find((commit) => commit.sha === selectedSha) ?? commits[0];
+	// A surrounding story can pick the commit instead of the reader.
+	const storySha = useContext(SelectedCommitContext);
+	const selected = commits.find((commit) => commit.sha === (storySha ?? selectedSha)) ?? commits[0];
 
 	const laneOf = new Map(branches.map((branch, index) => [branch.id, index]));
 	const row = new Map(commits.map((commit, index) => [commit.sha, index]));

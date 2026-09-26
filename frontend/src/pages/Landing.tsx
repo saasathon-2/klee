@@ -6,7 +6,6 @@ import polyphony from "../assets/klee-polyphony.jpg";
 import { useSession } from "../lib/auth-client";
 import { useTheme } from "../lib/use-theme";
 import { useDocumentTitle } from "../useDocumentTitle";
-import { GlueBand } from "../artefacts/templates/blocks/Glue";
 import { Footer } from "./landing/Footer";
 import { GitHubPullRequestStory } from "./landing/GitHubPullRequestStory";
 import { HeroArtefact } from "./landing/HeroArtefact";
@@ -22,7 +21,6 @@ const paintings = {
 };
 
 /** Space between the hero demo and the stories, and the stories and the footer. */
-const sectionGap = "mt-[clamp(4rem,12dvh,9rem)]";
 
 export function Landing() {
 	useDocumentTitle("Klee");
@@ -76,9 +74,6 @@ export function Landing() {
 				</div>
 			</section>
 
-			<div className={sectionGap}>
-				<GlueBand>The same context, shared with your team</GlueBand>
-			</div>
 			<SlackChannelStory />
 			<GitHubPullRequestStory />
 

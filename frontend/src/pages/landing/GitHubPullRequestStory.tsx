@@ -11,6 +11,7 @@ import { Scallop } from "../../artefacts/templates/page/Scallop";
 import { GitHubIcon } from "../../components/BrandIcons";
 import { KleeIcon } from "../../components/KleeLogo";
 import { UserAvatar } from "../../components/UserAvatar";
+import { FitToSpace } from "./FitToSpace";
 
 const commits = [
 	{ message: "chore: scaffold integration fixtures", sha: "7c32a61" },
@@ -108,10 +109,11 @@ export function GitHubPullRequestStory() {
 					<GitHubIcon aria-hidden className="mx-auto mb-3 size-7 sm:[@media(min-height:44rem)]:size-9" />
 					Every pull request, explained
 				</Heading>
+				<FitToSpace>
 				<section
 					aria-label="GitHub pull request preview"
 					inert
-					className="flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-github-border bg-github-canvas text-github-foreground shadow-xl"
+					className="flex w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-github-border bg-github-canvas text-github-foreground shadow-xl"
 				>
 					<header className="shrink-0 border-b border-github-border px-4 py-4 sm:px-8">
 						<div className="flex flex-wrap items-center gap-3">
@@ -344,6 +346,7 @@ export function GitHubPullRequestStory() {
 						</div>
 					</div>
 				</section>
+				</FitToSpace>
 			</div>
 		</div>
 	);
