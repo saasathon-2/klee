@@ -15,6 +15,7 @@ import { Glue } from "./blocks/Glue";
 import { HandoffBrief } from "./blocks/HandoffBrief";
 import { IncidentTimeline } from "./blocks/IncidentTimeline";
 import { MetricRow } from "./blocks/MetricRow";
+import { NoteEvidence } from "./blocks/NoteEvidence";
 import { NextSteps } from "./blocks/NextSteps";
 import { Prose } from "./blocks/Prose";
 import { ReleaseTimeline } from "./blocks/ReleaseTimeline";
@@ -77,6 +78,7 @@ export const templateDefinitions: Record<
 	"evidence-table": definition(EvidenceTable),
 	"activity-trend": definition(ActivityTrend),
 	"handoff-brief": definition(HandoffBrief),
+	"note-evidence": definition(NoteEvidence),
 	"two-column": definition(TwoColumn),
 };
 

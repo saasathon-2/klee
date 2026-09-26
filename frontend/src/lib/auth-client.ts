@@ -33,6 +33,18 @@ export function linkGitHub(returnPath: string) {
 	});
 }
 
+/** Adds per-file Google Drive access to the signed-in Google account. */
+export function linkGoogleDrive(returnPath: string) {
+	const origin = window.location.origin;
+	return authClient.linkSocial({
+		provider: "google",
+		scopes: ["https://www.googleapis.com/auth/drive.file"],
+		additionalParams: { access_type: "offline", prompt: "consent" },
+		callbackURL: `${origin}${returnPath}`,
+		errorCallbackURL: `${origin}${returnPath}`,
+	});
+}
+
 /** Readable messages for the `?error=` codes better-auth redirects back with. */
 export function authErrorMessage(code: string) {
 	const messages: Record<string, string> = {
@@ -43,6 +55,10 @@ export function authErrorMessage(code: string) {
 			"This email already has an account. Sign in the way you did before, then link this provider from Integrations.",
 		email_not_found: "Your account doesn't share an email address, so we couldn't sign you in.",
 		unable_to_link_account: "We couldn't link that account. Please try again.",
+		email_does_not_match:
+			"Use the same Google email address as your Klee account.",
+		account_already_linked_to_different_user:
+			"That Google account is already linked to a different Klee account.",
 	};
 	return messages[code] ?? "Something went wrong signing in. Please try again.";
 }
