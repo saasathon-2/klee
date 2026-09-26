@@ -3,21 +3,10 @@
 @import "@heroui/styles";
 @import "./themes/klee.css" layer(theme);
 
-:root {
-	--font-bricolage-grotesque:
-		"Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-	--font-sans: var(--font-bricolage-grotesque);
-}
-
 body {
 	background: var(--background);
 	color: var(--foreground);
 	font-family: var(--font-sans);
-}
-
-@theme inline {
-	--color-brand: var(--brand);
-	--color-brand-foreground: var(--brand-foreground);
 }
 
 /* Scalloped band edge used by artefact pages: one even semicircle per tile,

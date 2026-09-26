@@ -16,6 +16,7 @@
     "better-auth": "^1.7.5",
     "lucide-react": "^1.47.0",
     "react": "^19.2.8",
+    "react-aria-components": "1.21.1",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4",
     "tailwindcss": "^4.3.3"

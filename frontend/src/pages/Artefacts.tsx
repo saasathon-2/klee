@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { useDrop } from "react-aria-components";
 import {
 	Navigate,
 	useLocation,
@@ -57,6 +58,7 @@ import { IntegrationsModal } from "./Integrations";
 import { useMediaQuery } from "../lib/use-media-query";
 import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 import { ArtefactNav } from "./artefact/ArtefactNav";
+import { acceptArtefactDrop, droppedArtefactId } from "./artefact/artefactDrag";
 import { FolderSelect } from "./artefact/FolderSelect";
 import { ProjectSelect } from "./artefact/ProjectSelect";
 import { useFolders, type Folder } from "./artefact/useFolders";
@@ -138,6 +140,8 @@ export function Artefacts() {
 		rename: renameFolder,
 		remove: removeFolder,
 	} = useFolders(Boolean(session?.user) && !isShared, setError);
+	const [hasGitHubInstallation, setHasGitHubInstallation] =
+		useState<boolean>();
 	const [copied, setCopied] = useState(false);
 	const [notShared, setNotShared] = useState(false);
 	const [isFullscreen, setFullscreen] = useState(false);
@@ -147,6 +151,17 @@ export function Artefacts() {
 		() => window.matchMedia(desktopQuery).matches,
 	);
 	const generationAbort = useRef<AbortController | undefined>(undefined);
+	// Dropping a sidebar artefact onto the main view opens it.
+	const mainRef = useRef<HTMLElement>(null);
+	const { dropProps: mainDropProps, isDropTarget: isMainDropTarget } =
+		useDrop({
+			ref: mainRef,
+			getDropOperation: acceptArtefactDrop,
+			onDrop: async ({ items }) => {
+				const artefactId = await droppedArtefactId(items);
+				if (artefactId) navigate(`/?artefact=${artefactId}`);
+			},
+		});
 	const artefactPath = shareId
 		? snapshotToken
 			? `/artefacts/${shareId}/snapshot?token=${encodeURIComponent(snapshotToken)}`
@@ -166,6 +181,15 @@ export function Artefacts() {
 			.then(setArtefacts)
 			.catch(() => setError("Could not load artefacts."));
 	}, [isShared, session?.user]);
+	useEffect(() => {
+		if (!isProfile || !session?.user) return;
+		api("/integrations/github")
+			.then((response) => (response.ok ? response.json() : []))
+			.then((installations: unknown[]) =>
+				setHasGitHubInstallation(installations.length > 0),
+			)
+			.catch(() => setHasGitHubInstallation(false));
+	}, [isProfile, session?.user]);
 	useEffect(() => {
 		if (!artefactPath || loaded?.path === artefactPath) return;
 		api(artefactPath)
@@ -341,14 +365,24 @@ export function Artefacts() {
 		updateCurrent(result.artefact);
 		return "saved";
 	}
-	async function moveToFolder(folderId: string | null) {
-		if (!current) return;
-		const response = await api(`/artefacts/${current.id}/folder`, {
+	async function moveArtefact(artefactId: string, folderId: string | null) {
+		const listed = artefacts.find((artefact) => artefact.id === artefactId);
+		if (listed && (listed.folderId ?? null) === folderId) return;
+		const response = await api(`/artefacts/${artefactId}/folder`, {
 			method: "PUT",
 			body: JSON.stringify({ folderId }),
 		});
 		if (!response.ok) return setError("Could not move the artefact.");
-		updateCurrent({ folderId });
+		setArtefacts((currentArtefacts) =>
+			currentArtefacts.map((artefact) =>
+				artefact.id === artefactId ? { ...artefact, folderId } : artefact,
+			),
+		);
+		setLoaded((open) =>
+			open?.artefact.id === artefactId
+				? { ...open, artefact: { ...open.artefact, folderId } }
+				: open,
+		);
 	}
 	function reload() {
 		// Clearing the loaded artefact makes the loading effect fetch it again.
@@ -404,6 +438,7 @@ export function Artefacts() {
 			onCreateFolder={createFolder}
 			onRenameFolder={renameFolder}
 			onDeleteFolder={removeFolder}
+			onMoveArtefact={moveArtefact}
 			selectedId={id}
 			user={user}
 			isIntegrations={isIntegrations}
@@ -433,7 +468,18 @@ export function Artefacts() {
 					</Drawer.Backdrop>
 				</Drawer>
 			)}
-			<section className="relative flex min-h-screen min-w-0 flex-1 flex-col bg-background">
+			<section
+				ref={mainRef}
+				{...mainDropProps}
+				className="relative flex min-h-screen min-w-0 flex-1 flex-col bg-background"
+			>
+				{isMainDropTarget && (
+					<div className="pointer-events-none absolute inset-4 z-20 grid place-items-center rounded-2xl border-2 border-dashed border-accent-text bg-accent-soft">
+						<span className="rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-surface-foreground">
+							Drop to open
+						</span>
+					</div>
+				)}
 				<header className="flex h-20 items-center gap-4 px-7">
 					<Button
 						aria-label={
@@ -496,15 +542,17 @@ export function Artefacts() {
 									</div>
 								</dl>
 								<div className="mt-5">
-									<Button
-										onPress={() =>
-											window.location.assign(
-												"/api/integrations/github/install",
-											)
-										}
-									>
-										Connect GitHub
-									</Button>
+									{hasGitHubInstallation === false && (
+										<Button
+											onPress={() =>
+												window.location.assign(
+													"/api/integrations/github/install",
+												)
+											}
+										>
+											Connect GitHub
+										</Button>
+									)}
 									{searchParams.get("github") ===
 										"connected" && (
 										<p className="mt-2 text-sm text-success">
@@ -628,7 +676,7 @@ export function Artefacts() {
 					onReload={reload}
 					onProjectChange={updateCurrent}
 					folders={folders}
-					onFolderChange={moveToFolder}
+					onFolderChange={(folderId) => current && moveArtefact(current.id, folderId)}
 					onError={setError}
 				/>
 			)}
@@ -646,6 +694,7 @@ function WorkspaceSidebar({
 	onCreateFolder,
 	onRenameFolder,
 	onDeleteFolder,
+	onMoveArtefact,
 	selectedId,
 	user,
 	isIntegrations,
@@ -662,6 +711,7 @@ function WorkspaceSidebar({
 	onCreateFolder: (name: string) => Promise<unknown>;
 	onRenameFolder: (id: string, name: string) => Promise<unknown>;
 	onDeleteFolder: (id: string) => Promise<unknown>;
+	onMoveArtefact: (id: string, folderId: string | null) => void;
 	selectedId?: string;
 	user: { name?: string | null; email: string; image?: string | null };
 	isIntegrations: boolean;
@@ -702,6 +752,7 @@ function WorkspaceSidebar({
 				folders={folders}
 				selectedId={selectedId}
 				onOpen={onOpenArtefact}
+				onMoveArtefact={onMoveArtefact}
 				onCreateFolder={onCreateFolder}
 				onRenameFolder={onRenameFolder}
 				onDeleteFolder={onDeleteFolder}

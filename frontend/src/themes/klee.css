@@ -1,104 +1,311 @@
 /*
- * HeroUI Theme Customization
- * Add this to your global.css after importing @heroui/styles
- * Only includes variables users need to customize
+ * Klee theme: the single source of truth for colour, typography, radius and
+ * elevation. Components use the Tailwind utilities these tokens generate
+ * (bg-surface, text-muted, text-heading-1, font-mono, bg-github-canvas, ...);
+ * no component should need a literal colour or font size.
+ *
+ * Built on HeroUI v3 theming:
  * @see https://heroui.com/docs/react/getting-started/theming
  *
- * The palette is built around #fbf363 (oklch 94.42% 0.1624 106.11), used
- * for artefact bands and the accent, with neutrals lightly tinted towards
- * it. Status colours (danger, success, warning) keep their own hues.
+ * The palette is built around #fbf363 (oklch 94.42% 0.1624 106.11), used for
+ * artefact bands and the accent, with neutrals lightly tinted towards it
+ * (hue ~100-106). Status colours (danger, success, warning) keep their own
+ * hues.
+ *
+ * Sections:
+ *   1. Semantic colours, light mode
+ *   2. Semantic colours, dark mode
+ *   3. Mode-independent tokens: typography, radius, product mock palettes
+ *   4. Tailwind utility mappings (@theme)
  */
+
+/* 1. Semantic colours, light mode ---------------------------------------- */
 
 :root,
 .light,
 .default,
 [data-theme="light"],
 [data-theme="default"] {
-	/* Theme Colors (Light Mode) */
-	--accent: oklch(94.42% 0.1624 106.11);
-	--accent-foreground: oklch(22% 0.03 100);
-	--accent-text: oklch(50% 0.1 100);
+	color-scheme: light;
+
+	/* Page */
 	--background: oklch(98.5% 0.008 106);
-	--border: oklch(90% 0.02 106);
-	--danger: oklch(65.32% 0.2343 9.39);
-	--danger-foreground: oklch(99.11% 0 0);
-	--default: oklch(94.5% 0.018 106);
-	--default-foreground: oklch(24% 0.02 100);
-	--field-background: oklch(100% 0 0);
-	--field-border: oklch(90% 0.02 106);
-	--field-foreground: oklch(22% 0.02 100);
-	--field-placeholder: oklch(55% 0.025 100);
-	--focus: oklch(94.42% 0.1624 106.11);
 	--foreground: oklch(22% 0.02 100);
 	--muted: oklch(52% 0.025 100);
-	--overlay: oklch(100% 0 0);
-	--overlay-foreground: oklch(22% 0.02 100);
-	--scrollbar: oklch(85% 0.02 106);
-	--segment: oklch(100% 0 0);
-	--segment-foreground: oklch(22% 0.02 100);
-	--separator: oklch(92.5% 0.014 106);
-	--success: oklch(73.29% 0.1948 134.46);
-	--success-foreground: oklch(21.03% 0.0059 134.46);
+
+	/* Surfaces: cards and panels, stepped from surface to tertiary */
 	--surface: oklch(100% 0 0);
 	--surface-foreground: oklch(22% 0.02 100);
 	--surface-secondary: oklch(96% 0.014 106);
 	--surface-secondary-foreground: oklch(22% 0.02 100);
 	--surface-tertiary: oklch(94.5% 0.018 106);
 	--surface-tertiary-foreground: oklch(22% 0.02 100);
+	--overlay: oklch(100% 0 0);
+	--overlay-foreground: oklch(22% 0.02 100);
+
+	/* Lines */
+	--border: oklch(90% 0.02 106);
+	--separator: oklch(92.5% 0.014 106);
+	--scrollbar: oklch(85% 0.02 106);
+
+	/* Accent: brand yellow. Use accent-text for yellow-family text on light
+	 * backgrounds, where the raw accent would be unreadable. */
+	--accent: oklch(94.42% 0.1624 106.11);
+	--accent-foreground: oklch(22% 0.03 100);
+	--accent-text: oklch(50% 0.1 100);
+	--accent-soft-foreground: var(--accent-text);
+	--focus: oklch(94.42% 0.1624 106.11);
+	--link: var(--foreground);
+
+	/* Neutral controls (default buttons, chips, segmented controls) */
+	--default: oklch(94.5% 0.018 106);
+	--default-foreground: oklch(24% 0.02 100);
+	--segment: oklch(100% 0 0);
+	--segment-foreground: oklch(22% 0.02 100);
+
+	/* Form fields */
+	--field-background: oklch(100% 0 0);
+	--field-foreground: oklch(22% 0.02 100);
+	--field-placeholder: oklch(55% 0.025 100);
+	--field-border: oklch(90% 0.02 106);
+
+	/* Status */
+	--success: oklch(73.29% 0.1948 134.46);
+	--success-foreground: oklch(21.03% 0.0059 134.46);
 	--warning: oklch(78.19% 0.1595 55.98);
 	--warning-foreground: oklch(21.03% 0.0059 55.98);
+	--danger: oklch(65.32% 0.2343 9.39);
+	--danger-foreground: oklch(99.11% 0 0);
 
-	/* Artefact Palette */
+	/* Artefact bands (header band and scallop edge on artefact pages) */
 	--brand: oklch(94.42% 0.1624 106.11);
 	--brand-foreground: oklch(24% 0.04 100);
 
-	/* Border Radius */
-	--radius: 0.125rem;
-	--field-radius: 0.25rem;
-
-	/* Font Family */
-	/* Make sure to load Bricolage Grotesque font in your app */
-	--font-sans: var(--font-bricolage-grotesque);
+	/* Skeleton loading placeholders */
+	--skeleton: oklch(22% 0.02 100 / 5%);
 }
+
+/* 2. Semantic colours, dark mode ----------------------------------------- */
 
 .dark,
 [data-theme="dark"] {
 	color-scheme: dark;
-	/* Theme Colors (Dark Mode) */
-	--accent: oklch(94.42% 0.1624 106.11);
-	--accent-foreground: oklch(20% 0.03 100);
-	--accent-text: oklch(94.42% 0.1624 106.11);
+
+	/* Page */
 	--background: oklch(14% 0.012 100);
-	--border: oklch(30% 0.02 100);
-	--danger: oklch(59.4% 0.198 8.28);
-	--danger-foreground: oklch(99.11% 0 0);
-	--default: oklch(27% 0.02 100);
-	--default-foreground: oklch(97% 0.01 106);
-	--field-background: oklch(21% 0.015 100);
-	--field-border: transparent;
-	--field-foreground: oklch(97% 0.01 106);
-	--field-placeholder: oklch(68% 0.025 103);
-	--focus: oklch(94.42% 0.1624 106.11);
 	--foreground: oklch(97% 0.01 106);
 	--muted: oklch(72% 0.025 103);
-	--overlay: oklch(21% 0.015 100);
-	--overlay-foreground: oklch(97% 0.01 106);
-	--scrollbar: oklch(60% 0.02 100);
-	--segment: oklch(38% 0.025 100);
-	--segment-foreground: oklch(97% 0.01 106);
-	--separator: oklch(26% 0.016 100);
-	--success: oklch(73.29% 0.1948 134.46);
-	--success-foreground: oklch(21.03% 0.0059 134.46);
+
+	/* Surfaces */
 	--surface: oklch(19% 0.014 100);
 	--surface-foreground: oklch(97% 0.01 106);
 	--surface-secondary: oklch(23% 0.016 100);
 	--surface-secondary-foreground: oklch(97% 0.01 106);
 	--surface-tertiary: oklch(25% 0.018 100);
 	--surface-tertiary-foreground: oklch(97% 0.01 106);
+	--overlay: oklch(21% 0.015 100);
+	--overlay-foreground: oklch(97% 0.01 106);
+
+	/* Lines */
+	--border: oklch(30% 0.02 100);
+	--separator: oklch(26% 0.016 100);
+	--scrollbar: oklch(60% 0.02 100);
+
+	/* Accent */
+	--accent: oklch(94.42% 0.1624 106.11);
+	--accent-foreground: oklch(20% 0.03 100);
+	--accent-text: oklch(94.42% 0.1624 106.11);
+	--accent-soft-foreground: var(--accent-text);
+	--focus: oklch(94.42% 0.1624 106.11);
+	--link: var(--foreground);
+
+	/* Neutral controls */
+	--default: oklch(27% 0.02 100);
+	--default-foreground: oklch(97% 0.01 106);
+	--segment: oklch(38% 0.025 100);
+	--segment-foreground: oklch(97% 0.01 106);
+
+	/* Form fields */
+	--field-background: oklch(21% 0.015 100);
+	--field-foreground: oklch(97% 0.01 106);
+	--field-placeholder: oklch(68% 0.025 103);
+	--field-border: transparent;
+
+	/* Status */
+	--success: oklch(73.29% 0.1948 134.46);
+	--success-foreground: oklch(21.03% 0.0059 134.46);
 	--warning: oklch(82.03% 0.1397 59.99);
 	--warning-foreground: oklch(21.03% 0.0059 59.99);
+	--danger: oklch(59.4% 0.198 8.28);
+	--danger-foreground: oklch(99.11% 0 0);
 
-	/* Artefact Palette */
+	/* Artefact bands */
 	--brand: oklch(94.42% 0.1624 106.11);
 	--brand-foreground: oklch(20% 0.03 100);
+
+	/* Skeleton loading placeholders */
+	--skeleton: oklch(97% 0.01 106 / 10%);
+}
+
+/* 3. Mode-independent tokens --------------------------------------------- */
+
+:root {
+	/* Font families. Bricolage Grotesque is loaded in index.css. */
+	--font-bricolage-grotesque:
+		"Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+	--font-sans: var(--font-bricolage-grotesque);
+
+	/* Radius. HeroUI derives rounded-xs..rounded-4xl from --radius
+	 * (xs 0.25x, sm 0.5x, md 0.75x, lg 1x, xl 1.5x, 2xl 2x, 3xl 3x, 4xl 4x),
+	 * so the whole app stays sharp-cornered. */
+	--radius: 0.125rem;
+	--field-radius: 0.25rem;
+
+	/*
+	 * Product mock palettes. The landing page recreates Slack and GitHub, and
+	 * the artefact card rendered inside them, so these stay fixed in both
+	 * modes rather than following the app theme.
+	 */
+
+	/* Slack (dark) */
+	--slack-canvas: #1b1d21;
+	--slack-canvas-highlight: #23252a;
+	--slack-foreground: #d1d2d3;
+	--slack-foreground-strong: #f4f4f5;
+	--slack-muted: #a4a6aa;
+	--slack-icon: #b7b8bb;
+	--slack-border: #393b40;
+	--slack-border-strong: #55575d;
+	--slack-hover: #2b2d31;
+	--slack-badge: #3b3d42;
+	--slack-tab-active: #d6b7ed;
+	--slack-link: #36c5f0;
+	--slack-avatar: #11adbd;
+
+	/* GitHub (dark) */
+	--github-canvas: #0d1117;
+	--github-canvas-subtle: #161b22;
+	--github-foreground: #e6edf3;
+	--github-foreground-code: #c9d1d9;
+	--github-muted: #8b949e;
+	--github-border: #30363d;
+	--github-link: #58a6ff;
+	--github-open: #238636;
+	--github-success: #3fb950;
+
+	/* Artefact preview card (always light) */
+	--preview-surface: #ffffff;
+	--preview-foreground: #1f2328;
+	--preview-muted: #56505e;
+	--preview-muted-strong: #4e4657;
+	--preview-subtle: #5f5962;
+	--preview-tile: #ebe7e8;
+	--preview-tile-muted: #6e6870;
+	--preview-code: #f4f1f2;
+	--preview-code-border: #e5e2e4;
+	--preview-diff-add: #edf7e8;
+	--preview-diff-add-foreground: #357b3c;
+	--preview-link: #0969da;
+	--preview-brand: #fbf463;
+}
+
+/* 4. Tailwind utility mappings ------------------------------------------- */
+
+@theme inline {
+	/* Colours HeroUI does not already map */
+	--color-brand: var(--brand);
+	--color-brand-foreground: var(--brand-foreground);
+	--color-accent-text: var(--accent-text);
+	--color-skeleton: var(--skeleton);
+	/* Legacy HeroUI v2 name still used across the app; same as border. */
+	--color-divider: var(--border);
+
+	--color-slack-canvas: var(--slack-canvas);
+	--color-slack-canvas-highlight: var(--slack-canvas-highlight);
+	--color-slack-foreground: var(--slack-foreground);
+	--color-slack-foreground-strong: var(--slack-foreground-strong);
+	--color-slack-muted: var(--slack-muted);
+	--color-slack-icon: var(--slack-icon);
+	--color-slack-border: var(--slack-border);
+	--color-slack-border-strong: var(--slack-border-strong);
+	--color-slack-hover: var(--slack-hover);
+	--color-slack-badge: var(--slack-badge);
+	--color-slack-tab-active: var(--slack-tab-active);
+	--color-slack-link: var(--slack-link);
+	--color-slack-avatar: var(--slack-avatar);
+
+	--color-github-canvas: var(--github-canvas);
+	--color-github-canvas-subtle: var(--github-canvas-subtle);
+	--color-github-foreground: var(--github-foreground);
+	--color-github-foreground-code: var(--github-foreground-code);
+	--color-github-muted: var(--github-muted);
+	--color-github-border: var(--github-border);
+	--color-github-link: var(--github-link);
+	--color-github-open: var(--github-open);
+	--color-github-success: var(--github-success);
+
+	--color-preview-surface: var(--preview-surface);
+	--color-preview-foreground: var(--preview-foreground);
+	--color-preview-muted: var(--preview-muted);
+	--color-preview-muted-strong: var(--preview-muted-strong);
+	--color-preview-subtle: var(--preview-subtle);
+	--color-preview-tile: var(--preview-tile);
+	--color-preview-tile-muted: var(--preview-tile-muted);
+	--color-preview-code: var(--preview-code);
+	--color-preview-code-border: var(--preview-code-border);
+	--color-preview-diff-add: var(--preview-diff-add);
+	--color-preview-diff-add-foreground: var(--preview-diff-add-foreground);
+	--color-preview-link: var(--preview-link);
+	--color-preview-brand: var(--preview-brand);
+}
+
+@theme {
+	/* Font families (font-sans comes from :root above) */
+	--font-mono:
+		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+		monospace;
+	--font-slack:
+		Slack-Lato, Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+	/* Type scale. Tailwind's text-xs..text-6xl remain available; 2xs covers
+	 * the smallest mock labels. Role styles below bundle size, line height,
+	 * weight and tracking for the app's recurring text roles. */
+	--text-2xs: 0.625rem;
+	--text-2xs--line-height: 1rem;
+
+	--text-display: 3rem;
+	--text-display--line-height: 1.05;
+	--text-display--letter-spacing: -0.025em;
+	--text-display--font-weight: 700;
+
+	--text-heading-1: 2.25rem;
+	--text-heading-1--line-height: 2.5rem;
+	--text-heading-1--letter-spacing: -0.025em;
+	--text-heading-1--font-weight: 600;
+
+	--text-heading-2: 1.5rem;
+	--text-heading-2--line-height: 2rem;
+	--text-heading-2--letter-spacing: -0.015em;
+	--text-heading-2--font-weight: 600;
+
+	--text-heading-3: 1.125rem;
+	--text-heading-3--line-height: 1.75rem;
+	--text-heading-3--font-weight: 600;
+
+	--text-body: 0.875rem;
+	--text-body--line-height: 1.25rem;
+	--text-body--font-weight: 400;
+
+	--text-body-lg: 1rem;
+	--text-body-lg--line-height: 1.75rem;
+	--text-body-lg--font-weight: 400;
+
+	--text-caption: 0.75rem;
+	--text-caption--line-height: 1rem;
+	--text-caption--font-weight: 400;
+
+	--text-overline: 0.75rem;
+	--text-overline--line-height: 1rem;
+	--text-overline--letter-spacing: 0.05em;
+	--text-overline--font-weight: 600;
 }

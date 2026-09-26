@@ -6,6 +6,7 @@ import {
 	GitCommitHorizontal,
 	GitPullRequest,
 } from "lucide-react";
+import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
@@ -21,7 +22,7 @@ const commits = [
 	{ message: "test: add code context fixtures", sha: "6aa9dd9" },
 ];
 const pop = (visible: boolean) =>
-	"transition-all duration-500 ease-out motion-reduce:transition-none " +
+	"transition-all duration-300 ease-out motion-reduce:transition-none " +
 	(visible
 		? "translate-y-0 scale-100 opacity-100"
 		: "pointer-events-none translate-y-3 scale-95 opacity-0");
@@ -58,25 +59,25 @@ export function GitHubPullRequestStory() {
 					Math.min(1, (window.scrollY - start) / distance),
 				);
 				const next =
-					progress < 0.07
+					progress < 0.106
 						? 0
-						: progress < 0.105
+						: progress < 0.159
 							? 1
-							: progress < 0.14
+							: progress < 0.212
 								? 2
-								: progress < 0.175
+								: progress < 0.265
 									? 3
-									: progress < 0.21
+									: progress < 0.318
 										? 4
-										: progress < 0.245
+										: progress < 0.371
 											? 5
-											: progress < 0.28
+											: progress < 0.424
 												? 6
-												: progress < 0.37
+												: progress < 0.561
 													? 7
-													: progress < 0.51
+													: progress < 0.773
 														? 8
-														: progress < 0.66
+														: progress < 0.98
 															? 9
 															: 10;
 				setStep(next);
@@ -95,60 +96,67 @@ export function GitHubPullRequestStory() {
 	return (
 		<div
 			ref={storyRef}
-			className="h-[260vh] px-3 py-8 sm:px-6 lg:px-10"
+			className="h-[calc(364vh-2rem)] px-3 py-8 sm:px-6 lg:px-10"
 		>
 			<div
 				ref={stageRef}
-				className="sticky top-20 grid h-[calc(100vh-6rem)] place-items-center"
+				className="sticky top-20 flex h-[calc(100dvh-6rem)] flex-col items-center justify-center gap-[clamp(1.25rem,5dvh,3.5rem)] py-[clamp(1rem,4dvh,3rem)]"
 			>
+				<Heading
+					level={2}
+					align="center"
+					className="max-w-3xl shrink-0 px-4 text-heading-2 text-balance sm:[@media(min-height:44rem)]:text-heading-1"
+				>
+					Every pull request, explained
+				</Heading>
 				<section
 					aria-label="GitHub pull request preview"
-					className="max-h-full w-full max-w-6xl overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] text-[#e6edf3] shadow-xl"
+					className="flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-github-border bg-github-canvas text-github-foreground shadow-xl"
 				>
-					<header className="border-b border-[#30363d] px-4 py-4 sm:px-8">
+					<header className="shrink-0 border-b border-github-border px-4 py-4 sm:px-8">
 						<div className="flex flex-wrap items-center gap-3">
-							<span className="inline-flex items-center gap-2 rounded-full bg-[#238636] px-4 py-2 text-sm font-semibold text-white">
+							<span className="inline-flex items-center gap-2 rounded-full bg-github-open px-4 py-2 text-sm font-semibold text-white">
 								<GitPullRequest aria-hidden size={17} />
 								Open
 							</span>
 							<h2 className="min-w-0 flex-1 text-lg font-semibold sm:text-2xl">
 								GitHub Context Fixtures{" "}
-								<span className="font-normal text-[#8b949e]">
+								<span className="font-normal text-github-muted">
 									#42
 								</span>
 							</h2>
 						</div>
-						<div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#8b949e] sm:text-base">
-							<span className="font-semibold text-[#e6edf3]">
+						<div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-github-muted sm:text-base">
+							<span className="font-semibold text-github-foreground">
 								winkingleek
 							</span>
 							wants to merge {commits.length} commits into
-							<code className="rounded-md bg-[#161b22] px-2 py-1 font-semibold text-[#58a6ff]">
+							<code className="rounded-md bg-github-canvas-subtle px-2 py-1 font-semibold text-github-link">
 								main
 							</code>
 							from
-							<code className="rounded-md bg-[#161b22] px-2 py-1 font-semibold text-[#58a6ff]">
+							<code className="rounded-md bg-github-canvas-subtle px-2 py-1 font-semibold text-github-link">
 								feat/github-context-fixtures
 							</code>
 							<Copy
 								aria-hidden
 								size={18}
-								className="ml-1 text-[#8b949e]"
+								className="ml-1 text-github-muted"
 							/>
 						</div>
 					</header>
 
-					<div className="max-h-[calc(100vh-13rem)] overflow-hidden px-4 py-4 sm:px-8 sm:py-6">
-						<div className="relative ml-5 border-l border-[#30363d] pl-7">
+					<div className="min-h-0 overflow-hidden px-4 py-4 sm:px-8 sm:py-6">
+						<div className="relative ml-5 border-l border-github-border pl-7">
 							<div className="relative -ml-[3.15rem] mb-3 flex items-center gap-3">
-								<span className="grid size-9 place-items-center rounded-full border border-[#30363d] bg-[#161b22] text-[#8b949e]">
+								<span className="grid size-9 place-items-center rounded-full border border-github-border bg-github-canvas-subtle text-github-muted">
 									<GitBranch aria-hidden size={17} />
 								</span>
 								<div className="size-8 shrink-0 overflow-hidden rounded-full">
 									<UserAvatar name="winkingleek" size="sm" />
 								</div>
-								<p className="text-sm text-[#8b949e] sm:text-base">
-									<strong className="text-[#e6edf3]">
+								<p className="text-sm text-github-muted sm:text-base">
+									<strong className="text-github-foreground">
 										winkingleek
 									</strong>{" "}
 									added {commits.length} commits{" "}
@@ -157,7 +165,7 @@ export function GitHubPullRequestStory() {
 							</div>
 							<div className="space-y-1 pb-2">
 								{botVisible && (
-									<p className="pb-1 text-xs text-[#8b949e]">
+									<p className="pb-1 text-xs text-github-muted">
 										{commits.length} commits condensed into
 										this review
 									</p>
@@ -165,9 +173,9 @@ export function GitHubPullRequestStory() {
 								{visibleCommits.map((commit) => (
 									<div
 										key={commit.sha}
-										className="relative -ml-[2.85rem] flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-[#161b22]"
+										className="relative -ml-[2.85rem] flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-github-canvas-subtle"
 									>
-										<span className="grid size-7 shrink-0 place-items-center rounded-full border border-[#30363d] bg-[#0d1117] text-[#8b949e]">
+										<span className="grid size-7 shrink-0 place-items-center rounded-full border border-github-border bg-github-canvas text-github-muted">
 											<GitCommitHorizontal
 												aria-hidden
 												size={15}
@@ -179,7 +187,7 @@ export function GitHubPullRequestStory() {
 												size="sm"
 											/>
 										</div>
-										<span className="min-w-0 flex-1 truncate font-mono text-xs text-[#c9d1d9] sm:text-sm">
+										<span className="min-w-0 flex-1 truncate font-mono text-xs text-github-foreground-code sm:text-sm">
 											{commit.message}
 										</span>
 										{commit.sha ===
@@ -187,14 +195,14 @@ export function GitHubPullRequestStory() {
 											<Check
 												aria-hidden
 												className={
-													"size-5 text-[#3fb950] transition-all duration-500 motion-reduce:transition-none " +
+													"size-5 text-github-success transition-all duration-300 motion-reduce:transition-none " +
 													(latestPassed
 														? "scale-100 opacity-100"
 														: "scale-50 opacity-0")
 												}
 											/>
 										)}
-										<code className="shrink-0 font-mono text-xs text-[#8b949e] underline underline-offset-4">
+										<code className="shrink-0 font-mono text-xs text-github-muted underline underline-offset-4">
 											{commit.sha}
 										</code>
 									</div>
@@ -215,15 +223,15 @@ export function GitHubPullRequestStory() {
 								alt="orca-klee profile picture"
 								className="size-10 shrink-0 rounded-xl sm:size-[4.5rem] sm:rounded-2xl"
 							/>
-							<article className="min-w-0 flex-1 overflow-hidden rounded-lg border border-[#30363d]">
-								<header className="flex flex-wrap items-baseline gap-x-2 border-b border-[#30363d] bg-[#161b22] px-4 py-3 sm:px-6">
+							<article className="min-w-0 flex-1 overflow-hidden rounded-lg border border-github-border">
+								<header className="flex flex-wrap items-baseline gap-x-2 border-b border-github-border bg-github-canvas-subtle px-4 py-3 sm:px-6">
 									<strong className="text-sm sm:text-lg">
 										orca-klee
 									</strong>
-									<span className="rounded-full border border-[#30363d] px-2 py-0.5 text-xs text-[#8b949e]">
+									<span className="rounded-full border border-github-border px-2 py-0.5 text-xs text-github-muted">
 										Bot
 									</span>
-									<span className="text-sm text-[#8b949e] sm:text-base">
+									<span className="text-sm text-github-muted sm:text-base">
 										commented 2 minutes ago
 									</span>
 								</header>
@@ -231,23 +239,23 @@ export function GitHubPullRequestStory() {
 									aria-hidden={!replyVisible}
 									inert={!replyVisible}
 									className={
-										"bg-[#0d1117] p-3 sm:p-6 " +
+										"bg-github-canvas p-3 sm:p-6 " +
 										pop(replyVisible)
 									}
 								>
-									<div className="overflow-hidden rounded-md border border-[#30363d] bg-white text-[#1f2328] shadow-sm">
-										<header className="bg-[#fbf463] px-4 py-5 text-center sm:px-10 sm:py-8">
+									<div className="overflow-hidden rounded-md border border-github-border bg-preview-surface font-sans text-preview-foreground shadow-sm">
+										<header className="bg-preview-brand px-4 py-5 text-center sm:px-10 sm:py-8">
 											<h3 className="text-lg font-bold sm:text-2xl">
 												PR #42: GitHub Context Fixtures
 											</h3>
-											<p className="mx-auto mt-2 max-w-3xl text-xs leading-5 text-[#56505e] sm:text-base">
+											<p className="mx-auto mt-2 max-w-3xl text-xs leading-5 text-preview-muted sm:text-base">
 												Adds GitHub and code-context
 												fixtures. A reviewer left an
 												explicit verdict, and the
 												pipeline and checks pass.
 												Everything should be good to go.
 											</p>
-											<div className="mt-3 flex flex-wrap justify-center gap-1.5 text-[10px] text-[#4e4657] sm:text-xs">
+											<div className="mt-3 flex flex-wrap justify-center gap-1.5 text-2xs text-preview-muted-strong sm:text-xs">
 												{[
 													"backend",
 													"integration",
@@ -269,7 +277,7 @@ export function GitHubPullRequestStory() {
 										<div
 											style={
 												{
-													"--brand": "#fbf463",
+													"--brand": "var(--preview-brand)",
 												} as CSSProperties
 											}
 										>
@@ -277,37 +285,37 @@ export function GitHubPullRequestStory() {
 										</div>
 										<div className="p-4 sm:p-8">
 											<div className="grid gap-2 sm:grid-cols-3">
-												<div className="rounded-md bg-[#ebe7e8] p-3">
-													<p className="text-xs text-[#6e6870]">
+												<div className="rounded-md bg-preview-tile p-3">
+													<p className="text-xs text-preview-tile-muted">
 														Changes
 													</p>
 													<strong className="text-lg">
 														+456 / -28
 													</strong>
-													<p className="mt-1 text-xs text-[#6e6870]">
+													<p className="mt-1 text-xs text-preview-tile-muted">
 														2 Implemented Fixtures
 													</p>
 												</div>
-												<div className="rounded-md bg-[#ebe7e8] p-3">
-													<p className="text-xs text-[#6e6870]">
+												<div className="rounded-md bg-preview-tile p-3">
+													<p className="text-xs text-preview-tile-muted">
 														CI
 													</p>
 													<strong className="text-lg">
 														5 passed
 													</strong>
-													<p className="mt-1 text-xs text-[#6e6870]">
+													<p className="mt-1 text-xs text-preview-tile-muted">
 														generate-artefact and 4
 														others
 													</p>
 												</div>
-												<div className="rounded-md bg-[#ebe7e8] p-3">
-													<p className="text-xs text-[#6e6870]">
+												<div className="rounded-md bg-preview-tile p-3">
+													<p className="text-xs text-preview-tile-muted">
 														Testing Line Percentage
 													</p>
 													<strong className="text-lg">
 														62% of committed lines
 													</strong>
-													<p className="mt-1 text-xs text-[#6e6870]">
+													<p className="mt-1 text-xs text-preview-tile-muted">
 														were in test commits
 													</p>
 												</div>
@@ -324,23 +332,23 @@ export function GitHubPullRequestStory() {
 											<h4 className="mt-6 text-base font-bold sm:text-xl">
 												Architecture
 											</h4>
-											<div className="mt-3 rounded-md border border-[#e5e2e4] bg-[#f4f1f2] p-3 font-mono text-[10px] leading-5 sm:text-xs">
-												<p className="text-[#5f5962]">
+											<div className="mt-3 rounded-md border border-preview-code-border bg-preview-code p-3 font-mono text-2xs leading-5 sm:text-xs">
+												<p className="text-preview-subtle">
 													github-context-fixtures/architecture.md
 												</p>
-												<p className="mt-2 bg-[#edf7e8] px-2 text-[#357b3c]">
+												<p className="mt-2 bg-preview-diff-add px-2 text-preview-diff-add-foreground">
 													+ 1. Receive an event.
 												</p>
-												<p className="bg-[#edf7e8] px-2 text-[#357b3c]">
+												<p className="bg-preview-diff-add px-2 text-preview-diff-add-foreground">
 													+ 2. Validate its input.
 												</p>
-												<p className="bg-[#edf7e8] px-2 text-[#357b3c]">
+												<p className="bg-preview-diff-add px-2 text-preview-diff-add-foreground">
 													+ 3. Produce a shared
 													summary.
 												</p>
 											</div>
 											<a
-												className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#0969da] hover:underline"
+												className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-preview-link hover:underline"
 												href={shareUrl}
 												target="_blank"
 												rel="noopener noreferrer"

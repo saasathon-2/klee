@@ -10,7 +10,7 @@ export function Profile() {
 		return (
 			<main className="mx-auto max-w-sm px-6 py-16">
 				<div
-					className="h-8 w-48 animate-pulse rounded bg-black/5 dark:bg-white/10"
+					className="h-8 w-48 animate-pulse rounded bg-skeleton"
 					aria-label="Loading profile"
 				/>
 			</main>

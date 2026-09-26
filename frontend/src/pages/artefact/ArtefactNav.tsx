@@ -9,7 +9,13 @@ import {
 	Paragraph,
 } from "@heroui/react";
 import { FileText, Folder as FolderIcon, FolderPlus, MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { useDrop } from "react-aria-components";
+import {
+	acceptArtefactDrop,
+	droppedArtefactId,
+	useArtefactDragAndDrop,
+} from "./artefactDrag";
 import { FolderDialog } from "./FolderDialog";
 import type { Folder } from "./useFolders";
 
@@ -19,6 +25,34 @@ type NavArtefact = {
 	project?: string | null;
 	folderId?: string | null;
 };
+
+/** A folder in the sidebar that files artefacts dropped onto it. */
+function FolderDropTarget({
+	onDropArtefact,
+	children,
+}: {
+	onDropArtefact: (id: string) => void;
+	children: ReactNode;
+}) {
+	const ref = useRef<HTMLDivElement>(null);
+	const { dropProps, isDropTarget } = useDrop({
+		ref,
+		getDropOperation: acceptArtefactDrop,
+		onDrop: async ({ items }) => {
+			const id = await droppedArtefactId(items);
+			if (id) onDropArtefact(id);
+		},
+	});
+	return (
+		<div
+			ref={ref}
+			{...dropProps}
+			className={`rounded-xl transition-colors ${isDropTarget ? "bg-accent-soft ring-1 ring-accent-text" : ""}`}
+		>
+			{children}
+		</div>
+	);
+}
 
 /** Unfiled artefacts without a project first, then one group per GitHub org. */
 function groupByProject(artefacts: NavArtefact[]) {
@@ -41,11 +75,13 @@ function ArtefactItems({
 	selectedId?: string;
 	onOpen: (id: string) => void;
 }) {
+	const dragAndDropHooks = useArtefactDragAndDrop();
 	return (
 		<ListBox
 			aria-label={label}
 			selectedKeys={selectedId ? [selectedId] : []}
 			onAction={(key) => onOpen(String(key))}
+			dragAndDropHooks={dragAndDropHooks}
 		>
 			{artefacts.map((artefact) => (
 				<ListBox.Item key={artefact.id} id={artefact.id} textValue={artefact.title}>
@@ -57,15 +93,53 @@ function ArtefactItems({
 	);
 }
 
+/** One group of unfiled artefacts; dropping an artefact here unfiles it. */
+function UnfiledGroup({
+	project,
+	artefacts,
+	selectedId,
+	onOpen,
+	onUnfile,
+}: {
+	project: string | null;
+	artefacts: NavArtefact[];
+	selectedId?: string;
+	onOpen: (id: string) => void;
+	onUnfile: (id: string) => void;
+}) {
+	const dragAndDropHooks = useArtefactDragAndDrop(onUnfile);
+	return (
+		<ListBox
+			aria-label={project ?? "Artefacts"}
+			className="mt-3 rounded-xl transition-colors data-[drop-target]:bg-accent-soft data-[drop-target]:ring-1 data-[drop-target]:ring-accent-text"
+			selectedKeys={selectedId ? [selectedId] : []}
+			onAction={(key) => onOpen(String(key))}
+			dragAndDropHooks={dragAndDropHooks}
+		>
+			<ListBox.Section>
+				<Header>{project ?? "Artefacts"}</Header>
+				{artefacts.map((artefact) => (
+					<ListBox.Item key={artefact.id} id={artefact.id} textValue={artefact.title}>
+						<FileText size={16} />
+						<Label>{artefact.title}</Label>
+					</ListBox.Item>
+				))}
+			</ListBox.Section>
+		</ListBox>
+	);
+}
+
 /**
  * The sidebar's artefact list: the user's folders (collapsible, with rename
  * and delete), then everything unfiled, grouped by GitHub project as before.
+ * Artefacts drag between folders and the unfiled list to move them.
  */
 export function ArtefactNav({
 	artefacts,
 	folders,
 	selectedId,
 	onOpen,
+	onMoveArtefact,
 	onCreateFolder,
 	onRenameFolder,
 	onDeleteFolder,
@@ -74,6 +148,7 @@ export function ArtefactNav({
 	folders: Folder[];
 	selectedId?: string;
 	onOpen: (id: string) => void;
+	onMoveArtefact: (id: string, folderId: string | null) => void;
 	onCreateFolder: (name: string) => Promise<unknown>;
 	onRenameFolder: (id: string, name: string) => Promise<unknown>;
 	onDeleteFolder: (id: string) => Promise<unknown>;
@@ -107,78 +182,74 @@ export function ArtefactNav({
 			{folders.map((folder) => {
 				const contents = artefacts.filter((artefact) => artefact.folderId === folder.id);
 				return (
-					<Disclosure key={folder.id} defaultExpanded>
-						<Disclosure.Heading className="flex items-center gap-1">
-							<Disclosure.Trigger className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm hover:bg-default">
-								<Disclosure.Indicator />
-								<FolderIcon size={16} className="shrink-0 text-muted" />
-								<span className="min-w-0 flex-1 truncate">{folder.name}</span>
-								<span className="text-xs text-muted">{contents.length}</span>
-							</Disclosure.Trigger>
-							<Dropdown>
-								<Button
-									aria-label={`${folder.name} actions`}
-									variant="ghost"
-									size="sm"
-									className="size-7 min-w-7 p-0"
-								>
-									<MoreHorizontal size={16} />
-								</Button>
-								<Dropdown.Popover placement="bottom end">
-									<Dropdown.Menu
+					<FolderDropTarget
+						key={folder.id}
+						onDropArtefact={(id) => onMoveArtefact(id, folder.id)}
+					>
+						<Disclosure defaultExpanded>
+							<Disclosure.Heading className="flex items-center gap-1">
+								<Disclosure.Trigger className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm hover:bg-default">
+									<Disclosure.Indicator />
+									<FolderIcon size={16} className="shrink-0 text-muted" />
+									<span className="min-w-0 flex-1 truncate">{folder.name}</span>
+									<span className="text-xs text-muted">{contents.length}</span>
+								</Disclosure.Trigger>
+								<Dropdown>
+									<Button
 										aria-label={`${folder.name} actions`}
-										onAction={(key) =>
-											setDialog({ kind: key === "delete" ? "delete" : "rename", folder })
-										}
+										variant="ghost"
+										size="sm"
+										className="size-7 min-w-7 p-0"
 									>
-										<Dropdown.Item id="rename" textValue="Rename">
-											<Label>Rename</Label>
-										</Dropdown.Item>
-										<Dropdown.Item id="delete" textValue="Delete" variant="danger">
-											<Label>Delete</Label>
-										</Dropdown.Item>
-									</Dropdown.Menu>
-								</Dropdown.Popover>
-							</Dropdown>
-						</Disclosure.Heading>
-						<Disclosure.Content>
-							<Disclosure.Body className="pl-4">
-								{contents.length ? (
-									<ArtefactItems
-										label={folder.name}
-										artefacts={contents}
-										selectedId={selectedId}
-										onOpen={onOpen}
-									/>
-								) : (
-									<Paragraph size="xs" color="muted" className="px-2 py-1.5">
-										Move artefacts here from the folder menu in an open artefact.
-									</Paragraph>
-								)}
-							</Disclosure.Body>
-						</Disclosure.Content>
-					</Disclosure>
+										<MoreHorizontal size={16} />
+									</Button>
+									<Dropdown.Popover placement="bottom end">
+										<Dropdown.Menu
+											aria-label={`${folder.name} actions`}
+											onAction={(key) =>
+												setDialog({ kind: key === "delete" ? "delete" : "rename", folder })
+											}
+										>
+											<Dropdown.Item id="rename" textValue="Rename">
+												<Label>Rename</Label>
+											</Dropdown.Item>
+											<Dropdown.Item id="delete" textValue="Delete" variant="danger">
+												<Label>Delete</Label>
+											</Dropdown.Item>
+										</Dropdown.Menu>
+									</Dropdown.Popover>
+								</Dropdown>
+							</Disclosure.Heading>
+							<Disclosure.Content>
+								<Disclosure.Body className="pl-4">
+									{contents.length ? (
+										<ArtefactItems
+											label={folder.name}
+											artefacts={contents}
+											selectedId={selectedId}
+											onOpen={onOpen}
+										/>
+									) : (
+										<Paragraph size="xs" color="muted" className="px-2 py-1.5">
+											Drag artefacts here to file them.
+										</Paragraph>
+									)}
+								</Disclosure.Body>
+							</Disclosure.Content>
+						</Disclosure>
+					</FolderDropTarget>
 				);
 			})}
 
 			{groupByProject(unfiled).map(([project, group]) => (
-				<ListBox
+				<UnfiledGroup
 					key={project ?? "own"}
-					aria-label={project ?? "Artefacts"}
-					className="mt-3"
-					selectedKeys={selectedId ? [selectedId] : []}
-					onAction={(key) => onOpen(String(key))}
-				>
-					<ListBox.Section>
-						<Header>{project ?? "Artefacts"}</Header>
-						{group.map((artefact) => (
-							<ListBox.Item key={artefact.id} id={artefact.id} textValue={artefact.title}>
-								<FileText size={16} />
-								<Label>{artefact.title}</Label>
-							</ListBox.Item>
-						))}
-					</ListBox.Section>
-				</ListBox>
+					project={project}
+					artefacts={group}
+					selectedId={selectedId}
+					onOpen={onOpen}
+					onUnfile={(id) => onMoveArtefact(id, null)}
+				/>
 			))}
 
 			{(dialog?.kind === "create" || dialog?.kind === "rename") && (

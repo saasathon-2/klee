@@ -58,7 +58,7 @@ export function FormsExample() {
 				</form>
 
 				<div className="rounded-2xl bg-surface-secondary p-8">
-					<p className="text-sm font-medium text-[var(--accent-text)]">
+					<p className="text-sm font-medium text-accent-text">
 						Why this pattern works
 					</p>
 					<h2 className="mt-3 text-2xl font-semibold">

@@ -21,6 +21,9 @@ const paintings = {
 	dark: { src: polyphony, title: "Polyphony", year: 1932 },
 };
 
+/** Space between the hero demo and the stories, and the stories and the footer. */
+const sectionGap = "mt-[clamp(4rem,12dvh,9rem)]";
+
 export function Landing() {
 	const navigate = useNavigate();
 	const { data: session } = useSession();
@@ -67,12 +70,13 @@ export function Landing() {
 				</div>
 			</section>
 
-			<GlueBand>The same context, shared with your team</GlueBand>
+			<div className={sectionGap}>
+				<GlueBand>The same context, shared with your team</GlueBand>
+			</div>
 			<SlackChannelStory />
 			<GitHubPullRequestStory />
 
-			{/* Pulled up over the demo's bottom edge so the scallops cut across it and the page. */}
-			<div aria-hidden className="relative z-10 -mt-10">
+			<div aria-hidden className={`relative z-10 ${sectionGap}`}>
 				<Scallop edge="top" />
 				<div className="h-16 bg-brand" />
 			</div>

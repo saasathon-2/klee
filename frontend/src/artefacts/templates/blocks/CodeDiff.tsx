@@ -141,13 +141,13 @@ export function CodeDiff({ node, context }: TemplateProps) {
 				setStoryStep(
 					progress < 0.12
 						? 0
-						: progress < 0.3
+						: progress < 0.345
 							? 1
-							: progress < 0.34
+							: progress < 0.385
 								? 2
-								: progress < 0.42
+								: progress < 0.465
 									? 3
-									: progress < 0.82
+									: progress < 0.865
 										? 4
 										: 5,
 				);
@@ -206,7 +206,7 @@ export function CodeDiff({ node, context }: TemplateProps) {
 				ref={storyRef}
 				className={
 					scrollStory
-					? "h-[300vh] lg:-mx-72 lg:w-[calc(100%+36rem)]"
+					? "h-[calc(300vh+6rem)] lg:-mx-72 lg:w-[calc(100%+36rem)]"
 						: undefined
 				}
 			>
