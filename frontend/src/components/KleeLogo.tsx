@@ -88,3 +88,7 @@ export function KleeLogo({ className }: { className?: string }) {
 		</svg>
 	);
 }
+
+export function KleeIcon({ className }: { className?: string }) {
+	return <img src="/kleelogo.svg" alt="" className={className} />;
+}

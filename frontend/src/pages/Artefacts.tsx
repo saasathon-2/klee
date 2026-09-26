@@ -42,7 +42,7 @@ import {
 	useSearchParams,
 } from "react-router-dom";
 import { signOut, useSession } from "../lib/auth-client";
-import { KleeLogo } from "../components/KleeLogo";
+import { KleeIcon, KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import {
@@ -53,6 +53,7 @@ import {
 import type { EditPath } from "../artefacts/templates/types";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { useTheme } from "../lib/use-theme";
 import { IntegrationsModal } from "./Integrations";
 import { OrganisationsModal } from "./Organisations";
 import { useMediaQuery } from "../lib/use-media-query";
@@ -837,6 +838,7 @@ function WorkspaceSidebar({
 	onSignOut: () => void;
 }) {
 	const displayName = user.name || user.email;
+	const { theme } = useTheme();
 	return (
 		<aside
 			className={
@@ -850,10 +852,12 @@ function WorkspaceSidebar({
 				aria-label="Klee home"
 				className="mb-5 flex h-10 items-center gap-2 px-2 text-left"
 			>
-				<KleeLogo className="size-8" />
-				<span className="text-lg font-semibold tracking-tight">
-					Klee
-				</span>
+				<KleeIcon className="size-8" />
+				<img
+					src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
+					alt="Klee"
+					className="h-6 w-auto"
+				/>
 			</Link>
 			<ListBox
 				aria-label="Workspace navigation"

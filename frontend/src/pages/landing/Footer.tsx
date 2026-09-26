@@ -3,7 +3,7 @@ import { useSession } from "../../lib/auth-client";
 import { useTheme } from "../../lib/use-theme";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
 import { navMenus, pricingPath } from "./links";
-import { KleeLogo } from "../../components/KleeLogo";
+import { KleeIcon } from "../../components/KleeLogo";
 
 export function Footer() {
 	const { data: session } = useSession();
@@ -44,7 +44,7 @@ export function Footer() {
 			<div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[2fr_repeat(4,1fr)]">
 				<div className="flex h-full flex-col">
 					<div className="flex items-center gap-2">
-						<KleeLogo className="size-10" />
+						<KleeIcon className="size-10" />
 						<img
 							src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
 							alt="Klee"

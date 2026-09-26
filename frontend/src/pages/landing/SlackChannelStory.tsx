@@ -7,7 +7,7 @@ import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
 import { SlackIcon } from "../../components/BrandIcons";
-import { KleeLogo } from "../../components/KleeLogo";
+import { KleeIcon } from "../../components/KleeLogo";
 
 const shareUrl =
 	"https://klee.work/artefacts/shared/29984434-6a04-490e-9d70-08cc214a6c22";
@@ -143,7 +143,7 @@ export function SlackChannelStory() {
 							inert={!botVisible}
 							className={`flex gap-4 bg-slack-canvas-highlight px-4 py-4 sm:px-8 ${pop(botVisible)}`}
 						>
-							<KleeLogo className="size-14 shrink-0 rounded-2xl sm:size-[4.5rem]" />
+							<KleeIcon className="size-14 shrink-0 rounded-2xl sm:size-[4.5rem]" />
 							<div className="min-w-0 flex-1">
 								<div className="flex flex-wrap items-baseline gap-x-3">
 									<p className="text-lg font-bold text-slack-foreground-strong sm:text-2xl">

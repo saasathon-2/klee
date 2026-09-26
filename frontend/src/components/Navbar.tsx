@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "../lib/auth-client";
 import { useTheme } from "../lib/use-theme";
 import { navMenus, pricingPath } from "../pages/landing/links";
-import { KleeLogo } from "./KleeLogo";
+import { KleeIcon } from "./KleeLogo";
 import { ThemeToggle } from "./ThemeToggle";
 
 const hrefFor = (link: { section?: string; to?: string }) =>
@@ -37,7 +37,7 @@ export function Navbar() {
 					aria-label="Klee home"
 					className="justify-self-start"
 				>
-					<KleeLogo className="size-10" />
+					<KleeIcon className="size-10" />
 					<img
 						src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
 						alt=""
