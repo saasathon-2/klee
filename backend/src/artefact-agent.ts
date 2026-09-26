@@ -40,6 +40,7 @@ const actionSchema = z
 		label: shortText,
 		description: shortText,
 		action: shortText,
+		url: z.string().nullable(),
 	})
 	.strict();
 const artefactIconSchema = z.enum([

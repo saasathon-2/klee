@@ -29,6 +29,8 @@ export type SuggestedAction = {
 	label: string;
 	description: string;
 	action: string;
+	/** Opens this page instead of asking Klee for a follow-up. */
+	url?: string | null;
 };
 export type DiffLine = {
 	kind: "context" | "add" | "remove";

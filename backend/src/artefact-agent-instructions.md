@@ -21,7 +21,7 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - `dependency-graph`: two to fourteen packages, modules, services, databases, or external APIs with kind, detail, optional version, health (current, outdated, vulnerable, or `null` when unknown), and url, plus directed edges from dependant to dependency.
 - `glue`: an optional, short, forward-looking hook between groups of blocks.
 - `task-list`: ordered tasks with id, key, title, detail, meta, and status.
-- `next-steps`: concrete follow-up suggestions.
+- `next-steps`: concrete follow-up buttons. Give an action a `url` when it opens a supplied page, such as the pull request, the failing job, or the ticket; everyone who views the artefact sees these. Use `null` for actions that ask Klee for a follow-up artefact; only the owner sees those.
 - `code-diff`: one file's changes as hunks of context, add, and remove lines. Use one source line per entry without a leading plus/minus marker; keep original indentation exactly. Use the `@@` hunk line as the header when supplied.
 - `review-comments`: each reviewer's handle without their verdict, their verdict as approved, changes-requested, or commented, their feedback, and the consensus.
 - `commit-list`: commits with sha, message, author, and detail. Use an empty sha when none is given.
