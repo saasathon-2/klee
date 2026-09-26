@@ -3,12 +3,13 @@ import { ChevronDown, Menu } from "lucide-react";
 import { type ComponentProps, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "../lib/auth-client";
-import { navMenus, pricingPath, repositoryUrl } from "../pages/landing/links";
+import { docsLink, navMenus, pricingPath, repositoryUrl } from "../pages/landing/links";
 import { GitHubIcon } from "./BrandIcons";
 import { KleeIcon } from "./KleeLogo";
 import { ThemeToggle } from "./ThemeToggle";
 
 const mobileLinks = [
+	docsLink,
 	...navMenus.flatMap((menu) => menu.links),
 	{ label: "Pricing", description: "Plans", to: pricingPath },
 ];
@@ -40,6 +41,14 @@ export function Navbar() {
 				</Link>
 
 				<div className="hidden items-center gap-2 md:flex">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="px-3 py-1.5"
+						onPress={() => navigate(docsLink.to)}
+					>
+						{docsLink.label}
+					</Button>
 					{navMenus.map((menu) => (
 						<Dropdown key={menu.label}>
 							<Button

@@ -2,7 +2,7 @@ import { Link, Paragraph, Separator } from "@heroui/react";
 import { useSession } from "../../lib/auth-client";
 import { useTheme } from "../../lib/use-theme";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
-import { navMenus, pricingPath } from "./links";
+import { docsLink, navMenus, pricingPath } from "./links";
 import { KleeLogo } from "../../components/KleeLogo";
 
 export function Footer() {
@@ -29,8 +29,11 @@ export function Footer() {
 					],
 		},
 		{
-			label: "Pricing",
-			links: [{ label: "Pricing", to: pricingPath }],
+			label: "Resources",
+			links: [
+				{ label: docsLink.label, to: docsLink.to },
+				{ label: "Pricing", to: pricingPath },
+			],
 		},
 	];
 
