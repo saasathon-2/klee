@@ -13,7 +13,7 @@ export function Footer() {
 			label: menu.label,
 			links: menu.links.map((link) => ({
 				label: link.label,
-				to: link.to ?? `/welcome#${link.section}`,
+				to: link.to,
 			})),
 		})),
 		{

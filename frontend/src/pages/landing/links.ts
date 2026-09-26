@@ -1,29 +1,29 @@
-/** Landing page sections, shared by the navbar menus and the footer. */
-export type LandingLink = { label: string; description: string; section?: string; to?: string };
+/** Pages linked from the navbar menus and the footer. */
+export type LandingLink = { label: string; description: string; to: string };
 
 export const navMenus: { label: string; links: LandingLink[] }[] = [
 	{
 		label: "Product",
 		links: [
-			{ label: "Create", description: "Turn any context into an artefact", section: "create" },
-			{ label: "Review", description: "Diffs, feedback, commits, and checks", section: "review" },
-			{ label: "Share", description: "Private until you share a link", section: "share" },
+			{ label: "Create", description: "How a prompt becomes an artefact", to: "/create" },
+			{ label: "Review", description: "Pages for pull requests", to: "/review" },
+			{ label: "Share", description: "Invites, organisations, and links", to: "/share" },
 		],
 	},
 	{
 		label: "Developers",
 		links: [
-			{ label: "For developers", description: "Bring context, code, and decisions together", to: "/developers" },
-			{ label: "Developer templates", description: "Start with a purpose-built artefact", to: "/developer-templates" },
-			{ label: "Integrations", description: "Connect Klee to the tools you already use", to: "/developer-integrations" },
+			{ label: "For developers", description: "Blocks for engineering work", to: "/developers" },
+			{ label: "Templates", description: "Example artefacts", to: "/developer-templates" },
+			{ label: "Integrations", description: "GitHub, Slack, and Jira", to: "/developer-integrations" },
 		],
 	},
 	{
-		label: "Enterprise",
+		label: "Teams",
 		links: [
-			{ label: "For business", description: "A shared view of the work that matters", to: "/business" },
-			{ label: "Access control", description: "Keep every artefact in the right hands", to: "/access-control" },
-			{ label: "Team integrations", description: "Bring the whole workspace into Klee", to: "/team-integrations" },
+			{ label: "For teams", description: "Status, releases, and decisions", to: "/business" },
+			{ label: "Access control", description: "Who can view, comment, and edit", to: "/access-control" },
+			{ label: "Team setup", description: "Organisations and shared apps", to: "/team-integrations" },
 		],
 	},
 ];

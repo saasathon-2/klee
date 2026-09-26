@@ -7,11 +7,9 @@ import { navMenus, pricingPath } from "../pages/landing/links";
 import { KleeIcon } from "./KleeLogo";
 import { ThemeToggle } from "./ThemeToggle";
 
-const hrefFor = (link: { section?: string; to?: string }) =>
-	link.to ?? `/welcome#${link.section}`;
 const mobileLinks = [
 	...navMenus.flatMap((menu) => menu.links),
-	{ label: "Pricing", description: "Plans for individual work and teams", to: pricingPath },
+	{ label: "Pricing", description: "Plans", to: pricingPath },
 ];
 
 export function Navbar() {
@@ -64,7 +62,7 @@ export function Navbar() {
 											render={(props) => (
 												<a
 													{...(props as unknown as ComponentProps<"a">)}
-													href={hrefFor(link)}
+													href={link.to}
 												/>
 											)}
 										>
@@ -110,7 +108,7 @@ export function Navbar() {
 										render={(props) => (
 											<a
 												{...(props as unknown as ComponentProps<"a">)}
-												href={hrefFor(link)}
+												href={link.to}
 											/>
 										)}
 									>

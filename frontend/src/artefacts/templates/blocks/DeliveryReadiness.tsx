@@ -5,7 +5,8 @@ import { BlockSection } from "../page/BlockSection";
 import { checkStatuses } from "../page/checkStatus";
 import { ExternalLink } from "../page/ExternalLink";
 import { editableFor } from "../page/editableFor";
-import { LiveIndicator, withLiveStatus } from "../page/liveStatus";
+import { LiveIndicator } from "../page/LiveIndicator";
+import { withLiveStatus } from "../page/liveStatus";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 const verdicts = {

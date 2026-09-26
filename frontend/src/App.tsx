@@ -52,6 +52,9 @@ function App() {
 						<Route path="/" element={<Home />} />
 						<Route path="/welcome" element={<Landing />} />
 						<Route path="/docs" element={<Docs />} />
+					<Route path="/create" element={<MarketingPage page="create" />} />
+					<Route path="/review" element={<MarketingPage page="review" />} />
+					<Route path="/share" element={<MarketingPage page="share" />} />
 						<Route path="/developers" element={<MarketingPage page="developers" />} />
 						<Route path="/developer-templates" element={<MarketingPage page="developer-templates" />} />
 						<Route path="/developer-integrations" element={<MarketingPage page="developer-integrations" />} />

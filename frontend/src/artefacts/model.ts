@@ -312,7 +312,7 @@ export function withEditedValue(
  */
 export function changedBlockIds(before: ArtefactDocument, after: ArtefactDocument) {
 	const blocks = (document: ArtefactDocument) => document.root.children?.[0]?.children ?? [];
-	const key = ({ id: _, ...node }: ArtefactNode) => JSON.stringify(node);
+	const key = (node: ArtefactNode) => JSON.stringify({ ...node, id: undefined });
 	const previous = new Set(blocks(before).map(key));
 	return new Set(blocks(after).filter((node) => !previous.has(key(node))).map((node) => node.id));
 }

@@ -4,7 +4,8 @@ import type { Check } from "../../model";
 import { BlockSection } from "../page/BlockSection";
 import { checkStatuses } from "../page/checkStatus";
 import { editableFor } from "../page/editableFor";
-import { LiveIndicator, withLiveStatus } from "../page/liveStatus";
+import { LiveIndicator } from "../page/LiveIndicator";
+import { withLiveStatus } from "../page/liveStatus";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 export function CheckList({ node, context }: TemplateProps) {
