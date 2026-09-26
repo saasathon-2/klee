@@ -52,7 +52,7 @@ function BauhausShapes() {
 	return (
 		<div ref={shapes} aria-hidden="true" className="bauhaus-shapes">
 			<div className="bauhaus-arch" />
-			<div className="bauhaus-bloom">
+			<div className="hidden bauhaus-bloom">
 				<i />
 				<i />
 				<i />
