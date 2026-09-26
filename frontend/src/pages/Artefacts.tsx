@@ -44,7 +44,7 @@ import {
 	useSearchParams,
 } from "react-router-dom";
 import { signOut, useSession } from "../lib/auth-client";
-import { KleeLogo } from "../components/KleeLogo";
+import { KleeIcon, KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import {
@@ -55,6 +55,7 @@ import {
 import type { EditPath } from "../artefacts/templates/types";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { useTheme } from "../lib/use-theme";
 import { IntegrationsModal } from "./Integrations";
 import { OrganisationsModal } from "./Organisations";
 import { useMediaQuery } from "../lib/use-media-query";
@@ -244,24 +245,32 @@ export function Artefacts() {
 	}, [isShared, viewerId]);
 	useEffect(() => {
 		if (!artefactPath || loaded?.path === artefactPath) return;
-		api(artefactPath)
-			.then((response) => {
-				if (response.ok) return response.json();
-				if (response.status === 403)
-					return Promise.reject("not_shared");
-				return Promise.reject("not_found");
-			})
+		const privatePath = isShared && viewerId && !snapshotToken
+			? `/artefacts/${shareId}`
+			: undefined;
+		const load = async () => {
+			const privateResponse = privatePath
+				? await api(privatePath)
+				: undefined;
+			const response = privateResponse?.ok
+				? privateResponse
+				: await api(artefactPath);
+			if (response.ok) return response.json() as Promise<Artefact>;
+			if (response.status === 403) throw new Error("not_shared");
+			throw new Error("not_found");
+		};
+		load()
 			.then((artefact: Artefact) => {
 				setNotShared(false);
 				setLoaded({ path: artefactPath, artefact });
 			})
-			.catch((reason) => {
+			.catch((error: Error) => {
 				setFailedPath(artefactPath);
-				if (reason === "not_shared") return setNotShared(true);
+				if (error.message === "not_shared") return setNotShared(true);
 				setNotShared(false);
 				setError("This artefact could not be found.");
 			});
-	}, [artefactPath, loaded?.path]);
+	}, [artefactPath, isShared, loaded?.path, shareId, snapshotToken, viewerId]);
 
 	useEffect(() => {
 		let active = true;
@@ -562,63 +571,75 @@ export function Artefacts() {
 				)}
 				{current && !isPreview && (
 					<div className="fixed inset-x-0 top-2 z-10 flex items-center justify-between px-4">
-						<Button
-							aria-label="Artefact home"
-							variant="ghost"
-							size="sm"
-							className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-							onPress={() => navigate("/")}
-						>
-							<House size={15} />
-							Artefact home
-						</Button>
-						<div className="flex items-center gap-2">
-							<Button
-								aria-label="Copy artefact link"
-								variant="ghost"
-								size="sm"
-								className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-								onPress={() =>
-									void navigator.clipboard
-										.writeText(
-											`${window.location.origin}/artefacts/shared/${current.id}`,
-										)
-										.then(() =>
-											setCopiedSharedLinkId(current.id),
-										)
-										.catch(() =>
-											setError(
-												"Could not copy the artefact link.",
-											),
-										)
-								}
-							>
-								{copiedSharedLinkId === current.id ? (
-									<Check size={15} />
-								) : (
-									<Copy size={15} />
-								)}
-								{copiedSharedLinkId === current.id
-									? "Link copied"
-									: "Copy link"}
-							</Button>
-							<Button
-								aria-label={`Comments, ${sharedCommentCount}`}
-								variant={
-									sharedCommentsOpen ? "secondary" : "ghost"
-								}
-								size="sm"
-								className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-								onPress={() =>
-									setSharedCommentsOpen(!sharedCommentsOpen)
-								}
-							>
-								<MessageCircle size={15} />
-								Comments
-								{sharedCommentCount > 0 &&
-									` ${sharedCommentCount}`}
-							</Button>
-						</div>
+								<Button
+									aria-label="Artefact home"
+									variant="ghost"
+									size="sm"
+									className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+									onPress={() => navigate("/")}
+								>
+									<House size={15} />
+									Artefact home
+								</Button>
+								<div className="flex items-center gap-2">
+									{currentSharedAccess?.permission === "edit" && (
+										<Button
+											aria-label="Edit artefact"
+											variant="ghost"
+											size="sm"
+											className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+											onPress={() => navigate(`/?artefact=${current.id}`)}
+										>
+											<Pencil size={15} />
+											Edit
+										</Button>
+									)}
+									<Button
+										aria-label="Copy artefact link"
+										variant="ghost"
+										size="sm"
+										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+										onPress={() =>
+											void navigator.clipboard
+												.writeText(
+													`${window.location.origin}/artefacts/shared/${current.id}`,
+												)
+												.then(() => setCopiedSharedLinkId(current.id))
+												.catch(() =>
+													setError("Could not copy the artefact link."),
+												)
+										}
+									>
+										{copiedSharedLinkId === current.id ? (
+											<Check size={15} />
+										) : (
+											<Copy size={15} />
+										)}
+										{copiedSharedLinkId === current.id
+											? "Link copied"
+											: "Copy link"}
+									</Button>
+									<Button
+										aria-label={`Comments, ${sharedCommentCount}`}
+										variant={
+											sharedCommentsOpen
+												? "secondary"
+												: "ghost"
+										}
+										size="sm"
+										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+										onPress={() =>
+											setSharedCommentsOpen(
+												!sharedCommentsOpen,
+											)
+										}
+									>
+										<MessageCircle size={15} />
+										Comments
+										{sharedCommentCount > 0 &&
+											` ${sharedCommentCount}`}
+									</Button>
+								</div>
 					</div>
 				)}
 				{current &&
@@ -903,6 +924,7 @@ function WorkspaceSidebar({
 	onSignOut: () => void;
 }) {
 	const displayName = user.name || user.email;
+	const { theme } = useTheme();
 	return (
 		<aside
 			className={
@@ -916,10 +938,12 @@ function WorkspaceSidebar({
 				aria-label="Klee home"
 				className="mb-5 flex h-10 items-center gap-2 px-2 text-left"
 			>
-				<KleeLogo alt="" className="size-8" />
-				<span className="text-lg font-semibold tracking-tight">
-					Klee
-				</span>
+				<KleeIcon className="size-10" />
+				<img
+					src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
+					alt="Klee"
+					className="h-6 w-auto"
+				/>
 			</Link>
 			<ListBox
 				aria-label="Workspace navigation"

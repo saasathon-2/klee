@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { DiffLayoutContext } from "../../artefacts/templates/page/diffLayout";
 
 /** Landing-only scroll treatment for the sample code diff. */
 export function LandingCodeDiffStory({ children }: { children: ReactNode }) {
@@ -59,15 +60,18 @@ export function LandingCodeDiffStory({ children }: { children: ReactNode }) {
 				<StoryNote
 					placement="left"
 					visible={step === 1}
-					title="Give Context to your Pull Requests."
-					body="Integrate Klee into your GitHub, GitLab or BitBucket pipeline, so you can keep your team moving elegantly without any extra explanations."
+					title="Context on every PR"
+					body="Add the GitHub Action and each pull request gets a summary."
 				/>
-				<div className="lg:col-start-2 lg:row-start-1">{children}</div>
+				{/* Split while the first note is up; unified once the notes swap. */}
+				<DiffLayoutContext value={step >= 2 ? "unified" : "split"}>
+					<div className="lg:col-start-2 lg:row-start-1">{children}</div>
+				</DiffLayoutContext>
 				<StoryNote
 					placement="right"
 					visible={step === 4}
-					title="Share the whole story. Or just a task."
-					body="Automatically share a contextual Klee artefact with anyone on your team, or manually provide one. The choice is yours."
+					title="Share it with a link"
+					body="Send the whole page, or just the part someone needs."
 				/>
 			</div>
 		</div>
@@ -87,14 +91,14 @@ function StoryNote({
 }) {
 	return (
 		<div
-			className={`relative z-10 hidden w-72 self-center lg:row-start-1 lg:block ${placement === "left" ? "lg:col-start-1 lg:translate-x-[46%] lg:-translate-y-[15%]" : "lg:col-start-3 lg:-translate-x-[46%] lg:translate-y-[15%]"}`}
+			className={`relative z-10 hidden w-72 self-center lg:row-start-1 lg:block ${placement === "left" ? "lg:col-start-1 lg:-translate-x-[12%] lg:-translate-y-[15%]" : "lg:col-start-3 lg:translate-x-[12%] lg:translate-y-[15%]"}`}
 		>
 			<aside
 				aria-hidden={!visible}
-				className={`rounded-2xl border border-border bg-surface-secondary p-6 shadow-2xl transition-all duration-500 ease-out ${visible ? "translate-x-0 translate-y-0 opacity-100" : "pointer-events-none translate-x-8 translate-y-3 opacity-0"}`}
+				className={`rounded-2xl border border-border bg-surface-secondary p-5 shadow-2xl transition-all duration-500 ease-out ${visible ? "translate-x-0 translate-y-0 opacity-100" : `pointer-events-none translate-y-3 opacity-0 ${placement === "left" ? "-translate-x-8" : "translate-x-8"}`}`}
 			>
-				<p className="mt-2 text-lg font-semibold leading-6">{title}</p>
-				<p className="mt-3 text-base leading-7 text-muted">{body}</p>
+				<p className="text-lg font-semibold leading-6">{title}</p>
+				<p className="mt-2 text-sm leading-6 text-muted">{body}</p>
 			</aside>
 		</div>
 	);

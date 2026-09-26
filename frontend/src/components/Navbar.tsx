@@ -3,9 +3,8 @@ import { ChevronDown, Menu } from "lucide-react";
 import { type ComponentProps, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "../lib/auth-client";
-import { useTheme } from "../lib/use-theme";
 import { navMenus, pricingPath } from "../pages/landing/links";
-import { KleeLogo } from "./KleeLogo";
+import { KleeIcon } from "./KleeLogo";
 import { ThemeToggle } from "./ThemeToggle";
 
 const hrefFor = (link: { section?: string; to?: string }) =>
@@ -17,7 +16,6 @@ const mobileLinks = [
 
 export function Navbar() {
 	const { data: session, isPending } = useSession();
-	const { theme } = useTheme();
 	const navigate = useNavigate();
 	const [scrolled, setScrolled] = useState(false);
 	useEffect(() => {
@@ -37,12 +35,7 @@ export function Navbar() {
 					aria-label="Klee home"
 					className="justify-self-start"
 				>
-					<KleeLogo className="size-10" />
-					<img
-						src={theme === "dark" ? "/kleelight.svg" : "/klee.svg"}
-						alt=""
-						className="ml-2 h-6 w-auto"
-					/>
+					<KleeIcon className="size-10" />
 				</Link>
 
 				<div className="hidden items-center gap-2 md:flex">

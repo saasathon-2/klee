@@ -7,7 +7,8 @@ import { Heading } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 import { Scallop } from "../../artefacts/templates/page/Scallop";
 import { SlackIcon } from "../../components/BrandIcons";
-import { KleeLogo } from "../../components/KleeLogo";
+import { KleeIcon } from "../../components/KleeLogo";
+import { FitToSpace } from "./FitToSpace";
 
 const shareUrl =
 	"https://klee.work/artefacts/shared/29984434-6a04-490e-9d70-08cc214a6c22";
@@ -79,10 +80,11 @@ export function SlackChannelStory() {
 					<SlackIcon aria-hidden className="mx-auto mb-3 size-7 sm:[@media(min-height:44rem)]:size-9" />
 					Get up to speed without leaving the channel
 				</Heading>
+				<FitToSpace>
 				<section
 					aria-label="Slack channel preview"
 					inert
-					className="flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slack-border bg-slack-canvas text-slack-foreground shadow-xl"
+					className="flex w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slack-border bg-slack-canvas text-slack-foreground shadow-xl"
 				>
 					<header className="flex h-16 shrink-0 items-center gap-4 px-5 sm:px-8">
 						<Star
@@ -143,10 +145,7 @@ export function SlackChannelStory() {
 							inert={!botVisible}
 							className={`flex gap-4 bg-slack-canvas-highlight px-4 py-4 sm:px-8 ${pop(botVisible)}`}
 						>
-							<KleeLogo
-								alt="klee (local) profile picture"
-								className="size-14 shrink-0 rounded-2xl sm:size-[4.5rem]"
-							/>
+							<KleeIcon className="size-14 shrink-0 rounded-2xl sm:size-[4.5rem]" />
 							<div className="min-w-0 flex-1">
 								<div className="flex flex-wrap items-baseline gap-x-3">
 									<p className="text-lg font-bold text-slack-foreground-strong sm:text-2xl">
@@ -277,6 +276,7 @@ export function SlackChannelStory() {
 						</div>
 					</div>
 				</section>
+				</FitToSpace>
 			</div>
 		</div>
 	);

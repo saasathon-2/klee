@@ -153,7 +153,7 @@ export function ArtefactComments({
 
 	useEffect(() => {
 		let current = true;
-		commentApi(artefactId, "", undefined, isShared && !canComment)
+		commentApi(artefactId, "", undefined, isShared && !userId)
 			.then(async (response) => {
 				if (!response.ok) throw new Error();
 				return (await response.json()) as Comment[];
@@ -168,7 +168,7 @@ export function ArtefactComments({
 		return () => {
 			current = false;
 		};
-	}, [artefactId, isShared, canComment]);
+	}, [artefactId, isShared, userId]);
 
 	useEffect(() => onCountChange(comments.length), [comments.length, onCountChange]);
 

@@ -25,7 +25,7 @@ export function ArtefactPage({ children, context }: TemplateProps) {
 							aria-label="Klee home"
 							className="flex items-center gap-2 font-semibold hover:underline"
 						>
-							<KleeLogo alt="" className="size-7" />
+							<KleeLogo className="size-7" />
 							<img src="/klee.svg" alt="" className="h-5 w-auto" />
 						</Link>
 					</div>

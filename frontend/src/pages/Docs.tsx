@@ -10,7 +10,7 @@ import { ChevronRight, ExternalLink, LibraryBig } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDocumentTitle } from "../useDocumentTitle";
-import { KleeLogo } from "../components/KleeLogo";
+import { KleeIcon } from "../components/KleeLogo";
 
 const sections = [
 	{
@@ -139,7 +139,7 @@ export function Docs() {
 				</div>
 
 				<DocsSection id="overview" title="What is Klee?">
-					<KleeLogo className="size-10" />
+					<KleeIcon className="size-10" />
 
 					<Paragraph>
 						Klee turns a prompt or connected pull request into a

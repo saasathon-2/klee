@@ -803,7 +803,7 @@ app.get("/api/artefacts/:id/comments", async (req, res) => {
 	const timing = requestTiming();
 	const user = await timing.measure("auth", () => sessionUser(req, res));
 	if (!user) return;
-	if (!(await timing.measure("access", () => commentableArtefact(req.params.id, user.id)))) return res.sendStatus(404);
+	if (!(await timing.measure("access", () => accessibleArtefact(req.params.id, user.id)))) return res.sendStatus(404);
 	const comments = await timing.measure("comments", () => readArtefactComments(req.params.id, user.id));
 	timing.apply(res);
 	res.json(comments);
