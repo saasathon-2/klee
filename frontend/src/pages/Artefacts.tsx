@@ -814,7 +814,7 @@ export function Artefacts() {
 								{greeting},{" "}
 								<span className="text-accent-text">
 									{user.name?.split(" ")[0] || "there"}
-								</span>
+								</span>!
 							</h1>
 						</div>
 						<form onSubmit={create} className="w-full">
