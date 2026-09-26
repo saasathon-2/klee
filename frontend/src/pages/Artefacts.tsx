@@ -47,6 +47,8 @@ import {
 import { signOut, useSession } from "../lib/auth-client";
 import { KleeIcon, KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
+import { LinkChips } from "../components/LinkChips";
+import { takeLinkPaste } from "../lib/links";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import { useLiveStatus } from "../artefacts/templates/page/liveStatus";
 import {
@@ -166,6 +168,8 @@ export function Artefacts() {
 	}>();
 	const [failedPath, setFailedPath] = useState<string>();
 	const [prompt, setPrompt] = useState("");
+	// Links pasted into the prompt, shown as chips and sent after the text.
+	const [promptLinks, setPromptLinks] = useState<string[]>([]);
 	const [isCreating, setIsCreating] = useState(false);
 	const [generationStatus, setGenerationStatus] = useState("");
 	const [generationCommentary, setGenerationCommentary] = useState("");
@@ -309,7 +313,8 @@ export function Artefacts() {
 
 	async function create(event: FormEvent) {
 		event.preventDefault();
-		if (!prompt.trim() || isCreating) return;
+		const fullPrompt = [prompt.trim(), ...promptLinks].filter(Boolean).join("\n");
+		if (!fullPrompt || isCreating) return;
 		const controller = new AbortController();
 		generationAbort.current = controller;
 		setIsCreating(true);
@@ -319,7 +324,7 @@ export function Artefacts() {
 		try {
 			const response = await api("/artefacts/stream", {
 				method: "POST",
-				body: JSON.stringify({ prompt }),
+				body: JSON.stringify({ prompt: fullPrompt }),
 				signal: controller.signal,
 			});
 			if (!response.ok || !response.body)
@@ -366,6 +371,7 @@ export function Artefacts() {
 			]);
 			setLoaded({ path, artefact: ownedArtefact });
 			setPrompt("");
+			setPromptLinks([]);
 			navigate(`/?artefact=${artefact.id}`);
 		} catch (error) {
 			if (!controller.signal.aborted)
@@ -774,7 +780,24 @@ export function Artefacts() {
 						</div>
 						<form onSubmit={create} className="w-full">
 							<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
+								<LinkChips
+									links={promptLinks}
+									onRemove={(link) =>
+										setPromptLinks((links) =>
+											links.filter((item) => item !== link),
+										)
+									}
+								/>
 								<TextArea
+									onPaste={(event) =>
+										takeLinkPaste(event, (link) =>
+											setPromptLinks((links) =>
+												links.includes(link)
+													? links
+													: [...links, link],
+											),
+										)
+									}
 									aria-label="Artefact prompt"
 									variant="secondary"
 									rows={3}
@@ -798,7 +821,10 @@ export function Artefacts() {
 										type="submit"
 										className="size-9 min-w-9 rounded-xl p-0"
 										isPending={isCreating}
-										isDisabled={!prompt.trim()}
+										isDisabled={
+											!prompt.trim() &&
+											promptLinks.length === 0
+										}
 									>
 										{({ isPending }) =>
 											isPending ? (
