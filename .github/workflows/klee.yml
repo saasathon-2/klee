@@ -3,10 +3,6 @@ name: klee
 on:
     pull_request:
         types: [opened, synchronize, reopened]
-    # Forked PRs require manual approval for `pull_request` workflows. This job
-    # only sends the PR number to Klee and never checks out or runs PR code.
-    pull_request_target:
-        types: [opened, synchronize, reopened]
 
 permissions:
     id-token: write
@@ -29,7 +25,6 @@ jobs:
                   MIGRATIONS_BASE_REF: origin/${{ github.base_ref }}
 
     generate-artefact:
-        if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.fork)
         runs-on: ubuntu-latest
         steps:
             - uses: saasathon-2/integrations/github@main
