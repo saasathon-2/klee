@@ -1181,18 +1181,18 @@ function WorkspaceSidebar({
 				<Popover.Trigger>
 					<Button
 						variant="ghost"
-						className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-2 text-left"
+						className="h-auto w-full justify-start gap-2 rounded-xl px-2 py-2 text-left"
 					>
 						<UserAvatar
 							image={user.image}
 							name={displayName}
-							size="lg"
+							size="md"
 						/>
 						<span className="min-w-0">
-							<span className="block truncate text-base font-semibold">
+							<span className="block truncate text-sm font-semibold">
 								{displayName}
 							</span>
-							<span className="block truncate text-sm text-muted">
+							<span className="block truncate text-xs text-muted">
 								{user.email}
 							</span>
 						</span>
