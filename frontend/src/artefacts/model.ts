@@ -1,5 +1,15 @@
 export type Metric = { label: string; value: string; detail: string };
 export type FlowNode = { label: string; detail: string };
+export type SoftwareDiagramNode = {
+	id: string;
+	label: string;
+	detail: string;
+};
+export type SoftwareDiagramEdge = {
+	source: string;
+	target: string;
+	label?: string | null;
+};
 export type ArtefactTask = {
 	id: string;
 	key: string;
@@ -54,6 +64,7 @@ export type ArtefactNode = {
 		| "metric-row"
 		| "code-diff"
 		| "architecture-flow"
+		| "software-diagram"
 		| "glue"
 		| "task-list"
 		| "next-steps"

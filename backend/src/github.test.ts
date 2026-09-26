@@ -89,5 +89,5 @@ const largePrompt = githubPullRequestPrompt("acme/repo", 13, {
 	commits: [],
 	checks: [],
 });
-assert.match(largePrompt, /Prioritize architecture-flow/);
-assert.doesNotMatch(largePrompt, /secret diff/);
+assert.match(largePrompt, /Include software-diagram/);
+assert.match(largePrompt, /secret diff/);

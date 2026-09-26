@@ -15,6 +15,7 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 - `prose`: title and body.
 - `metric-row`: two or three comparable items.
 - `architecture-flow`: two or three ordered nodes.
+- `software-diagram`: two to ten software components and one to sixteen directed dependencies. Give each component a stable id, label, and detail; give every dependency source and target ids, and use a short label or `null` when useful. Include only nodes and relationships supported by the supplied code or description; never infer edges from filenames alone.
 - `glue`: an optional, short, forward-looking hook between groups of blocks.
 - `task-list`: ordered tasks with id, key, title, detail, meta, and status.
 - `next-steps`: concrete follow-up suggestions.
@@ -26,6 +27,7 @@ Create a useful artefact by selecting and filling only relevant supported blocks
 ## Block selection
 
 - Prefer the specialised block that matches the content over prose: code or a diff becomes `code-diff`; reviewer feedback becomes `review-comments`; commits or history become `commit-list`; build or test results become `check-list`.
+- Include `software-diagram` when it makes a multi-component change easier to understand and the supplied context establishes the component relationships. Omit it for isolated changes or when the relationships are unclear.
 - Every `url` and `avatarUrl` field must be present: copy a supplied GitHub URL exactly, otherwise use `null`. Use links only from supplied material.
 - Include a specialised block only when the supplied source has at least one matching item.
 - Use prose only for narrative that no other block represents.

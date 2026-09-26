@@ -58,3 +58,32 @@ body {
 .home-section {
 	padding-top: 0px;
 }
+
+.software-diagram-canvas .react-flow__controls {
+	border: 1px solid var(--border);
+	border-radius: 0.75rem;
+	box-shadow: none;
+	overflow: hidden;
+}
+
+.software-diagram-canvas .react-flow__controls-button {
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--foreground);
+	fill: var(--foreground);
+}
+
+.software-diagram-canvas .react-flow__controls-button:hover {
+	background: var(--surface-secondary);
+}
+
+[data-theme="dark"] .software-diagram-canvas {
+	background: var(--surface);
+}
+
+[data-theme="dark"] .software-diagram-canvas .software-diagram-node {
+	background: var(--surface-tertiary);
+	border-color: var(--border);
+	border-left-color: color-mix(in oklab, var(--brand) 35%, var(--brand-foreground));
+	color: var(--surface-tertiary-foreground);
+}

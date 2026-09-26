@@ -8,6 +8,7 @@ import { MetricRow } from "./blocks/MetricRow";
 import { NextSteps } from "./blocks/NextSteps";
 import { Prose } from "./blocks/Prose";
 import { ReviewComments } from "./blocks/ReviewComments";
+import { SoftwareDiagram } from "./blocks/SoftwareDiagram";
 import { TaskList } from "./blocks/TaskList";
 import { DeveloperPage, GenericPage } from "./categories/CategoryPage";
 import { ArtefactPage } from "./page/ArtefactPage";
@@ -38,6 +39,7 @@ export const templateDefinitions: Record<
 	"generic-page": definition(GenericPage),
 	"metric-row": definition(MetricRow),
 	"architecture-flow": definition(ArchitectureFlow),
+	"software-diagram": definition(SoftwareDiagram),
 	glue: definition(Glue),
 	"task-list": definition(TaskList),
 	"next-steps": definition(NextSteps),
