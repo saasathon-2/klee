@@ -18,11 +18,11 @@ import {
 	ArrowUp,
 	BrainCog,
 	Building2,
+	ExternalLink,
+	House,
 	History,
 	LogOut,
-	Maximize2,
 	MessageCircle,
-	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
 	Pencil,
@@ -183,7 +183,6 @@ export function Artefacts() {
 		isOwner: boolean;
 		permission?: Artefact["permission"];
 	}>();
-	const [isFullscreen, setFullscreen] = useState(false);
 	// Phones get the sidebar as a drawer, closed until the toggle is pressed.
 	const isDesktop = useMediaQuery(desktopQuery);
 	const [isSidebarOpen, setSidebarOpen] = useState(
@@ -523,7 +522,6 @@ export function Artefacts() {
 		setLoaded(undefined);
 	}
 	function close() {
-		setFullscreen(false);
 		navigate("/");
 	}
 	async function leave() {
@@ -541,24 +539,24 @@ export function Artefacts() {
 		return <Navigate to="/?auth=signin" replace />;
 	if (isShared)
 		return (
-			<main className="flex min-h-screen flex-col bg-background">
+			<main className="relative flex min-h-screen flex-col bg-background">
 				{error && <p className="p-10 text-sm text-danger">{error}</p>}
 				{notShared && (
 					<p className="p-10 text-sm text-muted">
 						This artefact hasn't been shared.
 					</p>
 				)}
-				{current &&
-					(isPreview ? (
-						<ArtefactBody
-							artefact={current}
-							canInteract={false}
-							edgeToEdge
-							compactHeader
-						/>
-					) : (
-						<>
-							<div className="flex justify-end px-4 py-2">
+				{current && !isPreview && (
+					<div className="absolute inset-x-0 top-2 z-10 flex items-center justify-between px-4">
+								<Button
+									aria-label="Artefact home"
+									variant="ghost"
+									size="sm"
+									onPress={() => navigate("/")}
+								>
+									<House size={15} />
+									Artefact home
+								</Button>
 								<Button
 									aria-label={`Comments, ${sharedCommentCount}`}
 									variant={
@@ -578,8 +576,18 @@ export function Artefacts() {
 									{sharedCommentCount > 0 &&
 										` ${sharedCommentCount}`}
 								</Button>
-							</div>
-							<ArtefactComments
+					</div>
+				)}
+				{current &&
+					(isPreview ? (
+						<ArtefactBody
+							artefact={current}
+							canInteract={false}
+							edgeToEdge
+							compactHeader
+						/>
+					) : (
+						<ArtefactComments
 								key={current.id}
 								artefactId={current.id}
 								isOwner={currentSharedAccess?.isOwner ?? false}
@@ -597,7 +605,6 @@ export function Artefacts() {
 									compactHeader={isPreview}
 								/>
 							</ArtefactComments>
-						</>
 					))}
 			</main>
 		);
@@ -778,10 +785,11 @@ export function Artefacts() {
 					generationStatus={generationStatus}
 					generationCommentary={generationCommentary}
 					isCommentaryStarting={isCommentaryStarting}
-					isFullscreen={isFullscreen}
 					userId={user.id}
 					onClose={isCreating ? cancelGeneration : close}
-					onFullscreen={() => setFullscreen(!isFullscreen)}
+					onOpenShared={(artefactId) =>
+						navigate(`/artefacts/shared/${artefactId}`)
+					}
 					onShare={() => setShareOpen(true)}
 					followUp={followUp}
 					setFollowUp={setFollowUp}
@@ -954,10 +962,9 @@ function ArtefactModal({
 	generationStatus,
 	generationCommentary,
 	isCommentaryStarting,
-	isFullscreen,
 	userId,
 	onClose,
-	onFullscreen,
+	onOpenShared,
 	onShare,
 	followUp,
 	setFollowUp,
@@ -975,10 +982,9 @@ function ArtefactModal({
 	generationStatus: string;
 	generationCommentary: string;
 	isCommentaryStarting: boolean;
-	isFullscreen: boolean;
 	userId: string;
 	onClose: () => void;
-	onFullscreen: () => void;
+	onOpenShared: (artefactId: string) => void;
 	onShare: () => void;
 	followUp: string;
 	setFollowUp: (value: string) => void;
@@ -1020,7 +1026,7 @@ function ArtefactModal({
 	const isDirty =
 		isEditing &&
 		JSON.stringify(draft) !== JSON.stringify(artefact?.content);
-	const historyOpen = isFullscreen && showHistory && !isEditing;
+	const historyOpen = showHistory && !isEditing;
 	const canEdit = artefact?.permission === "edit";
 	const canComment = Boolean(artefact && !isEditing && !historyOpen && (canEdit || artefact.permission === "comment"));
 	const breadcrumb =
@@ -1070,12 +1076,12 @@ function ArtefactModal({
 				onOpenChange={(open) => {
 					if (!open) onClose();
 				}}
-				variant={isFullscreen ? "transparent" : "blur"}
+				variant="blur"
 			>
 				<Modal.Container
 					placement="center"
 					scroll="inside"
-					size={isFullscreen ? "full" : "cover"}
+					size="cover"
 				>
 					<Modal.Dialog
 							aria-label={
@@ -1083,13 +1089,9 @@ function ArtefactModal({
 									? artefactHeading(artefact)
 									: loadingLabel
 						}
-						className={
-							isFullscreen
-								? "h-dvh min-h-dvh w-screen max-w-none rounded-none p-0"
-								: "overflow-hidden rounded-2xl p-0"
-						}
+						className="w-full max-w-[1100px] overflow-hidden rounded-2xl p-0"
 					>
-						{/* Phones: title with fullscreen/close on top, the other actions on a second row. */}
+						{/* Phones: title and close control on top, the other actions on a second row. */}
 						<Modal.Header className="z-10 shrink-0 flex-row flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-surface px-4 py-3 sm:flex-nowrap sm:px-6">
 							<Modal.Heading className="order-1 flex min-w-0 flex-1 items-center gap-2">
 								{artefact ? (
@@ -1130,7 +1132,7 @@ function ArtefactModal({
 										onError={onError}
 									/>
 								)}
-								{artefact && !isEditing && isFullscreen && (
+								{artefact && !isEditing && (
 									<Button
 										aria-label="History"
 										variant={
@@ -1200,22 +1202,14 @@ function ArtefactModal({
 								)}
 							</Toolbar>
 							<div className="order-2 flex items-center gap-1 sm:order-3">
-								{artefact && (
+								{artefact?.isShared && (
 									<Button
-										aria-label={
-											isFullscreen
-												? "Exit fullscreen"
-												: "Fullscreen"
-										}
+										aria-label="Open shared artefact"
 										variant="ghost"
 										className="size-8 min-w-8 p-0"
-										onPress={onFullscreen}
+										onPress={() => onOpenShared(artefact.id)}
 									>
-										{isFullscreen ? (
-											<Minimize2 size={17} />
-										) : (
-											<Maximize2 size={17} />
-										)}
+										<ExternalLink size={17} />
 									</Button>
 								)}
 								<Button
