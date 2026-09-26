@@ -1,15 +1,36 @@
 import assert from "node:assert/strict";
-import { createHmac } from "node:crypto";
+import { createHmac, generateKeyPairSync } from "node:crypto";
 
 process.env.DATABASE_URL ??= "postgres://localhost/test";
 process.env.BETTER_AUTH_SECRET ??= "test";
 process.env.GITHUB_WEBHOOK_SECRET = "test-secret";
+process.env.GITHUB_APP_ID = "test-app";
+process.env.GITHUB_PRIVATE_KEY = generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey.export({ type: "pkcs8", format: "pem" }).toString();
 
-const { githubArtefactComment, githubPullRequestFingerprint, githubPullRequestPrompt, isGitHubBot, validActionsClaims, validGitHubWebhook } = await import("./github.ts");
+const { githubArtefactComment, githubInstallationRequest, githubPullRequestFingerprint, githubPullRequestPrompt, isGitHubBot, validActionsClaims, validGitHubWebhook } = await import("./github.ts");
 const body = Buffer.from('{"action":"created"}');
 const signature = `sha256=${createHmac("sha256", "test-secret").update(body).digest("hex")}`;
 assert.equal(validGitHubWebhook(body, signature), true);
 assert.equal(validGitHubWebhook(body, "sha256=wrong"), false);
+const originalFetch = globalThis.fetch;
+let tokenRequests = 0;
+globalThis.fetch = async (input) => {
+	const url = String(input);
+	if (url.endsWith("/access_tokens")) {
+		tokenRequests++;
+		return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }));
+	}
+	return new Response("{}");
+};
+try {
+	await Promise.all([
+		githubInstallationRequest("installation-1", "/repos/acme/repo/pulls/1"),
+		githubInstallationRequest("installation-1", "/repos/acme/repo/pulls/1/files"),
+	]);
+	assert.equal(tokenRequests, 1);
+} finally {
+	globalThis.fetch = originalFetch;
+}
 assert.equal(isGitHubBot({ login: "orca-klee[bot]" }), true);
 assert.equal(isGitHubBot({ login: "reviewer", type: "User" }), false);
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "klee-github-actions", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), true);
