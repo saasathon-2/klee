@@ -89,6 +89,71 @@ export function isTextOnlyEdit(patch: PatchOp[], before: unknown) {
 	);
 }
 
+const isFiniteNumber = (value: unknown) =>
+	typeof value === "number" && Number.isFinite(value);
+
+function isSoftwareDiagram(value: unknown) {
+	if (!isObject(value) || !Array.isArray(value.nodes) || !Array.isArray(value.edges))
+		return false;
+	const ids = new Set<string>();
+	for (const node of value.nodes) {
+		if (
+			!isObject(node) ||
+			typeof node.id !== "string" ||
+			!node.id ||
+			typeof node.label !== "string" ||
+			typeof node.detail !== "string" ||
+			ids.has(node.id)
+		)
+			return false;
+		if (
+			node.position !== undefined &&
+			(!isObject(node.position) ||
+				!isFiniteNumber(node.position.x) ||
+				!isFiniteNumber(node.position.y))
+		)
+			return false;
+		if (
+			(node.width !== undefined && (!isFiniteNumber(node.width) || node.width <= 0)) ||
+			(node.height !== undefined && (!isFiniteNumber(node.height) || node.height <= 0))
+		)
+			return false;
+		ids.add(node.id);
+	}
+	for (const edge of value.edges) {
+		if (
+			!isObject(edge) ||
+			typeof edge.source !== "string" ||
+			typeof edge.target !== "string" ||
+			!ids.has(edge.source) ||
+			!ids.has(edge.target) ||
+			edge.source === edge.target ||
+			![edge.sourceHandle, edge.targetHandle, edge.label].every(
+				(field) => field === undefined || field === null || typeof field === "string",
+			)
+		)
+			return false;
+	}
+	return true;
+}
+
+/** Allows graph edits only within a well-formed software-diagram node. */
+export function isTextOrDiagramEdit(
+	patch: PatchOp[],
+	before: unknown,
+	after: unknown,
+) {
+	return patch.every((operation) => {
+		if (isTextOnlyEdit([operation], before)) return true;
+		const dataIndex = operation.path.indexOf("data");
+		if (dataIndex < 0 || !["nodes", "edges"].includes(String(operation.path[dataIndex + 1])))
+			return false;
+		const node = valueAt(before, operation.path.slice(0, dataIndex));
+		const data = valueAt(after, operation.path.slice(0, dataIndex + 1));
+		return isObject(node) && node.template === "software-diagram" && isSoftwareDiagram(data);
+	});
+}
+
 const templateName = (template: string) =>
 	template.charAt(0).toUpperCase() + template.slice(1).replaceAll("-", " ");
 

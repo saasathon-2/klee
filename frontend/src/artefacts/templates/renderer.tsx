@@ -45,7 +45,7 @@ export function ArtefactRenderer({
 	compactHeader?: boolean;
 	isEditing?: boolean;
 	onAction?: (label: string) => void;
-	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
+	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
 	renderNode?: (node: ArtefactNode, rendered: ReactNode) => ReactNode;
 }) {
 	return (

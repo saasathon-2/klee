@@ -9,10 +9,10 @@ export type RenderContext = {
 	edgeToEdge: boolean;
 	showFooter: boolean;
 	compactHeader: boolean;
-	/** Text fields render as inputs and report changes through `onEdit`. */
+	/** Editable content reports changes through `onEdit`. */
 	isEditing: boolean;
 	onAction?: (label: string) => void;
-	onEdit?: (nodeId: string, path: EditPath, value: string) => void;
+	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
 };
 
 /** Path to a text field inside a node's `data`, e.g. ["tasks", 0, "title"]. */
