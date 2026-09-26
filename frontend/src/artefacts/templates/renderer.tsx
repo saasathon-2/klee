@@ -29,6 +29,7 @@ export function ArtefactRenderer({
 	canInteract,
 	edgeToEdge = false,
 	showFooter = true,
+	fillViewport = false,
 	compactHeader = false,
 	isEditing = false,
 	onAction,
@@ -41,6 +42,8 @@ export function ArtefactRenderer({
 	edgeToEdge?: boolean;
 	/** Draws the scalloped band at the bottom of the artefact. */
 	showFooter?: boolean;
+	/** Keeps the footer at the bottom of the visible artefact page. */
+	fillViewport?: boolean;
 	/** Hides nonessential header metadata for social-image snapshots. */
 	compactHeader?: boolean;
 	isEditing?: boolean;
@@ -56,6 +59,7 @@ export function ArtefactRenderer({
 				canInteract,
 				edgeToEdge,
 				showFooter,
+				fillViewport,
 				compactHeader,
 				isEditing,
 				onAction,

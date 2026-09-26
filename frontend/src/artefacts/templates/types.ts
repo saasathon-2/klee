@@ -8,6 +8,8 @@ export type RenderContext = {
 	canInteract: boolean;
 	edgeToEdge: boolean;
 	showFooter: boolean;
+	/** Makes the artefact shell fill the viewport so its footer reaches the bottom. */
+	fillViewport: boolean;
 	compactHeader: boolean;
 	/** Editable content reports changes through `onEdit`. */
 	isEditing: boolean;
