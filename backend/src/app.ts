@@ -724,11 +724,7 @@ function validCommentAnchor(value: unknown): value is CommentAnchor {
 		x + width <= 1.001 && y + height <= 1.001;
 }
 
-app.get("/api/artefacts/:id/comments", async (req, res) => {
-	const user = await sessionUser(req, res);
-	if (!user) return;
-	await refreshAccess(user.id);
-	if (!(await accessibleArtefact(req.params.id, user.id))) return res.sendStatus(404);
+async function readArtefactComments(artefactId: string, userId: string | null) {
 	const { rows } = await pool.query(
 		`select comment.id, comment.parent_id as "parentId", comment.body,
 			comment.anchor, comment.created_at as "createdAt", author.id as "authorId",
@@ -737,16 +733,16 @@ app.get("/api/artefacts/:id/comments", async (req, res) => {
 		join "user" author on author.id = comment.author_id
 		where comment.artefact_id = $1
 		order by comment.created_at`,
-		[req.params.id],
+		[artefactId],
 	);
 	const reactions = rows.length
 		? await pool.query(
 				`select comment_id as "commentId", emoji, count(*)::int as count,
-					bool_or(user_id = $2) as "reacted"
+					coalesce(bool_or(user_id = $2), false) as "reacted"
 				from artefact_comment_reaction
 				where comment_id = any($1::text[])
 				group by comment_id, emoji`,
-				[rows.map((row) => row.id), user.id],
+				[rows.map((row) => row.id), userId],
 			)
 		: { rows: [] };
 	const byComment = new Map<string, unknown[]>();
@@ -755,11 +751,45 @@ app.get("/api/artefacts/:id/comments", async (req, res) => {
 		current.push({ emoji: reaction.emoji, count: reaction.count, reacted: reaction.reacted });
 		byComment.set(reaction.commentId, current);
 	}
-	res.json(rows.map((row) => ({
+	return rows.map((row) => ({
 		...row,
 		author: { id: row.authorId, name: row.authorName, image: row.authorImage },
 		reactions: byComment.get(row.id) ?? [],
-	})));
+	}));
+}
+
+app.get("/api/artefacts/:id/comments", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	await refreshAccess(user.id);
+	if (!(await accessibleArtefact(req.params.id, user.id))) return res.sendStatus(404);
+	res.json(await readArtefactComments(req.params.id, user.id));
+});
+
+app.patch("/api/artefacts/:id/comments/:commentId", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	await refreshAccess(user.id);
+	const artefact = await accessibleArtefact(req.params.id, user.id);
+	if (!artefact) return res.sendStatus(404);
+	const anchor = req.body?.anchor;
+	if (!validCommentAnchor(anchor)) return res.status(400).json({ error: "Select a valid area of the artefact." });
+	const { rows } = await pool.query(
+		"update artefact_comment set anchor = $1::jsonb where id = $2 and artefact_id = $3 and parent_id is null and (author_id = $4 or $5::boolean) returning id",
+		[JSON.stringify(anchor), req.params.commentId, req.params.id, user.id, artefact.isOwner],
+	);
+	if (!rows[0]) return res.sendStatus(404);
+	res.sendStatus(204);
+});
+
+app.get("/api/shared/artefacts/:id/comments", async (req, res) => {
+	const { rows } = await pool.query(
+		"select is_shared as \"isShared\" from artefact where id = $1",
+		[req.params.id],
+	);
+	if (!rows[0]) return res.sendStatus(404);
+	if (!rows[0].isShared) return res.sendStatus(403);
+	res.json(await readArtefactComments(req.params.id, null));
 });
 
 app.post("/api/artefacts/:id/comments", async (req, res) => {

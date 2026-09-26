@@ -137,6 +137,7 @@ export function Artefacts() {
 	const snapshotToken = searchParams.get("snapshot");
 	const isPreview = searchParams.get("preview") === "1";
 	const { data: session, isPending } = useSession();
+	const viewerId = session?.user?.id;
 	const isShared = Boolean(shareId);
 	const isProfile = location.pathname === "/profile";
 	const isIntegrations = location.pathname === "/integrations";
@@ -163,6 +164,9 @@ export function Artefacts() {
 		useState<boolean>();
 	const [copied, setCopied] = useState(false);
 	const [notShared, setNotShared] = useState(false);
+	const [sharedCommentsOpen, setSharedCommentsOpen] = useState(false);
+	const [sharedCommentCount, setSharedCommentCount] = useState(0);
+	const [sharedAccess, setSharedAccess] = useState<{ artefactId: string; viewerId: string; isOwner: boolean }>();
 	const [isFullscreen, setFullscreen] = useState(false);
 	// Phones get the sidebar as a drawer, closed until the toggle is pressed.
 	const isDesktop = useMediaQuery(desktopQuery);
@@ -190,6 +194,10 @@ export function Artefacts() {
 			: undefined;
 	const current =
 		loaded?.path === artefactPath ? loaded?.artefact : undefined;
+	const currentSharedAccess =
+		current && sharedAccess?.artefactId === current.id && sharedAccess.viewerId === viewerId
+			? sharedAccess
+			: undefined;
 
 	useEffect(() => {
 		if (isShared || !session?.user) return;
@@ -228,6 +236,19 @@ export function Artefacts() {
 				setError("This artefact could not be found.");
 			});
 	}, [artefactPath, loaded?.path]);
+
+	useEffect(() => {
+		let active = true;
+		if (!isShared || !shareId || !viewerId) return () => { active = false; };
+		api(`/artefacts/${shareId}`)
+			.then(async (response) => response.ok ? await response.json() as Artefact : undefined)
+			.then((artefact) => {
+				if (!active) return;
+				setSharedAccess(artefact ? { artefactId: shareId, viewerId, isOwner: Boolean(artefact.isOwner) } : undefined);
+			})
+			.catch(() => { if (active) setSharedAccess(undefined); });
+		return () => { active = false; };
+	}, [isShared, shareId, viewerId]);
 
 	async function create(event: FormEvent) {
 		event.preventDefault();
@@ -474,7 +495,7 @@ export function Artefacts() {
 		return <Navigate to="/?auth=signin" replace />;
 	if (isShared)
 		return (
-			<main className="min-h-screen bg-background">
+			<main className="flex min-h-screen flex-col bg-background">
 				{error && <p className="p-10 text-sm text-danger">{error}</p>}
 				{notShared && (
 					<p className="p-10 text-sm text-muted">
@@ -482,12 +503,37 @@ export function Artefacts() {
 					</p>
 				)}
 				{current && (
-					<ArtefactBody
-						artefact={current}
-						canInteract={false}
-						edgeToEdge
-						compactHeader={isPreview}
-					/>
+					<>
+						<div className="flex justify-end px-4 py-2">
+							<Button
+								aria-label={`Comments, ${sharedCommentCount}`}
+								variant={sharedCommentsOpen ? "secondary" : "ghost"}
+								size="sm"
+								onPress={() => setSharedCommentsOpen(!sharedCommentsOpen)}
+							>
+								<MessageCircle size={15} />
+								Comments{sharedCommentCount > 0 && ` ${sharedCommentCount}`}
+							</Button>
+						</div>
+						<ArtefactComments
+							key={current.id}
+							artefactId={current.id}
+							isOwner={currentSharedAccess?.isOwner ?? false}
+							userId={session?.user?.id ?? ""}
+							isShared
+							canComment={Boolean(currentSharedAccess)}
+							isOpen={sharedCommentsOpen}
+							onOpenChange={setSharedCommentsOpen}
+							onCountChange={setSharedCommentCount}
+						>
+							<ArtefactBody
+								artefact={current}
+								canInteract={false}
+								edgeToEdge
+								compactHeader={isPreview}
+							/>
+						</ArtefactComments>
+					</>
 				)}
 			</main>
 		);
