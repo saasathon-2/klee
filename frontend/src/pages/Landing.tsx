@@ -6,7 +6,6 @@ import polyphony from "../assets/klee-polyphony.jpg";
 import { useSession } from "../lib/auth-client";
 import { useTheme } from "../lib/use-theme";
 import { useDocumentTitle } from "../useDocumentTitle";
-import { Scallop } from "../artefacts/templates/page/Scallop";
 import { GlueBand } from "../artefacts/templates/blocks/Glue";
 import { Footer } from "./landing/Footer";
 import { GitHubPullRequestStory } from "./landing/GitHubPullRequestStory";
@@ -83,10 +82,6 @@ export function Landing() {
 			<SlackChannelStory />
 			<GitHubPullRequestStory />
 
-			<div aria-hidden className={`relative z-10 ${sectionGap}`}>
-				<Scallop edge="top" />
-				<div className="h-16 bg-brand" />
-			</div>
 			<Footer />
 		</main>
 	);

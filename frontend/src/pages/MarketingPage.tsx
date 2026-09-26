@@ -896,6 +896,7 @@ function TemplatesPage() {
 		setActiveIndex((index + artefactExamples.length) % artefactExamples.length);
 
 	return (
+		<>
 		<main>
 			<PageHero
 				eyebrow="Developer templates"
@@ -990,6 +991,8 @@ function TemplatesPage() {
 				</Card>
 			</section>
 		</main>
+		<Footer />
+		</>
 	);
 }
 
@@ -1001,6 +1004,7 @@ const integrations = [
 
 function DeveloperIntegrationsPage() {
 	return (
+		<>
 		<main>
 			<PageHero
 				eyebrow="Developer integrations"
@@ -1085,6 +1089,8 @@ function DeveloperIntegrationsPage() {
 				</Card>
 			</section>
 		</main>
+		<Footer />
+		</>
 	);
 }
 
@@ -1175,6 +1181,7 @@ function AccessControlPage() {
 		["Release partner", "Review selected share links", "Guest"],
 	] as const;
 	return (
+		<>
 		<main>
 			<PageHero
 				eyebrow="Access control"
@@ -1240,6 +1247,8 @@ function AccessControlPage() {
 				</Card>
 			</section>
 		</main>
+		<Footer />
+		</>
 	);
 }
 
@@ -1250,6 +1259,7 @@ function TeamIntegrationsPage() {
 		[Sparkles, "Keep the signal", "Let artefacts follow the work without adding another status ritual."],
 	] as const;
 	return (
+		<>
 		<main>
 			<PageHero
 				eyebrow="Team integrations"
@@ -1309,6 +1319,8 @@ function TeamIntegrationsPage() {
 				</Card>
 			</section>
 		</main>
+		<Footer />
+		</>
 	);
 }
 
