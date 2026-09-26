@@ -1,6 +1,6 @@
 import { Button, TextArea } from "@heroui/react";
 import { ArrowLeft, Heart, MessageCircle, Pencil, Reply, Send, Sparkles, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent, PointerEvent, ReactNode } from "react";
 import { UserAvatar } from "../../components/UserAvatar";
 
@@ -115,7 +115,6 @@ export function ArtefactComments({
 	const [threadId, setThreadId] = useState<string>();
 	const [body, setBody] = useState("");
 	const [error, setError] = useState("");
-	const [isPosting, setPosting] = useState(false);
 	const [isDrafting, setDrafting] = useState(false);
 	const hoverTimeout = useRef<number | undefined>(undefined);
 	const pendingReactions = useRef(new Set<string>());
@@ -165,14 +164,6 @@ export function ArtefactComments({
 		return () => window.cancelAnimationFrame(frame);
 	}, [draftAnchor]);
 
-	const loadComments = useCallback(async () => {
-		const response = await commentApi(artefactId, "", undefined, isShared && !canComment);
-		if (!response.ok) throw new Error("Could not load comments.");
-		const next = (await response.json()) as Comment[];
-		setComments(next);
-		onCountChange(next.length);
-	}, [artefactId, isShared, canComment, onCountChange]);
-
 	useEffect(() => {
 		let current = true;
 		commentApi(artefactId, "", undefined, isShared && !canComment)
@@ -183,7 +174,6 @@ export function ArtefactComments({
 			.then((next) => {
 				if (!current) return;
 				setComments(next);
-				onCountChange(next.length);
 			})
 			.catch(() => {
 				if (current) setError("Could not load comments.");
@@ -191,7 +181,9 @@ export function ArtefactComments({
 		return () => {
 			current = false;
 		};
-	}, [artefactId, isShared, canComment, onCountChange]);
+	}, [artefactId, isShared, canComment]);
+
+	useEffect(() => onCountChange(comments.length), [comments.length, onCountChange]);
 
 	function point(event: PointerEvent<HTMLDivElement>) {
 		const rect = surfaceRef.current!.getBoundingClientRect();
@@ -368,30 +360,50 @@ export function ArtefactComments({
 		setAdjustingAnchor(undefined);
 	}
 
-	async function post(event: FormEvent<HTMLFormElement>) {
+	function post(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!canComment || !body.trim() || isPosting) return;
-		setPosting(true);
+		const nextBody = body.trim();
+		if (!canComment || !nextBody) return;
+		const parentId = threadId ?? null;
+		const anchor = parentId ? null : draftAnchor ?? null;
+		if (!parentId && !anchor) return;
+		const pendingId = `pending-${crypto.randomUUID()}`;
+		const pending: Comment = {
+			id: pendingId,
+			parentId,
+			body: nextBody,
+			anchor,
+			createdAt: new Date().toISOString(),
+			author: { id: userId, name: "You", image: null },
+			reactions: [],
+		};
+		setComments((current) => [...current, pending]);
+		setBody("");
+		setDraftAnchor(undefined);
+		if (!parentId) setThreadId(pendingId);
 		setError("");
-		try {
-			const response = await commentApi(artefactId, "", {
+		void commentApi(artefactId, "", {
 				method: "POST",
 				body: JSON.stringify({
-					body: body.trim(),
-					...(threadId ? { parentId: threadId } : { anchor: draftAnchor }),
+					body: nextBody,
+					...(parentId ? { parentId } : { anchor }),
 				}),
-			}, isShared && !canComment);
-			if (!response.ok) throw new Error("Could not post your comment.");
-			const result = (await response.json()) as { id: string };
-			setBody("");
-			if (!threadId) setThreadId(result.id);
-			setDraftAnchor(undefined);
-			await loadComments();
-		} catch (error) {
-			setError(error instanceof Error ? error.message : "Could not post your comment.");
-		} finally {
-			setPosting(false);
-		}
+			}, isShared && !canComment)
+			.then(async (response) => {
+				if (!response.ok) throw new Error("Could not post your comment.");
+				return (await response.json()) as Comment;
+			})
+			.then((comment) => {
+				setComments((current) => current.map((item) => item.id === pendingId ? comment : item));
+				if (!parentId) setThreadId(comment.id);
+			})
+			.catch((error) => {
+				setComments((current) => current.filter((item) => item.id !== pendingId));
+				setBody(nextBody);
+				if (parentId) setThreadId(parentId);
+				else setDraftAnchor(anchor!);
+				setError(error instanceof Error ? error.message : "Could not post your comment.");
+			});
 	}
 
 	async function react(commentId: string, emoji: string) {
@@ -399,7 +411,7 @@ export function ArtefactComments({
 		const key = `${commentId}:${emoji}`;
 		if (pendingReactions.current.has(key)) return;
 		pendingReactions.current.add(key);
-		const previous = comments;
+		const previous = comments.find((comment) => comment.id === commentId)?.reactions;
 		setComments((current) => current.map((comment) => {
 			if (comment.id !== commentId) return comment;
 			const reaction = comment.reactions.find((item) => item.emoji === emoji);
@@ -418,7 +430,7 @@ export function ArtefactComments({
 			}, isShared && !canComment);
 			if (!response.ok) throw new Error("Could not add reaction.");
 		} catch (error) {
-			setComments(previous);
+			setComments((current) => current.map((comment) => comment.id === commentId && previous ? { ...comment, reactions: previous } : comment));
 			setError(error instanceof Error ? error.message : "Could not add reaction.");
 		} finally {
 			pendingReactions.current.delete(key);
@@ -589,8 +601,8 @@ export function ArtefactComments({
 							/>
 							{error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
 							<div className="mt-2 flex justify-end">
-								<Button type="submit" size="sm" isDisabled={!body.trim() || isPosting}>
-									{isPosting ? "Posting…" : "Post"}<Send size={14} />
+								<Button type="submit" size="sm" isDisabled={!body.trim()}>
+									Post<Send size={14} />
 								</Button>
 							</div>
 						</form>
@@ -632,16 +644,16 @@ export function ArtefactComments({
 							</div>
 						)}
 						{compose ? (
-							thread.map((comment) => (
-								<CommentCard
-									key={comment.id}
-									comment={comment}
-									onReact={react}
-									canComment={canComment}
-									canEdit={canComment && comment.author.id === userId}
-									onEdit={editComment}
-								/>
-							))
+							<>
+								<CommentCard comment={selected!} onReact={react} canComment={canComment} canEdit={canComment && selected!.author.id === userId} onEdit={editComment} />
+								{thread.length > 1 && (
+									<div className="relative ml-5 border-l border-border pl-4">
+										{thread.filter((comment) => comment.id !== selected!.id).map((comment) => (
+											<CommentCard key={comment.id} comment={comment} connected onReact={react} canComment={canComment} canEdit={canComment && comment.author.id === userId} onEdit={editComment} />
+										))}
+									</div>
+								)}
+							</>
 						) : roots.length ? (
 							roots.map((comment) => {
 								const replyCount = comments.filter((reply) => reply.parentId === comment.id).length;
@@ -687,7 +699,7 @@ export function ArtefactComments({
 							{error && <p role="alert" className="text-xs text-danger">{error}</p>}
 							<div className="flex items-center justify-between gap-2">
 								{selected && isOwner ? <Button type="button" variant="ghost" size="sm" isDisabled={isDrafting} onPress={() => void draftReply()}>{isDrafting ? "Drafting…" : <><Sparkles size={14} /> Draft with AI</>}</Button> : <span />}
-								<Button type="submit" size="sm" isDisabled={!body.trim() || isPosting}>{isPosting ? "Posting…" : "Post"}<Send size={14} /></Button>
+								<Button type="submit" size="sm" isDisabled={!body.trim()}>Post<Send size={14} /></Button>
 							</div>
 						</form>
 					)}
@@ -699,8 +711,9 @@ export function ArtefactComments({
 }
 
 
-function CommentCard({ comment, onReact, canComment, canEdit, onEdit }: {
+function CommentCard({ comment, connected = false, onReact, canComment, canEdit, onEdit }: {
 	comment: Comment;
+	connected?: boolean;
 	onReact: (commentId: string, emoji: string) => void;
 	canComment: boolean;
 	canEdit: boolean;
@@ -719,7 +732,7 @@ function CommentCard({ comment, onReact, canComment, canEdit, onEdit }: {
 	}
 
 	return (
-		<article className={`mb-3 rounded-xl border border-border p-3 ${comment.parentId ? "ml-5" : ""}`}>
+		<article className={`relative mb-3 rounded-xl border border-border p-3 ${connected ? "last:mb-0 before:absolute before:-left-4 before:top-6 before:h-px before:w-4 before:bg-border" : ""}`}>
 			<div className="flex items-center gap-2">
 				<UserAvatar image={comment.author.image} name={comment.author.name || "Teammate"} size="sm" />
 				<span className="min-w-0 flex-1 truncate text-sm font-medium">{comment.author.name || "Teammate"}</span>

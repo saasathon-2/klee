@@ -23,6 +23,7 @@ import { ServiceOwnership } from "./blocks/ServiceOwnership";
 import { SoftwareDiagram } from "./blocks/SoftwareDiagram";
 import { SprintTimeline } from "./blocks/SprintTimeline";
 import { TaskList } from "./blocks/TaskList";
+import { TwoColumn } from "./blocks/TwoColumn";
 import { WorkItemBoard } from "./blocks/WorkItemBoard";
 import { DeveloperPage, GenericPage } from "./categories/CategoryPage";
 import { ArtefactPage } from "./page/ArtefactPage";
@@ -76,6 +77,7 @@ export const templateDefinitions: Record<
 	"evidence-table": definition(EvidenceTable),
 	"activity-trend": definition(ActivityTrend),
 	"handoff-brief": definition(HandoffBrief),
+	"two-column": definition(TwoColumn),
 };
 
 function selectionInfo(definition: TemplateDefinition): TemplateSelectionInfo {

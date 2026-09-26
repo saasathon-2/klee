@@ -14,7 +14,8 @@ export type ExamplePrompt = {
 		| "release-readiness"
 		| "incident-review"
 		| "architecture-decision"
-		| "on-call-handoff";
+		| "on-call-handoff"
+		| "two-column";
 	label: string;
 	prompt: string;
 };
@@ -220,5 +221,21 @@ Done: rolled back gateway 1.8.3 (error rate normal again); filed INC-311 follow-
 In flight: canary of v1.9.0 at 10% traffic, owned by Tom W; key store load test, owned by Data.
 Watch: key store connection pool at 82% at peak; release notes still waiting for product approval.
 Next for Ana: run the 14:00 error budget gate; page Data if the pool exceeds 90%; promote the canary to 50% only if the gate passes.`,
+	},
+	{
+		id: "two-column",
+		label: "Chart beside table",
+		prompt: `Show last week's deploy failures in a two-column layout: an activity-trend chart of failures per day on the left and an evidence-table of the failed deploys on the right, side by side in one row. This is an example of the two-column layout.
+
+Failed production deploys per day: 2026-09-20 1, 2026-09-21 0, 2026-09-22 2, 2026-09-23 0, 2026-09-24 3, 2026-09-25 1, 2026-09-26 0.
+
+Failed deploys:
+2026-09-20 | auth-gateway 1.8.1 | Health check timeout | Rolled back
+2026-09-22 | key-store 2.4.0 | Migration lock held | Retried
+2026-09-22 | login-service 3.1.2 | Missing secret | Rolled back
+2026-09-24 | auth-gateway 1.8.3 | 5xx spike in eu-west | Rolled back
+2026-09-24 | auth-gateway 1.8.3 | 5xx spike in us-east | Rolled back
+2026-09-24 | billing-api 5.0.0 | Canary error budget | Halted
+2026-09-25 | key-store 2.4.1 | Disk pressure | Retried`,
 	},
 ];
