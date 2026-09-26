@@ -22,6 +22,9 @@ export const auth = betterAuth({
 		accountLinking: {
 			enabled: true,
 			trustedProviders: ["google", "github"],
+			// A GitHub identity is used for organisation membership and may use a
+			// different (for example, work) email from the Klee login.
+			allowDifferentEmails: true,
 			// Klee doesn't send verification emails, so password accounts are never
 			// verified. Let Google/GitHub (which verify the email) sign straight in.
 			requireLocalEmailVerified: false,
