@@ -48,6 +48,7 @@ import { signOut, useSession } from "../lib/auth-client";
 import { KleeIcon, KleeLogo } from "../components/KleeLogo";
 import { UserAvatar } from "../components/UserAvatar";
 import { LinkChips } from "../components/LinkChips";
+import { PageLoader } from "../components/PageLoader";
 import { takeLinkPaste } from "../lib/links";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import { useLiveStatus } from "../artefacts/templates/page/liveStatus";
@@ -162,6 +163,7 @@ export function Artefacts() {
 	const isIntegrations = panel === "integrations";
 	const isOrganisations = panel === "organisations";
 	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
+	const [artefactsLoaded, setArtefactsLoaded] = useState(false);
 	const [loaded, setLoaded] = useState<{
 		path: string;
 		artefact: Artefact;
@@ -249,7 +251,8 @@ export function Artefacts() {
 				response.ok ? response.json() : Promise.reject(),
 			)
 			.then(setArtefacts)
-			.catch(() => setError("Could not load artefacts."));
+			.catch(() => setError("Could not load artefacts."))
+			.finally(() => setArtefactsLoaded(true));
 	}, [isShared, viewerId]);
 	useEffect(() => {
 		if (!artefactPath || loaded?.path === artefactPath) return;
@@ -564,9 +567,7 @@ export function Artefacts() {
 
 	if (isPending && !isShared)
 		return (
-			<main className="grid min-h-screen place-items-center">
-				<span className="text-sm text-muted">Loading</span>
-			</main>
+			<PageLoader />
 		);
 	if (!isShared && !session?.user)
 		return <Navigate to="/?auth=signin" replace />;
@@ -657,6 +658,7 @@ export function Artefacts() {
 								</div>
 					</div>
 				)}
+				{!current && !notShared && !error && <ArtefactSkeleton />}
 				{current &&
 					(isPreview ? (
 						<ArtefactBody
@@ -705,6 +707,7 @@ export function Artefacts() {
 		<WorkspaceSidebar
 			inDrawer={!isDesktop}
 			artefacts={artefacts}
+			isLoadingArtefacts={!artefactsLoaded}
 			folders={folders}
 			onCreateFolder={createFolder}
 			onRenameFolder={renameFolder}
@@ -928,6 +931,7 @@ export function Artefacts() {
 function WorkspaceSidebar({
 	inDrawer = false,
 	artefacts,
+	isLoadingArtefacts,
 	folders,
 	onCreateFolder,
 	onRenameFolder,
@@ -946,6 +950,7 @@ function WorkspaceSidebar({
 	/** Fills the phone drawer instead of sitting beside the page. */
 	inDrawer?: boolean;
 	artefacts: Artefact[];
+	isLoadingArtefacts: boolean;
 	folders: Folder[];
 	onCreateFolder: (name: string) => Promise<unknown>;
 	onRenameFolder: (id: string, name: string) => Promise<unknown>;
@@ -1020,6 +1025,7 @@ function WorkspaceSidebar({
 					description: artefactDescription(artefact),
 					icon: artefactIcon(artefact),
 				}))}
+				isLoading={isLoadingArtefacts}
 				folders={folders}
 				selectedId={selectedId}
 				onOpen={onOpenArtefact}

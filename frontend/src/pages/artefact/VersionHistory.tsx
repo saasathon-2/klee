@@ -1,4 +1,4 @@
-import { Card, Chip, Label, Paragraph, Separator, Slider } from "@heroui/react";
+import { Card, Chip, Label, Paragraph, Separator, Skeleton, Slider } from "@heroui/react";
 import { ArrowRight } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { ArtefactDocument } from "../../artefacts/model";
@@ -70,7 +70,13 @@ export function VersionHistory({
 	}
 
 	if (error) return <Paragraph size="sm" className="text-danger">{error}</Paragraph>;
-	if (!versions) return <Paragraph size="sm" color="muted">Loading history…</Paragraph>;
+	if (!versions)
+		return (
+			<div role="status" aria-label="Loading history" className="space-y-3">
+				<Skeleton animationType="pulse" className="h-4 w-1/3 rounded" />
+				<Skeleton animationType="pulse" className="h-2 w-full rounded-full" />
+			</div>
+		);
 	const current = versions[selected - 1];
 	const source = sources[current.source];
 
