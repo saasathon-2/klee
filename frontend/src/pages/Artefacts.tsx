@@ -342,8 +342,15 @@ export function Artefacts() {
 			}
 			if (!artefact) throw new Error("create incomplete");
 			const path = `/artefacts/${artefact.id}`;
-			const ownedArtefact = { ...artefact, isOwner: true, permission: "edit" as const };
-			setArtefacts((currentArtefacts) => [ownedArtefact, ...currentArtefacts]);
+			const ownedArtefact = {
+				...artefact,
+				isOwner: true,
+				permission: "edit" as const,
+			};
+			setArtefacts((currentArtefacts) => [
+				ownedArtefact,
+				...currentArtefacts,
+			]);
 			setLoaded({ path, artefact: ownedArtefact });
 			setPrompt("");
 			navigate(`/?artefact=${artefact.id}`);
@@ -464,7 +471,11 @@ export function Artefacts() {
 	function setShared(isShared: boolean) {
 		if (!current) return;
 		setLoaded({ path: artefactPath!, artefact: { ...current, isShared } });
-		setArtefacts((items) => items.map((item) => item.id === current.id ? { ...item, isShared } : item));
+		setArtefacts((items) =>
+			items.map((item) =>
+				item.id === current.id ? { ...item, isShared } : item,
+			),
+		);
 	}
 	function updateCurrent(update: Partial<Artefact>) {
 		if (!current) return;
@@ -551,63 +562,63 @@ export function Artefacts() {
 				)}
 				{current && !isPreview && (
 					<div className="fixed inset-x-0 top-2 z-10 flex items-center justify-between px-4">
-								<Button
-									aria-label="Artefact home"
-									variant="ghost"
-									size="sm"
-									className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-									onPress={() => navigate("/")}
-								>
-									<House size={15} />
-									Artefact home
-								</Button>
-								<div className="flex items-center gap-2">
-									<Button
-										aria-label="Copy artefact link"
-										variant="ghost"
-										size="sm"
-										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-										onPress={() =>
-											void navigator.clipboard
-												.writeText(
-													`${window.location.origin}/artefacts/shared/${current.id}`,
-												)
-												.then(() => setCopiedSharedLinkId(current.id))
-												.catch(() =>
-													setError("Could not copy the artefact link."),
-												)
-										}
-									>
-										{copiedSharedLinkId === current.id ? (
-											<Check size={15} />
-										) : (
-											<Copy size={15} />
-										)}
-										{copiedSharedLinkId === current.id
-											? "Link copied"
-											: "Copy link"}
-									</Button>
-									<Button
-										aria-label={`Comments, ${sharedCommentCount}`}
-										variant={
-											sharedCommentsOpen
-												? "secondary"
-												: "ghost"
-										}
-										size="sm"
-										className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
-										onPress={() =>
-											setSharedCommentsOpen(
-												!sharedCommentsOpen,
-											)
-										}
-									>
-										<MessageCircle size={15} />
-										Comments
-										{sharedCommentCount > 0 &&
-											` ${sharedCommentCount}`}
-									</Button>
-								</div>
+						<Button
+							aria-label="Artefact home"
+							variant="ghost"
+							size="sm"
+							className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+							onPress={() => navigate("/")}
+						>
+							<House size={15} />
+							Artefact home
+						</Button>
+						<div className="flex items-center gap-2">
+							<Button
+								aria-label="Copy artefact link"
+								variant="ghost"
+								size="sm"
+								className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+								onPress={() =>
+									void navigator.clipboard
+										.writeText(
+											`${window.location.origin}/artefacts/shared/${current.id}`,
+										)
+										.then(() =>
+											setCopiedSharedLinkId(current.id),
+										)
+										.catch(() =>
+											setError(
+												"Could not copy the artefact link.",
+											),
+										)
+								}
+							>
+								{copiedSharedLinkId === current.id ? (
+									<Check size={15} />
+								) : (
+									<Copy size={15} />
+								)}
+								{copiedSharedLinkId === current.id
+									? "Link copied"
+									: "Copy link"}
+							</Button>
+							<Button
+								aria-label={`Comments, ${sharedCommentCount}`}
+								variant={
+									sharedCommentsOpen ? "secondary" : "ghost"
+								}
+								size="sm"
+								className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
+								onPress={() =>
+									setSharedCommentsOpen(!sharedCommentsOpen)
+								}
+							>
+								<MessageCircle size={15} />
+								Comments
+								{sharedCommentCount > 0 &&
+									` ${sharedCommentCount}`}
+							</Button>
+						</div>
 					</div>
 				)}
 				{current &&
@@ -616,27 +627,32 @@ export function Artefacts() {
 							artefact={current}
 							canInteract={false}
 							edgeToEdge
+							fillViewport
 							compactHeader
 						/>
 					) : (
 						<ArtefactComments
-								key={current.id}
-								artefactId={current.id}
-								isOwner={currentSharedAccess?.isOwner ?? false}
-								userId={session?.user?.id ?? ""}
-								isShared
-								canComment={currentSharedAccess?.permission === "comment" || currentSharedAccess?.permission === "edit"}
-								isOpen={sharedCommentsOpen}
-								onOpenChange={setSharedCommentsOpen}
-								onCountChange={setSharedCommentCount}
-							>
-								<ArtefactBody
-									artefact={current}
-									canInteract={false}
-									edgeToEdge
-									compactHeader={isPreview}
-								/>
-							</ArtefactComments>
+							key={current.id}
+							artefactId={current.id}
+							isOwner={currentSharedAccess?.isOwner ?? false}
+							userId={session?.user?.id ?? ""}
+							isShared
+							canComment={
+								currentSharedAccess?.permission === "comment" ||
+								currentSharedAccess?.permission === "edit"
+							}
+							isOpen={sharedCommentsOpen}
+							onOpenChange={setSharedCommentsOpen}
+							onCountChange={setSharedCommentCount}
+						>
+							<ArtefactBody
+								artefact={current}
+								canInteract={false}
+								edgeToEdge
+								fillViewport
+								compactHeader={isPreview}
+							/>
+						</ArtefactComments>
 					))}
 			</main>
 		);
@@ -715,93 +731,91 @@ export function Artefacts() {
 					</Button>
 					<ThemeToggle className="ml-auto" />
 				</header>
-					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
-						<div className="mx-auto w-full max-w-2xl">
-							<div className="mb-8 text-center">
-								<KleeLogo className="mx-auto mb-4 size-16" />
-								<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-									Good morning,{" "}
-									{user.name?.split(" ")[0] || "there"}
-								</h1>
-							</div>
-							<form onSubmit={create} className="w-full">
-								<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
-									<TextArea
-										aria-label="Artefact prompt"
-										variant="secondary"
-										rows={3}
-										value={prompt}
-										onChange={(event) =>
-											setPrompt(event.target.value)
-										}
-										placeholder="What would you like to make? Paste a PR, issue, or a question…"
-										className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
-									/>
-									<Toolbar
-										aria-label="Create artefact controls"
-										className="flex w-full justify-end px-1 pt-1"
-									>
-										<Button
-											aria-label={
-												isCreating
-													? "Generating artefact"
-													: "Create artefact"
-											}
-											type="submit"
-											className="size-9 min-w-9 rounded-full p-0"
-											isDisabled={
-												!prompt.trim() || isCreating
-											}
-										>
-											{isCreating ? (
-												"…"
-											) : (
-												<ArrowUp size={17} />
-											)}
-										</Button>
-									</Toolbar>
-								</Surface>
-							</form>
-							<div className="mt-5 flex justify-center">
-								<Button
-									variant="ghost"
-									className="h-auto max-w-full rounded-xl justify-center border border-border bg-surface px-4 py-3 hover:bg-surface-secondary"
-									onPress={() => navigate("/?panel=integrations")}
+				<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
+					<div className="mx-auto w-full max-w-2xl">
+						<div className="mb-8 text-center">
+							<KleeLogo className="mx-auto mb-4 size-16" />
+							<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+								Good morning,{" "}
+								{user.name?.split(" ")[0] || "there"}
+							</h1>
+						</div>
+						<form onSubmit={create} className="w-full">
+							<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
+								<TextArea
+									aria-label="Artefact prompt"
+									variant="secondary"
+									rows={3}
+									value={prompt}
+									onChange={(event) =>
+										setPrompt(event.target.value)
+									}
+									placeholder="What would you like to make? Paste a PR, issue, or a question…"
+									className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
+								/>
+								<Toolbar
+									aria-label="Create artefact controls"
+									className="flex w-full justify-end px-1 pt-1"
 								>
-									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
-										<Plug size={16} />
-									</span>
-									<span>
-										<span className="block text-sm font-medium">
-											Connect your apps
-										</span>
-										<span className="block text-xs text-muted">
-											Bring in context from GitHub and
-											manage access in one place.
-										</span>
-									</span>
-								</Button>
-							</div>
-							<div className="mt-4 flex flex-wrap justify-center gap-2">
-								{starterPrompts.map((template) => (
 									<Button
-										key={template.id}
-										size="sm"
-										variant="outline"
-										className="rounded-full"
-										onPress={() =>
-											setPrompt(template.prompt)
+										aria-label={
+											isCreating
+												? "Generating artefact"
+												: "Create artefact"
+										}
+										type="submit"
+										className="size-9 min-w-9 rounded-xl p-0"
+										isDisabled={
+											!prompt.trim() || isCreating
 										}
 									>
-										{template.id === "god-prompt" && (
-											<BrainCog size={15} />
+										{isCreating ? (
+											"…"
+										) : (
+											<ArrowUp size={17} />
 										)}
-										{template.label}
 									</Button>
-								))}
-							</div>
+								</Toolbar>
+							</Surface>
+						</form>
+						<div className="mt-5 flex justify-center">
+							<Button
+								variant="ghost"
+								className="h-auto max-w-full rounded-xl justify-center border border-border bg-surface px-4 py-3 hover:bg-surface-secondary"
+								onPress={() => navigate("/?panel=integrations")}
+							>
+								<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
+									<Plug size={16} />
+								</span>
+								<span>
+									<span className="block text-sm font-medium">
+										Connect your apps
+									</span>
+									<span className="block text-xs text-muted">
+										Bring in context from GitHub and manage
+										access in one place.
+									</span>
+								</span>
+							</Button>
+						</div>
+						<div className="mt-4 flex flex-wrap justify-center gap-2">
+							{starterPrompts.map((template) => (
+								<Button
+									key={template.id}
+									size="sm"
+									variant="outline"
+									className="rounded-full"
+									onPress={() => setPrompt(template.prompt)}
+								>
+									{template.id === "god-prompt" && (
+										<BrainCog size={15} />
+									)}
+									{template.label}
+								</Button>
+							))}
 						</div>
 					</div>
+				</div>
 				{error && (
 					<p className="absolute bottom-8 left-8 text-sm text-danger">
 						{error}
@@ -810,7 +824,7 @@ export function Artefacts() {
 			</section>
 			{(current || isCreating || isLoadingArtefact) && (
 				<ArtefactModal
-					key={current?.id ?? (isCreating ? "creating" : "loading")}
+					key={artefactPath ?? (isCreating ? "creating" : "loading")}
 					artefact={current}
 					isCreating={isCreating}
 					isLoading={isLoadingArtefact}
@@ -841,7 +855,12 @@ export function Artefacts() {
 				<OrganisationsModal onClose={() => navigate("/")} />
 			)}
 			{shareOpen && current?.isOwner && (
-				<ShareDialog artefactId={current.id} isShared={Boolean(current.isShared)} onSharingChange={setShared} onClose={() => setShareOpen(false)} />
+				<ShareDialog
+					artefactId={current.id}
+					isShared={Boolean(current.isShared)}
+					onSharingChange={setShared}
+					onClose={() => setShareOpen(false)}
+				/>
 			)}
 		</Surface>
 	);
@@ -904,8 +923,20 @@ function WorkspaceSidebar({
 			</Link>
 			<ListBox
 				aria-label="Workspace navigation"
-				selectedKeys={isIntegrations ? ["integrations"] : isOrganisations ? ["organisations"] : []}
-				onAction={(key) => key === "integrations" ? onIntegrations() : key === "organisations" ? onOrganisations() : onCreate()}
+				selectedKeys={
+					isIntegrations
+						? ["integrations"]
+						: isOrganisations
+							? ["organisations"]
+							: []
+				}
+				onAction={(key) =>
+					key === "integrations"
+						? onIntegrations()
+						: key === "organisations"
+							? onOrganisations()
+							: onCreate()
+				}
 			>
 				<ListBox.Item id="new" textValue="New artefact">
 					<Plus size={18} />
@@ -1060,7 +1091,12 @@ function ArtefactModal({
 		JSON.stringify(draft) !== JSON.stringify(artefact?.content);
 	const historyOpen = showHistory && !isEditing;
 	const canEdit = artefact?.permission === "edit";
-	const canComment = Boolean(artefact && !isEditing && !historyOpen && (canEdit || artefact.permission === "comment"));
+	const canComment = Boolean(
+		artefact &&
+		!isEditing &&
+		!historyOpen &&
+		(canEdit || artefact.permission === "comment"),
+	);
 	const breadcrumb =
 		folders.find((folder) => folder.id === artefact?.folderId)?.name ??
 		"Artefacts";
@@ -1070,12 +1106,14 @@ function ArtefactModal({
 			document={draft ?? (historyOpen ? pastVersion : undefined)}
 			canInteract={canEdit}
 			edgeToEdge
+			fillViewport
 			onAction={setFollowUp}
 			isEditing={isEditing}
 			onEdit={(nodeId, path, value) =>
 				setDraft(
 					(current) =>
-						current && withEditedValue(current, nodeId, path, value),
+						current &&
+						withEditedValue(current, nodeId, path, value),
 				)
 			}
 		/>
@@ -1116,12 +1154,10 @@ function ArtefactModal({
 					size="cover"
 				>
 					<Modal.Dialog
-							aria-label={
-								artefact
-									? artefactHeading(artefact)
-									: loadingLabel
+						aria-label={
+							artefact ? artefactHeading(artefact) : loadingLabel
 						}
-						className="w-full max-w-[1100px] overflow-hidden rounded-2xl p-0"
+						className="relative w-full max-w-[1100px] overflow-hidden rounded-2xl p-0"
 					>
 						{/* Phones: title and close control on top, the other actions on a second row. */}
 						<Modal.Header className="z-10 shrink-0 flex-row flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-surface px-4 py-3 sm:flex-nowrap sm:px-6">
@@ -1239,7 +1275,9 @@ function ArtefactModal({
 										aria-label="Open shared artefact"
 										variant="ghost"
 										className="size-8 min-w-8 p-0"
-										onPress={() => onOpenShared(artefact.id)}
+										onPress={() =>
+											onOpenShared(artefact.id)
+										}
 									>
 										<ExternalLink size={17} />
 									</Button>
@@ -1274,17 +1312,17 @@ function ArtefactModal({
 						)}
 						<Modal.Body className="m-0 flex min-h-0 flex-1 bg-surface p-0">
 							{artefact ? (
-									<ArtefactComments
-										artefactId={artefact.id}
-										isOwner={artefact.isOwner ?? false}
-										userId={userId}
-										canComment={canComment}
-										isOpen={commentsOpen}
-										onOpenChange={setCommentsOpen}
-										onCountChange={setCommentCount}
-									>
-										{renderedArtefact}
-									</ArtefactComments>
+								<ArtefactComments
+									artefactId={artefact.id}
+									isOwner={artefact.isOwner ?? false}
+									userId={userId}
+									canComment={canComment}
+									isOpen={commentsOpen}
+									onOpenChange={setCommentsOpen}
+									onCountChange={setCommentCount}
+								>
+									{renderedArtefact}
+								</ArtefactComments>
 							) : (
 								<div className="min-h-0 flex-1 overflow-auto">
 									<ArtefactSkeleton>
@@ -1292,13 +1330,21 @@ function ArtefactModal({
 											<p role="status">
 												{isCreating ? (
 													<>
-														{generationStatus || "Starting your artefact…"}
+														{generationStatus ||
+															"Starting your artefact…"}
 														<span
 															className="ml-2 text-xs tabular-nums"
 															aria-hidden="true"
 														>
-															{Math.floor(generationSeconds / 60)}:
-															{String(generationSeconds % 60).padStart(2, "0")}
+															{Math.floor(
+																generationSeconds /
+																	60,
+															)}
+															:
+															{String(
+																generationSeconds %
+																	60,
+															).padStart(2, "0")}
 														</span>
 													</>
 												) : (
@@ -1311,7 +1357,11 @@ function ArtefactModal({
 													aria-label="AI commentary"
 													aria-live="off"
 												>
-													<GenerationCommentary text={generationCommentary} />
+													<GenerationCommentary
+														text={
+															generationCommentary
+														}
+													/>
 												</p>
 											)}
 										</div>
@@ -1378,71 +1428,81 @@ function ArtefactModal({
 								</Toolbar>
 							</Modal.Footer>
 						)}
-						{artefact && !isCreating && !isEditing && canEdit && (
-							<Modal.Footer className="z-10 m-0 shrink-0 border-t border-border bg-surface px-4 py-3 sm:px-6">
-								<div className="relative w-full">
+						{artefact &&
+							!isCreating &&
+							!isEditing &&
+							canEdit &&
+							!commentsOpen && (
+								<div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 px-4 sm:px-6">
+								<div className="pointer-events-auto relative mx-auto w-[70%] max-sm:w-full">
 									<form
 										onSubmit={onSubmit}
-										className={`flex w-full items-center gap-2 rounded-full border border-border bg-field p-1.5 pl-4 transition-opacity duration-300 ${isRevising ? "opacity-0" : "opacity-100"}`}
-									>
-										<Input
-											aria-label="Refine artefact"
-											variant="secondary"
-											className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
-											value={followUp}
-											disabled={pastVersion !== undefined}
-											onChange={(event) =>
-												setFollowUp(event.target.value)
-											}
-											placeholder={
-												pastVersion
-													? "Return to the latest version to make changes"
-													: "Describe what to change"
-											}
-										/>
-										<Button
-											aria-label={
-												isRevising
-													? "Refining artefact"
-													: "Refine artefact"
-											}
-											type="submit"
-											className="size-10 min-w-10 rounded-full p-0"
-											isDisabled={
-												!followUp.trim() ||
-												isRevising ||
-												pastVersion !== undefined
-											}
+										className={`flex w-full items-center gap-2 rounded-xl border-2 border-border bg-surface-tertiary p-1.5 pl-4 shadow-2xl ring-1 ring-foreground/10 transition-opacity duration-300 ${isRevising ? "opacity-0" : "opacity-100"}`}
 										>
-											{isRevising ? (
-												"…"
-											) : (
-												<ArrowUp size={17} />
-											)}
-										</Button>
-									</form>
-									{isRevising && (
-										<p
-											className="absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap text-sm text-muted"
-											aria-label="AI commentary"
-											aria-live="off"
-										>
-											{generationCommentary ? (
-												<GenerationCommentary
-													text={generationCommentary}
-												/>
-											) : (
-												<span
-													className={`transition-opacity duration-200 motion-reduce:transition-none ${isCommentaryStarting ? "opacity-0" : "opacity-100"}`}
-												>
-													<GenerationCommentary text="Refining artefact…" />
-												</span>
-											)}
-										</p>
-									)}
+											<Input
+												aria-label="Refine artefact"
+												variant="secondary"
+												className="h-9 flex-1 border-0 bg-transparent px-0 shadow-none outline-none focus-visible:ring-0"
+												value={followUp}
+												disabled={
+													pastVersion !== undefined
+												}
+												onChange={(event) =>
+													setFollowUp(
+														event.target.value,
+													)
+												}
+												placeholder={
+													pastVersion
+														? "Return to the latest version to make changes"
+														: "Describe what to change"
+												}
+											/>
+											<Button
+												aria-label={
+													isRevising
+														? "Refining artefact"
+														: "Refine artefact"
+												}
+												type="submit"
+												className="size-10 min-w-10 rounded-xl p-0"
+												isDisabled={
+													!followUp.trim() ||
+													isRevising ||
+													pastVersion !== undefined
+												}
+											>
+												{isRevising ? (
+													"…"
+												) : (
+													<ArrowUp size={17} />
+												)}
+											</Button>
+										</form>
+										{isRevising && (
+											<p
+												className="absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap text-sm text-muted"
+												aria-label="AI commentary"
+												aria-live="off"
+											>
+												{generationCommentary ? (
+													<GenerationCommentary
+														text={
+															generationCommentary
+														}
+													/>
+												) : (
+													<span
+														className={`transition-opacity duration-200 motion-reduce:transition-none ${isCommentaryStarting ? "opacity-0" : "opacity-100"}`}
+													>
+														<GenerationCommentary text="Refining artefact…" />
+													</span>
+												)}
+											</p>
+										)}
+									</div>
 								</div>
-							</Modal.Footer>
-						)}
+							)}
 					</Modal.Dialog>
 				</Modal.Container>
 			</Modal.Backdrop>
@@ -1489,6 +1549,7 @@ function ArtefactBody({
 	document: override,
 	canInteract,
 	edgeToEdge = false,
+	fillViewport = false,
 	compactHeader = false,
 	isEditing = false,
 	onAction,
@@ -1499,6 +1560,7 @@ function ArtefactBody({
 	document?: ArtefactDocument;
 	canInteract: boolean;
 	edgeToEdge?: boolean;
+	fillViewport?: boolean;
 	compactHeader?: boolean;
 	isEditing?: boolean;
 	onAction?: (label: string) => void;
@@ -1514,6 +1576,7 @@ function ArtefactBody({
 			createdAt={artefact.createdAt}
 			canInteract={canInteract && !isEditing}
 			edgeToEdge={edgeToEdge}
+			fillViewport={fillViewport}
 			compactHeader={compactHeader}
 			isEditing={isEditing}
 			onAction={onAction}
