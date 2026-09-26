@@ -6,12 +6,13 @@ import {
 	ToggleButtonGroup,
 } from "@heroui/react";
 import { FileCode2 } from "lucide-react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import type { DiffHunk, DiffLine } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { DiffLayoutContext, type DiffLayout } from "../page/diffLayout";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
-type Mode = "split" | "unified";
+type Mode = DiffLayout;
 type NumberedLine = DiffLine & { number: number };
 type UnifiedRow = DiffLine & { oldNumber?: number; newNumber?: number };
 type SplitRow = { old?: NumberedLine; new?: NumberedLine };
@@ -114,15 +115,19 @@ export function CodeDiff({ node, context }: TemplateProps) {
 		hunks: DiffHunk[];
 	};
 	const [mode, setMode] = useState<Mode>("split");
-	const shownMode = mode;
+	// A surrounding story can drive the layout; the toggle then mirrors it.
+	const storyMode = useContext(DiffLayoutContext);
+	const shownMode = storyMode ?? mode;
 	const modeToggle = (
 		<ToggleButtonGroup
-			aria-label="Diff layout"
+			aria-label={storyMode ? "Diff layout, controlled by scrolling" : "Diff layout"}
 			size="sm"
 			selectionMode="single"
 			disallowEmptySelection
 			selectedKeys={[shownMode]}
-			onSelectionChange={(keys) => setMode([...keys][0] as Mode)}
+			onSelectionChange={(keys) => {
+				if (!storyMode) setMode([...keys][0] as Mode);
+			}}
 			className="shrink-0"
 		>
 			<ToggleButton id="split">Split</ToggleButton>
