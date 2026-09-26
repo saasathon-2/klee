@@ -9,8 +9,10 @@ import { DecisionRecord } from "./blocks/DecisionRecord";
 import { DeliveryProgress } from "./blocks/DeliveryProgress";
 import { DeliveryReadiness } from "./blocks/DeliveryReadiness";
 import { DependencyRiskRegister } from "./blocks/DependencyRiskRegister";
+import { DependencyGraph } from "./blocks/DependencyGraph";
 import { EvidenceTable } from "./blocks/EvidenceTable";
 import { GitGraph } from "./blocks/GitGraph";
+import { Flowchart } from "./blocks/Flowchart";
 import { Glue } from "./blocks/Glue";
 import { HandoffBrief } from "./blocks/HandoffBrief";
 import { IncidentTimeline } from "./blocks/IncidentTimeline";
@@ -56,6 +58,8 @@ export const templateDefinitions: Record<
 	"metric-row": definition(MetricRow),
 	"architecture-flow": definition(ArchitectureFlow),
 	"software-diagram": definition(SoftwareDiagram),
+	flowchart: definition(Flowchart),
+	"dependency-graph": definition(DependencyGraph),
 	glue: definition(Glue),
 	"task-list": definition(TaskList),
 	"next-steps": definition(NextSteps),

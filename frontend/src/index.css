@@ -208,3 +208,40 @@ body {
 	border-left-color: color-mix(in oklab, var(--brand) 35%, var(--brand-foreground));
 	color: var(--surface-tertiary-foreground);
 }
+
+[data-theme="dark"] .software-diagram-canvas .flowchart-shape {
+	background: var(--surface-tertiary);
+	fill: var(--surface-tertiary);
+	color: var(--surface-tertiary-foreground);
+}
+
+/* A revision dims the artefact while it works, then flashes the blocks it changed. */
+.artefact-revising {
+	opacity: 0.55;
+	pointer-events: none;
+	transition: opacity 300ms ease-out;
+}
+
+@keyframes artefact-changed {
+	from {
+		background-color: color-mix(in oklab, var(--accent) 16%, transparent);
+	}
+	to {
+		background-color: transparent;
+	}
+}
+
+.artefact-changed {
+	animation: artefact-changed 2.4s ease-out;
+	border-radius: 1rem;
+	scroll-margin-top: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.artefact-revising {
+		transition: none;
+	}
+	.artefact-changed {
+		animation: none;
+	}
+}

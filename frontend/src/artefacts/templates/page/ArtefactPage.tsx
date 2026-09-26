@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { KleeLogo } from "../../../components/KleeLogo";
+import { KleeIcon } from "../../../components/KleeLogo";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 import { Scallop } from "./Scallop";
 
@@ -25,7 +25,7 @@ export function ArtefactPage({ children, context }: TemplateProps) {
 							aria-label="Klee home"
 							className="flex items-center gap-2 font-semibold hover:underline"
 						>
-							<KleeLogo className="size-7" />
+							<KleeIcon className="size-7" />
 							<img src="/klee.svg" alt="" className="h-5 w-auto" />
 						</Link>
 					</div>

@@ -42,7 +42,7 @@ const richDocument = toDocument({
 			{ label: "Risk", value: "Low", detail: "Changes are isolated." },
 		] } },
 		{ template: "next-steps", data: { title: "Next", actions: [
-			{ label: "Share", description: "Send the release brief.", action: "share" },
+			{ label: "Share", description: "Send the release brief.", action: "share", url: null },
 		] } },
 	],
 });

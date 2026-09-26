@@ -4,7 +4,7 @@ import type { Node as XYFlowNode, NodeProps } from "@xyflow/react";
 import type { ChangeState, ImpactNode, SoftwareDiagramEdge } from "../../model";
 import { BlockSection } from "../page/BlockSection";
 import { DiagramCanvas } from "../page/DiagramCanvas";
-import { safeUrl } from "../page/safeUrl";
+import { SourceLink } from "../page/SourceLink";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 const nodeSize = { width: 256, height: 148 };
@@ -24,7 +24,6 @@ const changeState = (state: string) =>
 
 function ImpactNodeCard({ data }: NodeProps<XYFlowNode<ImpactNode, "impact">>) {
 	const state = changeState(data.change);
-	const url = safeUrl(data.url);
 	return (
 		<div
 			role="group"
@@ -33,29 +32,18 @@ function ImpactNodeCard({ data }: NodeProps<XYFlowNode<ImpactNode, "impact">>) {
 			style={{ borderLeftColor: state.edge }}
 		>
 			<Handle type="target" position={Position.Left} className="!border-0 !bg-transparent" />
-			<div className="flex items-start justify-between gap-2">
-				<div className="line-clamp-1 text-base font-semibold leading-6">
-					{url ? (
-						<a
-							className="nodrag nopan underline decoration-muted underline-offset-4 hover:text-accent-text"
-							href={url}
-							target="_blank"
-							rel="noreferrer"
-						>
-							{data.label}
-						</a>
-					) : (
-						data.label
-					)}
+			<SourceLink href={data.url} className="-m-4 flex min-h-0 flex-1 flex-col rounded-xl p-4">
+				<div className="flex items-start justify-between gap-2 pr-4">
+					<div className="line-clamp-1 text-base font-semibold leading-6">{data.label}</div>
+					<Chip size="sm" color={state.color} className="shrink-0">
+						{state.label}
+					</Chip>
 				</div>
-				<Chip size="sm" color={state.color} className="shrink-0">
-					{state.label}
-				</Chip>
-			</div>
-			<div className="mt-2 line-clamp-2 text-sm leading-5 text-muted">{data.detail}</div>
-			{data.owner && (
-				<div className="mt-auto truncate text-xs text-muted">Owner · {data.owner}</div>
-			)}
+				<div className="mt-2 line-clamp-2 text-sm leading-5 text-muted">{data.detail}</div>
+				{data.owner && (
+					<div className="mt-auto truncate text-xs text-muted">Owner · {data.owner}</div>
+				)}
+			</SourceLink>
 			<Handle type="source" position={Position.Right} className="!border-0 !bg-transparent" />
 		</div>
 	);
