@@ -1434,10 +1434,10 @@ function ArtefactModal({
 							canEdit &&
 							!commentsOpen && (
 								<div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 px-4 sm:px-6">
-								<div className="pointer-events-auto relative mx-auto w-[70%] max-sm:w-full">
-									<form
-										onSubmit={onSubmit}
-										className={`flex w-full items-center gap-2 rounded-xl border-2 border-border bg-surface-tertiary p-1.5 pl-4 shadow-2xl ring-1 ring-foreground/10 transition-opacity duration-300 ${isRevising ? "opacity-0" : "opacity-100"}`}
+									<div className="pointer-events-auto relative mx-auto w-[70%] max-sm:w-full">
+										<form
+											onSubmit={onSubmit}
+											className={`flex w-full items-center gap-2 rounded-xl border-2 border-border bg-surface-tertiary p-1.5 pl-4 shadow-2xl ring-1 ring-foreground/10 transition-opacity duration-300 ${isRevising ? "opacity-0" : "opacity-100"}`}
 										>
 											<Input
 												aria-label="Refine artefact"
