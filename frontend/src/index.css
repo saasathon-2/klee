@@ -56,6 +56,96 @@ body {
 	transform: scaleY(-1);
 }
 
+/* Home hero: a small, deliberately irregular Bauhaus composition. */
+.bauhaus-hero {
+	isolation: isolate;
+}
+
+.bauhaus-shapes,
+.bauhaus-shapes > * {
+	pointer-events: none;
+	position: absolute;
+}
+
+.bauhaus-shapes {
+	inset: 0;
+	z-index: 1;
+	overflow: hidden;
+	border-radius: 1.5rem;
+}
+
+.bauhaus-arch {
+	top: 3.5rem;
+	left: clamp(-7rem, -2vw, -2rem);
+	width: clamp(13rem, 23vw, 22rem);
+	aspect-ratio: 1;
+	border: clamp(2.25rem, 4vw, 3.7rem) solid #e54432;
+	border-bottom: 0;
+	border-radius: 999px 999px 0 0;
+	transform: rotate(-12deg);
+	opacity: 0.9;
+}
+
+.bauhaus-bloom {
+	top: clamp(3rem, 7vw, 7rem);
+	right: clamp(1.5rem, 9vw, 10rem);
+	width: clamp(7rem, 13vw, 12rem);
+	aspect-ratio: 1;
+	border: clamp(0.7rem, 1.3vw, 1.2rem) solid #1f5bc5;
+	border-radius: 50%;
+	background: #f7ca3e;
+	box-shadow: inset 0 0 0 clamp(0.8rem, 1.7vw, 1.5rem) #f6f0d7;
+	animation: bauhaus-bloom 9s ease-in-out infinite;
+}
+
+.bauhaus-bloom i {
+	position: absolute;
+	inset: 14%;
+	border: clamp(0.45rem, 0.9vw, 0.8rem) solid #e54432;
+	border-radius: 50%;
+}
+
+.bauhaus-bloom i:nth-child(2) { transform: translate(67%, 7%); border-color: #1f5bc5; }
+.bauhaus-bloom i:nth-child(3) { transform: translate(-7%, 67%); border-color: #e54432; }
+.bauhaus-bloom i:nth-child(4) { transform: translate(67%, 67%); border-color: #f7ca3e; }
+
+.bauhaus-star {
+	right: clamp(-1rem, 3vw, 4rem);
+	top: 24rem;
+	width: clamp(10rem, 15vw, 15rem);
+	transform: rotate(8deg);
+	animation: bauhaus-float 7s ease-in-out infinite;
+}
+
+.bauhaus-dot {
+	top: 20rem;
+	right: clamp(1rem, 2vw, 3rem);
+	width: clamp(1.5rem, 3vw, 2.5rem);
+	aspect-ratio: 1;
+	border-radius: 50%;
+	background: #e54432;
+	box-shadow: -1rem 1rem 0 #f7ca3e;
+}
+
+@keyframes bauhaus-bloom {
+	50% { transform: rotate(12deg) scale(1.06); }
+}
+
+@keyframes bauhaus-float {
+	50% { transform: translateY(-0.8rem) rotate(-4deg); }
+}
+
+@media (max-width: 640px) {
+	.bauhaus-arch { top: 0.75rem; left: -4.5rem; width: 14rem; opacity: 0.72; }
+	.bauhaus-bloom { right: -1rem; top: 4rem; opacity: 0.7; }
+	.bauhaus-star { right: -2rem; top: 24rem; width: 10rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bauhaus-bloom,
+	.bauhaus-star { animation: none; }
+}
+
 /* Hero demo on the landing page: each artefact block rises in the first time
  * it scrolls into view (HeroArtefact marks it with data-revealed). */
 .hero-demo [data-slot="artefact-blocks"] > * {
