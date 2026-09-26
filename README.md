@@ -70,13 +70,14 @@ permissions:
     id-token: write
 
 jobs:
-    klee:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: saasathon-2/integrations/github@main
-              with:
-                  api-url: https://<api-domain>
-                  pull-request: ${{ github.event.pull_request.number }}
+  klee:
+    # List every test, lint, and build job from this workflow here.
+    needs: [test, lint]
+    if: always()
+    uses: saasathon-2/integrations/.github/workflows/klee.yml@main
+    with:
+      api-url: https://<api-domain>
+      pull-request: ${{ github.event.pull_request.number }}
 ```
 
 `api-url` must exactly match `BETTER_AUTH_URL` (without a trailing slash), which is how the API verifies the Action's OIDC audience. The GitHub App needs `Issues: Read and write` permission to post the pull request comment.

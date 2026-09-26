@@ -25,6 +25,8 @@ jobs:
                   MIGRATIONS_BASE_REF: origin/${{ github.base_ref }}
 
     generate-artefact:
+        needs: migration-guard
+        if: always()
         runs-on: ubuntu-latest
         steps:
             - uses: saasathon-2/integrations/github@main
