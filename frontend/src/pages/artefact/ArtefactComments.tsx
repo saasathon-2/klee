@@ -62,6 +62,13 @@ function visibleAnchor(anchor: Anchor, width: number, height: number): Anchor {
 	return { ...anchor, y: anchor.y * scale, height: anchor.height * scale };
 }
 
+function previewPosition(anchor: Anchor, side: "left" | "right", surfaceWidth: number) {
+	const boxLeft = anchor.x * surfaceWidth;
+	const boxRight = (anchor.x + anchor.width) * surfaceWidth;
+	const width = Math.max(0, Math.min(256, side === "left" ? boxLeft : surfaceWidth - boxRight));
+	return { left: side === "left" ? -width : boxRight - boxLeft, width };
+}
+
 function regionStyle(anchor: Anchor, color: string, highlighted = false) {
 	return {
 		...regionBounds(anchor),
@@ -151,7 +158,10 @@ export function ArtefactComments({
 
 	useEffect(() => {
 		if (!draftAnchor) return;
-		const frame = window.requestAnimationFrame(() => draftInputRef.current?.focus());
+		const frame = window.requestAnimationFrame(() => {
+			draftInputRef.current?.focus();
+			draftInputRef.current?.form?.scrollIntoView({ block: "nearest", inline: "nearest" });
+		});
 		return () => window.cancelAnimationFrame(frame);
 	}, [draftAnchor]);
 
@@ -464,6 +474,7 @@ export function ArtefactComments({
 						const color = userColor(comment.author.id);
 						const anchor = visibleAnchor(adjustingAnchor?.id === comment.id ? adjustingAnchor.anchor : comment.anchor!, surfaceSize.width, surfaceSize.height);
 						const highlighted = hoveredCommentId === comment.id || threadId === comment.id;
+						const previewStyle = previewPosition(anchor, hoverPreviewSide, surfaceSize.width);
 						const { left, top, width, height, ...boxStyle } = regionStyle(anchor, color, highlighted);
 						return (
 							<div
@@ -504,7 +515,8 @@ export function ArtefactComments({
 								{hoveredCommentId === comment.id && (
 									<div
 										data-comment-ui
-										className={`pointer-events-auto absolute top-0 z-20 max-h-64 w-64 overflow-y-auto ${hoverPreviewSide === "left" ? "right-full mr-3" : "left-full ml-3"}`}
+										className="pointer-events-auto absolute top-0 z-20 max-h-64 overflow-y-auto"
+										style={previewStyle}
 										onMouseEnter={() => showCommentHover(comment.id)}
 										onMouseLeave={hideCommentHover}
 									>
@@ -575,7 +587,7 @@ export function ArtefactComments({
 			{isOpen && (
 				<aside
 					aria-label="Artefact comments"
-					className="absolute inset-y-0 right-0 z-10 flex w-[min(22rem,90vw)] flex-col border-l border-border bg-surface shadow-xl"
+					className="absolute right-0 top-0 z-10 flex h-full max-h-full w-[min(22rem,90vw)] flex-col overflow-hidden border-l border-border bg-surface shadow-xl"
 				>
 					<header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
 						<MessageCircle size={17} className="text-muted" />
