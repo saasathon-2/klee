@@ -18,9 +18,8 @@ assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.
 assert.equal(validActionsClaims({ iss: "https://token.actions.githubusercontent.com", aud: "http://localhost:3000", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), true);
 assert.equal(validActionsClaims({ iss: "wrong", aud: "klee-github-actions", repository: "acme/repo", event_name: "pull_request", exp: Math.floor(Date.now() / 1000) + 60 }), false);
 const artefactUrl = "https://klee.work/artefacts/shared/example";
-const previewUrl = "https://klee.work/api/shared/artefacts/example/preview.png?v=1";
+const previewUrl = "https://klee.work/api/shared/artefacts/example/preview?v=1";
 assert.equal(githubArtefactComment(artefactUrl, previewUrl), `<a href="${artefactUrl}" target="_blank"><img src="${previewUrl}" alt="Klee artefact"></a>`);
-assert.equal(githubArtefactComment(artefactUrl), `<a href="${artefactUrl}" target="_blank">Open Klee artefact</a>`);
 const prompt = githubPullRequestPrompt("acme/repo", 12, {
 	headSha: "abcdef",
 	title: "Add context",

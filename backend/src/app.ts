@@ -37,6 +37,9 @@ import {
 const app: Express = express();
 const githubRefreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const githubRefreshDelayMs = 30_000;
+const previewFallback = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<rect width="1200" height="630" fill="#fbf463"/><text x="96" y="278" fill="#1e1e1e" font-family="Arial, sans-serif" font-size="68" font-weight="700">Klee artefact</text><text x="96" y="350" fill="#4f503e" font-family="Arial, sans-serif" font-size="30">Preparing preview…</text>
+</svg>`);
 
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
 
@@ -238,9 +241,7 @@ async function refreshGitHubPullRequestArtefact(
             { authorId: null, source: "github", installationId },
         );
         const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
-        const previewUrl = artefact.previewReady
-            ? `${env.corsOrigin}/api/shared/artefacts/${artefact.id}/preview.png?v=${Date.now()}`
-            : undefined;
+        const previewUrl = `${env.corsOrigin}/api/shared/artefacts/${artefact.id}/preview?v=${Date.now()}`;
         let commentId = current?.commentId;
         if (commentId) {
             await githubInstallationRequest(
@@ -613,8 +614,8 @@ app.get("/api/artefacts/:id/snapshot", async (req, res) => {
     res.json({ ...rows[0], revisions: revisions.rows });
 });
 
-/** Proxies a private R2 preview after confirming its artefact is shared. */
-app.get("/api/shared/artefacts/:id/preview.png", async (req, res) => {
+/** Gives GitHub a stable public image while R2 remains private. */
+app.get("/api/shared/artefacts/:id/preview", async (req, res) => {
     const { rows } = await pool.query(
         "select id from artefact where id = $1 and is_shared = true",
         [req.params.id],
@@ -622,13 +623,15 @@ app.get("/api/shared/artefacts/:id/preview.png", async (req, res) => {
     if (!rows[0]) return res.sendStatus(404);
     try {
         const preview = await getArtefactPreview(req.params.id);
-        if (!preview) return res.sendStatus(404);
-        res.set({ "Content-Type": "image/png", "Cache-Control": "public, max-age=300" });
-        res.send(Buffer.from(preview));
+        if (preview) {
+            res.set({ "Content-Type": "image/png", "Cache-Control": "public, max-age=300" });
+            return res.send(Buffer.from(preview));
+        }
     } catch (error) {
         console.error("Artefact preview read failed", error);
-        res.sendStatus(404);
     }
+    res.set({ "Content-Type": "image/svg+xml", "Cache-Control": "no-store" });
+    res.send(previewFallback);
 });
 
 app.post("/api/artefacts/:id/revisions", async (req, res) => {
