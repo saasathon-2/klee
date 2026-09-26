@@ -1,4 +1,5 @@
 import { Avatar, AvatarGroup, Button, Card, Chip } from "@heroui/react";
+import { useDocumentTitle } from "../useDocumentTitle";
 
 const communities = [
 	["Indie Hackers", "148 members", "IH", "orange"],
@@ -9,6 +10,7 @@ const avatarUrl = (color: string) =>
 	`https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/${color}.jpg`;
 
 export function SocialExample() {
+	useDocumentTitle("Social cards - Klee");
 	return (
 		<main className="mx-auto max-w-5xl px-6 py-16">
 			<h1 className="mt-2 text-4xl font-semibold">Social cards</h1>

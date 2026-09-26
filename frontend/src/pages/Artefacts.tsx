@@ -66,6 +66,7 @@ import { ProjectSelect } from "./artefact/ProjectSelect";
 import { useFolders, type Folder } from "./artefact/useFolders";
 import { VersionHistory } from "./artefact/VersionHistory";
 import { ArtefactComments } from "./artefact/ArtefactComments";
+import { useDocumentTitle } from "../useDocumentTitle";
 
 type Revision = {
 	id: string;
@@ -209,6 +210,17 @@ export function Artefacts() {
 			: undefined;
 	const current =
 		loaded?.path === artefactPath ? loaded?.artefact : undefined;
+	useDocumentTitle(
+		current
+			? `${artefactHeading(current)} - Klee`
+			: isProfile
+				? "Profile - Klee"
+				: isIntegrations
+					? "Integrations - Klee"
+					: isShared
+						? "Shared artefact - Klee"
+						: "Artefacts - Klee",
+	);
 	const currentSharedAccess =
 		current &&
 		sharedAccess?.artefactId === current.id &&

@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDocumentTitle } from "../useDocumentTitle";
 import type { ArtefactDocument } from "../artefacts/model";
 import { ArtefactRenderer } from "../artefacts/templates/renderer";
 import { GitHubIcon, JiraIcon, SlackIcon } from "../components/BrandIcons";
@@ -885,6 +886,16 @@ function PricingPage() {
 }
 
 export function MarketingPage({ page }: { page: MarketingPageName }) {
+	const pageTitles: Record<MarketingPageName, string> = {
+		developers: "Developers",
+		"developer-templates": "Developer templates",
+		"developer-integrations": "Developer integrations",
+		business: "Business",
+		"access-control": "Access control",
+		"team-integrations": "Team integrations",
+		pricing: "Pricing",
+	};
+	useDocumentTitle(`${pageTitles[page]} - Klee`);
 	const pages = {
 		developers: <DevelopersPage />,
 		"developer-templates": <TemplatesPage />,

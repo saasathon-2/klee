@@ -1,6 +1,8 @@
 import { Alert, Button, InputOTP, Switch, Tabs } from "@heroui/react";
+import { useDocumentTitle } from "../useDocumentTitle";
 
 export function SettingsExample() {
+	useDocumentTitle("Settings - Klee");
 	return (
 		<main className="mx-auto max-w-3xl px-6 py-16">
 			<h1 className="mt-2 text-4xl font-semibold">Settings</h1>

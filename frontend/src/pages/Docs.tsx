@@ -9,6 +9,7 @@ import {
 import { ChevronRight, ExternalLink, LibraryBig } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDocumentTitle } from "../useDocumentTitle";
 
 const sections = [
 	{
@@ -30,6 +31,7 @@ const sections = [
 ];
 
 export function Docs() {
+	useDocumentTitle("Docs - Klee");
 	const navigate = useNavigate();
 	const content = useRef<HTMLElement>(null);
 	const [activeSection, setActiveSection] = useState(sections[0].id);
