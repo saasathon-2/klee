@@ -598,7 +598,7 @@ export function ArtefactComments({
 			{isOpen && (
 				<aside
 					aria-label="Artefact comments"
-					className="absolute right-0 top-0 z-10 flex h-full max-h-full w-[min(22rem,90vw)] flex-col overflow-hidden border-l border-border bg-surface shadow-xl"
+					className="fixed right-0 top-0 z-20 flex h-dvh w-[min(22rem,90vw)] flex-col overflow-hidden border-l border-border bg-surface shadow-xl"
 				>
 					<header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
 						<MessageCircle size={17} className="text-muted" />

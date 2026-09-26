@@ -547,11 +547,12 @@ export function Artefacts() {
 					</p>
 				)}
 				{current && !isPreview && (
-					<div className="absolute inset-x-0 top-2 z-10 flex items-center justify-between px-4">
+					<div className="fixed inset-x-0 top-2 z-10 flex items-center justify-between px-4">
 								<Button
 									aria-label="Artefact home"
 									variant="ghost"
 									size="sm"
+									className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
 									onPress={() => navigate("/")}
 								>
 									<House size={15} />
@@ -565,6 +566,7 @@ export function Artefacts() {
 											: "ghost"
 									}
 									size="sm"
+									className="border border-border bg-background text-foreground shadow-sm hover:bg-surface"
 									onPress={() =>
 										setSharedCommentsOpen(
 											!sharedCommentsOpen,
