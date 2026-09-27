@@ -66,10 +66,7 @@ function App() {
 						<Route path="/login" element={<Navigate to="/?auth=signin" replace />} />
 						<Route path="/register" element={<Navigate to="/?auth=signup" replace />} />
 						<Route element={<RequireUser />}>
-							<Route
-								path="/integrations"
-								element={<Navigate to="/?panel=integrations" replace />}
-							/>
+							<Route path="/integrations" element={<Artefacts />} />
 							<Route path="/organisations" element={<Navigate to="/?panel=organisations" replace />} />
 						</Route>
 						<Route path="/artefacts" element={<Navigate to="/" replace />} />
