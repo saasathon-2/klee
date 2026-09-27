@@ -111,5 +111,6 @@ const largePrompt = githubPullRequestPrompt("acme/repo", 13, {
 	commits: [],
 	checks: [],
 });
-assert.match(largePrompt, /Include software-diagram/);
+assert.match(largePrompt, /change-walkthrough\/v1/);
+assert.match(largePrompt, /Do not use git-graph by default/);
 assert.match(largePrompt, /secret diff/);

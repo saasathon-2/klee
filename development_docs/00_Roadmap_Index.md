@@ -4,19 +4,20 @@ These notes expand the proposals in [NEXT_STEPS.md](../NEXT_STEPS.md) and [TEMPL
 
 ## Workstreams
 
-| Note                                                                           | Covers                                                                         | Suggested order               |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | ----------------------------- |
-| [01_Reliability_and_Quality.md](01_Reliability_and_Quality.md)                 | Release checks, generation failures, quality fixtures, minimal product signals | First                         |
-| [02_Recent_Artifacts_and_Search.md](02_Recent_Artifacts_and_Search.md)         | Recent cards/previews, bounded feed, workspace search                          | First user-facing improvement |
-| [03_Templates_and_Presets.md](03_Templates_and_Presets.md)                     | Curated recipes as creation presets, duplicate/save/reuse                      | After recent work             |
-| [04_Vibeable_Components.md](04_Vibeable_Components.md)                         | Prompt-built trusted block compositions and constrained editing                | After recipes prove reuse     |
-| [05_Integrations_and_Context.md](05_Integrations_and_Context.md)               | Slack/Jira context ingest, source mapping, provider roadmap                    | One source at a time          |
-| [06_Collaboration_and_Lifecycle.md](06_Collaboration_and_Lifecycle.md)         | Archive/pin/duplicate/export/activity/notifications                            | As repeated team use appears  |
-| [07_Generation_Intent_and_Grounding.md](07_Generation_Intent_and_Grounding.md) | Better prompt interpretation, typed context, evidence and source freshness     | Foundation for template work  |
-| [08_Consistent_Artifact_Recipes.md](08_Consistent_Artifact_Recipes.md)         | Stable PR and other artefact section order with optional appendices            | PR recipe first               |
-| [09_Visuals_Motion_and_Media.md](09_Visuals_Motion_and_Media.md)               | Diagram policy, visual density, accessible motion, possible video              | Static quality first          |
-| [10_Discipline_Expansion.md](10_Discipline_Expansion.md)                       | Electrical/civil/chemistry/maths or other product verticals                    | Separate product decision     |
-| [11_Branch_Hygiene.md](11_Branch_Hygiene.md)                                   | Review, salvage, close, or prune hanging branches                              | Small housekeeping task       |
+| Note                                                                           | Covers                                                                          | Suggested order               |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ----------------------------- |
+| [01_Reliability_and_Quality.md](01_Reliability_and_Quality.md)                 | Release checks, generation failures, quality fixtures, minimal product signals  | First                         |
+| [02_Recent_Artifacts_and_Search.md](02_Recent_Artifacts_and_Search.md)         | Recent cards/previews, bounded feed, workspace search                           | First user-facing improvement |
+| [03_Templates_and_Presets.md](03_Templates_and_Presets.md)                     | Curated recipes as creation presets, duplicate/save/reuse                       | After recent work             |
+| [04_Vibeable_Components.md](04_Vibeable_Components.md)                         | Prompt-built trusted block compositions and constrained editing                 | After recipes prove reuse     |
+| [05_Integrations_and_Context.md](05_Integrations_and_Context.md)               | Slack/Jira context ingest, source mapping, provider roadmap                     | One source at a time          |
+| [06_Collaboration_and_Lifecycle.md](06_Collaboration_and_Lifecycle.md)         | Archive/pin/duplicate/export/activity/notifications                             | As repeated team use appears  |
+| [07_Generation_Intent_and_Grounding.md](07_Generation_Intent_and_Grounding.md) | Better prompt interpretation, typed context, evidence and source freshness      | Foundation for template work  |
+| [08_Consistent_Artifact_Recipes.md](08_Consistent_Artifact_Recipes.md)         | Stable PR and other artefact section order with optional appendices             | PR recipe first               |
+| [09_Visuals_Motion_and_Media.md](09_Visuals_Motion_and_Media.md)               | Diagram policy, visual density, accessible motion, possible video               | Static quality first          |
+| [10_Discipline_Expansion.md](10_Discipline_Expansion.md)                       | Electrical/civil/chemistry/maths or other product verticals                     | Separate product decision     |
+| [11_Branch_Hygiene.md](11_Branch_Hygiene.md)                                   | Review, salvage, close, or prune hanging branches                               | Small housekeeping task       |
+| [12_Streaming_Artefact_Generation.md](12_Streaming_Artefact_Generation.md)     | Progressive artefact shell, section events, skeletons, cancellation, final save | After recipe selection exists |
 
 ## Suggested dependency path
 
@@ -26,6 +27,7 @@ These notes expand the proposals in [NEXT_STEPS.md](../NEXT_STEPS.md) and [TEMPL
                                                 └──> 05 Integrations
 06 Lifecycle can follow demonstrated team usage; 10 requires a product decision.
 11 Branch review can be done independently.
+12 Streaming builds on 07 intent/grounding and 08 recipes.
 ```
 
 ## Shared implementation rules

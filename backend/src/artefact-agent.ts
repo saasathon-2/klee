@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { readFileSync } from "node:fs";
 import type { ArtefactDocument, ArtefactNode } from "./artefact-model.ts";
+import { validateRecipe, type GenerationIntent } from "./artefact-recipes.ts";
 
 const shortText = z.string().trim().min(1).max(120);
 const detailText = z.string().trim().min(1).max(280);
@@ -787,7 +788,7 @@ function normaliseBlock(block: ContentBlock): ContentBlock {
 	return block;
 }
 
-export function toDocument(generation: Generation): ArtefactDocument {
+export function toDocument(generation: Generation, intent?: GenerationIntent): ArtefactDocument {
 	if (generation.blocks.length === 0 || generation.tags.length === 0) {
 		throw new Error("The generated artefact is incomplete");
 	}
@@ -928,6 +929,11 @@ export function toDocument(generation: Generation): ArtefactDocument {
 			},
 		});
 	}
+	if (intent)
+		validateRecipe(
+			intent,
+			blocks.filter((block) => block.template !== "glue").map((block) => block.template),
+		);
 	const nodes: ArtefactNode[] = blocks.map((block, index) => ({
 		id: `block-${index + 1}`,
 		template: block.template,
@@ -975,6 +981,7 @@ export async function generateArtefact(
 		onCommentary?: (text: string) => void;
 		signal?: AbortSignal;
 		serviceTier?: "fast";
+		intent?: GenerationIntent;
 	} = {},
 ) {
 	if (!apiKey) throw new ArtefactAgentError("missing_api_key");
@@ -1113,7 +1120,7 @@ export async function generateArtefact(
 		throw new ArtefactAgentError("incomplete_agent_response");
 	try {
 		return {
-			content: toDocument(generationSchema.parse(JSON.parse(output))),
+			content: toDocument(generationSchema.parse(JSON.parse(output)), options.intent),
 			sessionId,
 			telemetry: {
 				model,
