@@ -55,6 +55,7 @@ import {
 	githubRepositoryInstallation,
 	validGitHubWebhook,
 } from "./github.ts";
+import { githubPullRequestIntent, type GenerationIntent } from "./artefact-recipes.ts";
 
 const app: Express = express();
 const githubRefreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -172,6 +173,7 @@ async function createGeneratedArtefact(
 		serviceTier?: "fast";
 		deferPreview?: boolean;
 		googleFileIds?: string[];
+		intent?: GenerationIntent;
 	} = {},
 	id?: string,
 	history: {
@@ -353,8 +355,8 @@ async function refreshGitHubPullRequestArtefact(
 			owner,
 			githubPullRequestPrompt(repository, pullRequest, context),
 			true,
-			{},
-			current?.artefactId ?? artefactId,
+		{ intent: githubPullRequestIntent() },
+		current?.artefactId ?? artefactId,
 			{ authorId: null, source: "github", installationId },
 		);
 		const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
