@@ -31,7 +31,8 @@ export type MarketingPageName =
 	| "team-integrations"
 	| "pricing";
 
-const integrationsSource = "https://github.com/saasathon-2/integrations/tree/main";
+const integrationsSource =
+	"https://github.com/saasathon-2/integrations/tree/main";
 
 /** A plain page: a title, one sentence saying what it covers, then sections. */
 function Page({
@@ -47,11 +48,15 @@ function Page({
 }) {
 	return (
 		<>
-			<main className={`mx-auto px-6 py-16 sm:py-20 ${wide ? "max-w-5xl" : "max-w-3xl"}`}>
+			<main
+				className={`mx-auto px-6 py-16 sm:py-20 ${wide ? "max-w-5xl" : "max-w-3xl"}`}
+			>
 				<Heading level={1} className="text-4xl tracking-tight">
 					{title}
 				</Heading>
-				<Paragraph className="mt-4 max-w-2xl text-lg text-muted">{intro}</Paragraph>
+				<Paragraph className="mt-4 max-w-2xl text-lg text-muted">
+					{intro}
+				</Paragraph>
 				<div className="mt-12 space-y-12">{children}</div>
 			</main>
 			<Footer />
@@ -65,7 +70,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 			<Heading level={2} className="text-xl">
 				{title}
 			</Heading>
-			<div className="mt-3 space-y-3 leading-7 text-muted">{children}</div>
+			<div className="mt-3 space-y-3 leading-7 text-muted">
+				{children}
+			</div>
 		</section>
 	);
 }
@@ -162,10 +169,22 @@ function ReviewPage() {
 			<Section title="What the page shows">
 				<Points
 					items={[
-						["Code changes", "The one to three diffs that matter most."],
-						["Review feedback", "What each reviewer said and where they landed."],
-						["History", "Commits, drawn as a git graph when branches merge."],
-						["Checks", "CI results, with live status while jobs run."],
+						[
+							"Code changes",
+							"The one to three diffs that matter most.",
+						],
+						[
+							"Review feedback",
+							"What each reviewer said and where they landed.",
+						],
+						[
+							"History",
+							"Commits, drawn as a git graph when branches merge.",
+						],
+						[
+							"Checks",
+							"CI results, with live status while jobs run.",
+						],
 					]}
 				/>
 			</Section>
@@ -177,7 +196,7 @@ function ReviewPage() {
 						"Open a pull request. The page updates when CI finishes.",
 					]}
 				/>
-			<CodeBlock>{`name: Klee
+				<CodeBlock>{`name: Klee
 
 on:
   pull_request:
@@ -208,25 +227,43 @@ jobs:
 
 function SharePage() {
 	return (
-		<Page title="Sharing" intro="Artefacts are private until you share them.">
+		<Page
+			title="Sharing"
+			intro="Artefacts are private until you share them."
+		>
 			<Section title="Ways to share">
 				<Points
 					items={[
-						["Invite people", "Add a Klee account by email and choose whether they can view, comment, or edit."],
-						["Share with an organisation", "Everyone in the organisation gets the access you pick."],
-						["Link sharing", "Turn it on and anyone with the link can view. Only invited people can comment or edit."],
-						["GitHub projects", "Artefacts in a GitHub project are editable by members of that GitHub org."],
+						[
+							"Invite people",
+							"Add a Klee account by email and choose whether they can view, comment, or edit.",
+						],
+						[
+							"Share with an organisation",
+							"Everyone in the organisation gets the access you pick.",
+						],
+						[
+							"Link sharing",
+							"Turn it on and anyone with the link can view. Only invited people can comment or edit.",
+						],
+						[
+							"GitHub projects",
+							"Artefacts in a GitHub project are editable by members of that GitHub org.",
+						],
 					]}
 				/>
 			</Section>
 			<Section title="Comments">
 				<Paragraph>
-					Press Comments to turn on comment mode, then drag across part of the page to leave a comment on it. Outside comment mode you can select and copy text as usual.
+					Press Comments to turn on comment mode, then drag across
+					part of the page to leave a comment on it. Outside comment
+					mode you can select and copy text as usual.
 				</Paragraph>
 			</Section>
 			<Section title="Stopping">
 				<Paragraph>
-					Stop sharing in the share dialog removes every invite and organisation and turns the link off.
+					Stop sharing in the share dialog removes every invite and
+					organisation and turns the link off.
 				</Paragraph>
 			</Section>
 			<NextLinks docs="start" />
@@ -244,20 +281,44 @@ function DevelopersPage() {
 				<Points
 					items={[
 						["Code diff", "Changed lines with context, per file."],
-						["Git graph", "Branches, merges, and commits in order."],
-						["Check list", "CI results that update live from GitHub."],
-						["Flowchart", "Processes with decisions, like release or on-call steps."],
-						["Dependency graph", "Packages and services, with versions and health."],
-						["Change impact map", "Which services a change touches, and who owns them."],
-						["Release and incident timelines", "Events in order, with status and evidence."],
-						["Sprint timeline and board", "Work items by date or by state."],
+						[
+							"Git graph",
+							"Branches, merges, and commits in order.",
+						],
+						[
+							"Check list",
+							"CI results that update live from GitHub.",
+						],
+						[
+							"Flowchart",
+							"Processes with decisions, like release or on-call steps.",
+						],
+						[
+							"Dependency graph",
+							"Packages and services, with versions and health.",
+						],
+						[
+							"Change impact map",
+							"Which services a change touches, and who owns them.",
+						],
+						[
+							"Release and incident timelines",
+							"Events in order, with status and evidence.",
+						],
+						[
+							"Sprint timeline and board",
+							"Work items by date or by state.",
+						],
 					]}
 				/>
 			</Section>
 			<Section title="Where it connects">
 				<Paragraph>
-					GitHub builds a page for each pull request. Slack previews artefact links in channels. Jira shows linked artefacts on issues.{" "}
-					<Link href="/developer-integrations">See integrations</Link>.
+					GitHub builds a page for each pull request. Slack previews
+					artefact links in channels. Jira shows linked artefacts on
+					issues.{" "}
+					<Link href="/developer-integrations">See integrations</Link>
+					.
 				</Paragraph>
 			</Section>
 			<NextLinks docs="overview" />
@@ -283,8 +344,14 @@ function TemplatesPage() {
 					</Tabs.List>
 				</Tabs.ListContainer>
 				{artefactExamples.map((example) => (
-					<Tabs.Panel key={example.id} id={example.id} className="mt-6 space-y-4">
-						<Paragraph color="muted">{example.description}</Paragraph>
+					<Tabs.Panel
+						key={example.id}
+						id={example.id}
+						className="mt-6 space-y-4"
+					>
+						<Paragraph color="muted">
+							{example.description}
+						</Paragraph>
 						<Example document={artefactDocuments[example.id]} />
 					</Tabs.Panel>
 				))}
@@ -297,7 +364,8 @@ const integrations = [
 	{
 		name: "GitHub",
 		Icon: GitHubIcon,
-		summary: "Builds a page for each pull request, comments the link, and refreshes it when CI finishes. Check statuses stay live.",
+		summary:
+			"Builds a page for each pull request, comments the link, and refreshes it when CI finishes. Check statuses stay live.",
 		setup: "Install the GitHub App, then add the Klee Action to a workflow.",
 		source: `${integrationsSource}/github`,
 		docs: "github",
@@ -305,14 +373,16 @@ const integrations = [
 	{
 		name: "Slack",
 		Icon: SlackIcon,
-		summary: "Unfurls shared artefact links in channels and threads. /klee posts a preview of any artefact.",
+		summary:
+			"Unfurls shared artefact links in channels and threads. /klee posts a preview of any artefact.",
 		setup: "Install the Klee app to your workspace.",
 		source: `${integrationsSource}/slack`,
 	},
 	{
 		name: "Jira",
 		Icon: JiraIcon,
-		summary: "Shows artefacts linked from an issue's description or comments in a Klee panel.",
+		summary:
+			"Shows artefacts linked from an issue's description or comments in a Klee panel.",
 		setup: "Install the Klee app from the Atlassian Marketplace.",
 		source: `${integrationsSource}/jira`,
 	},
@@ -325,29 +395,40 @@ function DeveloperIntegrationsPage() {
 			intro="Connect these from Integrations in your workspace. Each one's source is public."
 		>
 			<div className="space-y-4">
-				{integrations.map(({ name, Icon, summary, setup, source, ...rest }) => (
-					<Card key={name} variant="secondary">
-						<Card.Header className="flex-row items-center gap-3">
-							<Icon aria-hidden className="size-6" />
-							<Card.Title className="flex-1">{name}</Card.Title>
-							<Link href={source} target="_blank" className="inline-flex items-center gap-1 text-sm">
-								Source <ExternalLink aria-hidden size={14} />
-							</Link>
-						</Card.Header>
-						<Card.Content className="space-y-1 text-sm">
-							<p>{summary}</p>
-							<p className="text-muted">
-								{setup}
-								{"docs" in rest && (
-									<>
-										{" "}
-										<Link href={`/docs#${rest.docs}`}>Setup guide</Link>
-									</>
-								)}
-							</p>
-						</Card.Content>
-					</Card>
-				))}
+				{integrations.map(
+					({ name, Icon, summary, setup, source, ...rest }) => (
+						<Card key={name} variant="secondary">
+							<Card.Header className="flex-row items-center gap-3">
+								<Icon aria-hidden className="size-6" />
+								<Card.Title className="flex-1">
+									{name}
+								</Card.Title>
+								<Link
+									href={source}
+									target="_blank"
+									className="inline-flex items-center gap-1 text-sm"
+								>
+									Source{" "}
+									<ExternalLink aria-hidden size={14} />
+								</Link>
+							</Card.Header>
+							<Card.Content className="space-y-1 text-sm">
+								<p>{summary}</p>
+								<p className="text-muted">
+									{setup}
+									{"docs" in rest && (
+										<>
+											{" "}
+											<Link href={`/docs#${rest.docs}`}>
+												Setup guide
+											</Link>
+										</>
+									)}
+								</p>
+							</Card.Content>
+						</Card>
+					),
+				)}
 			</div>
 		</Page>
 	);
@@ -362,16 +443,30 @@ function BusinessPage() {
 			<Section title="Useful for">
 				<Points
 					items={[
-						["Sprint status", "Progress, forecast, and what's blocked."],
-						["Release decisions", "Required gates and a ready, waiting, or blocked verdict."],
-						["Handoffs", "What's done, in flight, and next when work changes hands."],
-						["Decisions", "Options, trade-offs, and what was chosen."],
+						[
+							"Sprint status",
+							"Progress, forecast, and what's blocked.",
+						],
+						[
+							"Release decisions",
+							"Required gates and a ready, waiting, or blocked verdict.",
+						],
+						[
+							"Handoffs",
+							"What's done, in flight, and next when work changes hands.",
+						],
+						[
+							"Decisions",
+							"Options, trade-offs, and what was chosen.",
+						],
 					]}
 				/>
 			</Section>
 			<Section title="Keeping it current">
 				<Paragraph>
-					Ask for changes in plain language, edit text directly, or let the GitHub Action refresh pull request pages. Comments stay attached to the part of the page they're about.
+					Ask for changes in plain language, edit text directly, or
+					let the GitHub Action refresh pull request pages. Comments
+					stay attached to the part of the page they're about.
 				</Paragraph>
 			</Section>
 			<NextLinks docs="overview" />
@@ -409,9 +504,16 @@ function AccessControlPage() {
 										{levels.map((allowed, index) => (
 											<Table.Cell key={index}>
 												{allowed ? (
-													<Check aria-label="Yes" size={16} className="text-success" />
+													<Check
+														aria-label="Yes"
+														size={16}
+														className="text-success"
+													/>
 												) : (
-													<span aria-label="No" className="text-muted">
+													<span
+														aria-label="No"
+														className="text-muted"
+													>
 														–
 													</span>
 												)}
@@ -423,18 +525,34 @@ function AccessControlPage() {
 						</Table.Content>
 					</Table.ScrollContainer>
 				</Table>
-				<Paragraph size="sm">Changing access is owner-only at every level.</Paragraph>
+				<Paragraph size="sm">
+					Changing access is owner-only at every level.
+				</Paragraph>
 			</Section>
 			<Section title="Where access comes from">
 				<Points
 					items={[
-						["Direct invites", "A Klee account, at the level the owner picks."],
-						["Organisations", "Every member, at the level granted to the organisation."],
-						["GitHub projects", "Members of the GitHub org get edit access to its artefacts."],
-						["Public link", "Anyone with the link can view, and nothing more."],
+						[
+							"Direct invites",
+							"A Klee account, at the level the owner picks.",
+						],
+						[
+							"Organisations",
+							"Every member, at the level granted to the organisation.",
+						],
+						[
+							"GitHub projects",
+							"Members of the GitHub org get edit access to its artefacts.",
+						],
+						[
+							"Public link",
+							"Anyone with the link can view, and nothing more.",
+						],
 					]}
 				/>
-				<Paragraph>When more than one applies, the highest level wins.</Paragraph>
+				<Paragraph>
+					When more than one applies, the highest level wins.
+				</Paragraph>
 			</Section>
 			<NextLinks docs="sharing" />
 		</Page>
@@ -443,7 +561,10 @@ function AccessControlPage() {
 
 function TeamIntegrationsPage() {
 	return (
-		<Page title="Team setup" intro="Set Klee up once for the team rather than person by person.">
+		<Page
+			title="Team setup"
+			intro="Set Klee up once for the team rather than person by person."
+		>
 			<Section title="Steps">
 				<Steps
 					items={[
@@ -457,8 +578,14 @@ function TeamIntegrationsPage() {
 			<Section title="Roles">
 				<Points
 					items={[
-						["Owner", "Manages members and roles, and can delete the organisation."],
-						["Admin", "Adds members and shares artefacts with the organisation."],
+						[
+							"Owner",
+							"Manages members and roles, and can delete the organisation.",
+						],
+						[
+							"Admin",
+							"Adds members and shares artefacts with the organisation.",
+						],
 						["Member", "Sees what's shared with the organisation."],
 					]}
 				/>
@@ -469,37 +596,77 @@ function TeamIntegrationsPage() {
 }
 
 const plans = [
-	["Individual", "Free", ["Create and edit artefacts", "Share links and invite people", "GitHub pull request pages"]],
-	["Team", "Contact us", ["Organisations and roles", "Slack and Jira apps", "Comments on artefacts"]],
-	["Enterprise", "Contact us", ["Access reviews", "Rollout support", "Custom integrations"]],
+	[
+		"Individual",
+		"Free",
+		[
+			"Create and edit artefacts",
+			"Share links and invite people",
+			"GitHub pull request pages",
+		],
+	],
+	[
+		"Team",
+		"Coming soon",
+		[
+			"Organisations and roles",
+			"Slack and Jira apps",
+			"Comments on artefacts",
+		],
+	],
+	[
+		"Enterprise",
+		"Coming soon",
+		["Access reviews", "Rollout support", "Custom integrations"],
+	],
 ] as const;
 
 function PricingPage() {
 	const navigate = useNavigate();
 	return (
-		<Page title="Pricing" intro="Free for individual use. Teams and larger organisations, get in touch." wide>
+		<Page
+			title="Pricing"
+			intro="Free for individual use. Teams and larger organisations, get in touch."
+			wide
+		>
 			<div className="grid gap-4 lg:grid-cols-3">
 				{plans.map(([name, price, features], index) => (
 					<Card key={name} variant="secondary">
 						<Card.Header>
 							<Card.Title>{name}</Card.Title>
-							<p className="mt-2 text-2xl font-semibold">{price}</p>
+							<p className="mt-2 text-2xl font-semibold">
+								{price}
+							</p>
 						</Card.Header>
 						<Card.Content className="flex-1">
 							<Separator />
 							<ul className="mt-4 space-y-2 text-sm">
 								{features.map((feature) => (
 									<li className="flex gap-2" key={feature}>
-										<Check aria-hidden className="mt-0.5 shrink-0 text-success" size={16} />
+										<Check
+											aria-hidden
+											className="mt-0.5 shrink-0 text-success"
+											size={16}
+										/>
 										{feature}
 									</li>
 								))}
 							</ul>
 						</Card.Content>
 						{index === 0 && (
-							<Card.Footer>
-								<Button onPress={() => navigate("/?auth=signup")}>Start</Button>
-							</Card.Footer>
+							<>
+								<br></br>
+
+								<Card.Footer>
+									<Button
+										onPress={() =>
+											navigate("/?auth=signup")
+										}
+									>
+										Get Started
+									</Button>
+								</Card.Footer>
+							</>
 						)}
 					</Card>
 				))}
