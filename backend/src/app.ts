@@ -27,7 +27,11 @@ import {
 	type PatchOp,
 	type VersionSource,
 } from "./artefact-versions.ts";
-import { ArtefactAgentError, generateArtefact } from "./artefact-agent.ts";
+import {
+	answerArtefactQuestion,
+	ArtefactAgentError,
+	generateArtefact,
+} from "./artefact-agent.ts";
 import {
 	captureArtefactSnapshot,
 	snapshotUrl,
@@ -799,6 +803,46 @@ app.get("/api/artefacts/:id", async (req, res) => {
 		[req.params.id],
 	);
 	res.json({ ...artefact, revisions: revisions.rows });
+});
+
+app.post("/api/artefacts/:id/questions", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user) return;
+	const question =
+		typeof req.body?.question === "string" ? req.body.question.trim() : "";
+	if (!question || question.length > 1_200)
+		return res.status(400).json({ error: "Ask a question of up to 1,200 characters." });
+	const suppliedHistory: unknown[] = Array.isArray(req.body?.history)
+		? req.body.history.slice(-6)
+		: [];
+	const history = suppliedHistory.filter(
+		(item): item is { role: "user" | "assistant"; text: string } =>
+			Boolean(item) &&
+			typeof item === "object" &&
+			((item as { role?: unknown }).role === "user" ||
+				(item as { role?: unknown }).role === "assistant") &&
+			typeof (item as { text?: unknown }).text === "string" &&
+			(item as { text: string }).text.length <= 1_200,
+	);
+	const { rows } = await pool.query(
+		`select prompt, content from artefact where id = $1
+        and (is_shared = true or ${accessibleArtefactSql("$2")})`,
+		[req.params.id, user.id],
+	);
+	if (!rows[0]) return res.sendStatus(404);
+	try {
+		const answer = await answerArtefactQuestion(
+			question,
+			`Artefact document:\n${JSON.stringify(rows[0].content)}\n\nOriginal generation prompt and captured source context:\n${rows[0].prompt}\n\nPrevious conversation:\n${history.map((item) => `${item.role}: ${item.text}`).join("\n")}`,
+			env.openAiApiKey,
+			env.openAiModel,
+		);
+		res.json({ answer });
+	} catch (error) {
+		if (!(error instanceof ArtefactAgentError)) throw error;
+		console.error("Artefact question failed", { kind: error.kind, ...error.details });
+		res.status(502).json({ error: "Could not answer that question." });
+	}
 });
 
 /** Current GitHub status of the check runs an artefact links to, keyed by link. */

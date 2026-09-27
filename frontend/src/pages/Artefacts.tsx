@@ -48,6 +48,7 @@ import { WorkspaceSidebar as WorkspaceSidebarComponent } from "./artefact/Worksp
 import { acceptArtefactDrop, droppedArtefactId } from "./artefact/artefactDrag";
 import { useFolders } from "./artefact/useFolders";
 import { ArtefactComments } from "./artefact/ArtefactComments";
+import { ArtefactQuestionHelper } from "./artefact/ArtefactQuestionHelper";
 import { ShareDialog } from "./artefact/ShareDialog";
 import { useDocumentTitle } from "../useDocumentTitle";
 
@@ -725,6 +726,9 @@ export function Artefacts() {
 							/>
 						</ArtefactComments>
 					))}
+				{current && viewerId && !isPreview && (
+					<ArtefactQuestionHelper artefactId={current.id} />
+				)}
 			</main>
 		);
 
@@ -813,154 +817,160 @@ export function Artefacts() {
 					</main>
 				) : (
 					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
-					<div className="mx-auto w-full max-w-2xl">
-						<div className="mb-8 text-center">
-							<KleeLogo
-								className="mx-auto mb-4 size-16"
-								lookAt={promptCaret}
-							/>
-							<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-								{greeting},{" "}
-								<span className="text-accent-text">
-									{user.name?.split(" ")[0] || "there"}
-								</span>
-								{greeting === "Night shift" ? "?" : "!"}
-							</h1>
-						</div>
-						<form onSubmit={create} className="w-full">
-							<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
-								<LinkChips
-									links={promptLinks}
-									onRemove={(link) =>
-										setPromptLinks((links) =>
-											links.filter(
-												(item) => item !== link,
-											),
-										)
-									}
+						<div className="mx-auto w-full max-w-2xl">
+							<div className="mb-8 text-center">
+								<KleeLogo
+									className="mx-auto mb-4 size-16"
+									lookAt={promptCaret}
 								/>
-								<TextArea
-									onPaste={(event) =>
-										takeLinkPaste(event, (link) =>
+								<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+									{greeting},{" "}
+									<span className="text-accent-text">
+										{user.name?.split(" ")[0] || "there"}
+									</span>
+									{greeting === "Night shift" ? "?" : "!"}
+								</h1>
+							</div>
+							<form onSubmit={create} className="w-full">
+								<Surface className="rounded-2xl border border-border bg-surface p-3 transition-colors focus-within:border-muted">
+									<LinkChips
+										links={promptLinks}
+										onRemove={(link) =>
 											setPromptLinks((links) =>
-												links.includes(link)
-													? links
-													: [...links, link],
-											),
-										)
-									}
-									aria-label="Artefact prompt"
-									variant="secondary"
-									rows={3}
-									value={prompt}
-									onChange={(event) => {
-										setPrompt(event.target.value);
-										followPromptCaret(event.currentTarget);
-									}}
-									onSelect={(event) =>
-										followPromptCaret(event.currentTarget)
-									}
-									placeholder="What would you like to make? Paste a PR, issue, or a question…"
-									className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
-								/>
-								<Toolbar
-									aria-label="Create artefact controls"
-									className="flex w-full items-center justify-between px-1 pt-1"
-								>
-									{googleFiles.length ? (
-										<div className="flex min-w-0 items-center gap-2 text-xs text-muted">
-											<FileText size={15} />
-											<span className="truncate">
-												{googleFiles.length === 1
-													? `${googleFiles[0].name} will be used`
-													: `${googleFiles.length} Google files will be used`}
-											</span>
+												links.filter(
+													(item) => item !== link,
+												),
+											)
+										}
+									/>
+									<TextArea
+										onPaste={(event) =>
+											takeLinkPaste(event, (link) =>
+												setPromptLinks((links) =>
+													links.includes(link)
+														? links
+														: [...links, link],
+												),
+											)
+										}
+										aria-label="Artefact prompt"
+										variant="secondary"
+										rows={3}
+										value={prompt}
+										onChange={(event) => {
+											setPrompt(event.target.value);
+											followPromptCaret(
+												event.currentTarget,
+											);
+										}}
+										onSelect={(event) =>
+											followPromptCaret(
+												event.currentTarget,
+											)
+										}
+										placeholder="What would you like to make? Paste a PR, issue, or a question…"
+										className="min-h-28 w-full resize-none border-0 bg-transparent px-1 py-1 text-lg leading-7 shadow-none outline-none placeholder:text-muted focus-visible:ring-0"
+									/>
+									<Toolbar
+										aria-label="Create artefact controls"
+										className="flex w-full items-center justify-between px-1 pt-1"
+									>
+										{googleFiles.length ? (
+											<div className="flex min-w-0 items-center gap-2 text-xs text-muted">
+												<FileText size={15} />
+												<span className="truncate">
+													{googleFiles.length === 1
+														? `${googleFiles[0].name} will be used`
+														: `${googleFiles.length} Google files will be used`}
+												</span>
+												<Button
+													size="sm"
+													variant="ghost"
+													onPress={() =>
+														setGoogleFiles([])
+													}
+												>
+													Clear
+												</Button>
+											</div>
+										) : googleConnected ? (
 											<Button
 												size="sm"
 												variant="ghost"
 												onPress={() =>
-													setGoogleFiles([])
+													navigate(
+														"/integrations?select=google",
+													)
 												}
 											>
-												Clear
+												<FileText size={15} />
+												Add Google files
 											</Button>
-										</div>
-									) : googleConnected ? (
+										) : null}
 										<Button
-											size="sm"
-											variant="ghost"
-											onPress={() =>
-												navigate(
-													"/integrations?select=google",
-												)
+											aria-label={
+												isCreating
+													? "Generating artefact"
+													: "Create artefact"
+											}
+											type="submit"
+											className="ml-auto size-9 min-w-9 rounded-xl p-0"
+											isPending={isCreating}
+											isDisabled={
+												!prompt.trim() &&
+												promptLinks.length === 0
 											}
 										>
-											<FileText size={15} />
-											Add Google files
+											{({ isPending }) =>
+												isPending ? (
+													<Spinner
+														color="current"
+														size="sm"
+													/>
+												) : (
+													<ArrowUp size={17} />
+												)
+											}
 										</Button>
-									) : null}
+									</Toolbar>
+								</Surface>
+							</form>
+							<div className="mt-5 flex justify-center">
+								<Button
+									variant="ghost"
+									className="h-auto max-w-full rounded-xl justify-center border border-border bg-surface px-4 py-3 hover:bg-surface-secondary"
+									onPress={() => navigate("/integrations")}
+								>
+									<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
+										<Plug size={16} />
+									</span>
+									<span>
+										<span className="block text-sm font-medium">
+											Connect your apps
+										</span>
+										<span className="block text-xs text-muted">
+											Bring in context from GitHub and
+											manage access in one place.
+										</span>
+									</span>
+								</Button>
+							</div>
+							<div className="mt-4 flex flex-wrap justify-center gap-2">
+								{starterPrompts.map((template) => (
 									<Button
-										aria-label={
-											isCreating
-												? "Generating artefact"
-												: "Create artefact"
-										}
-										type="submit"
-										className="ml-auto size-9 min-w-9 rounded-xl p-0"
-										isPending={isCreating}
-										isDisabled={
-											!prompt.trim() &&
-											promptLinks.length === 0
+										key={template.id}
+										size="sm"
+										variant="outline"
+										className="rounded-full"
+										onPress={() =>
+											setPrompt(template.prompt)
 										}
 									>
-										{({ isPending }) =>
-											isPending ? (
-												<Spinner
-													color="current"
-													size="sm"
-												/>
-											) : (
-												<ArrowUp size={17} />
-											)
-										}
+										{template.label}
 									</Button>
-								</Toolbar>
-							</Surface>
-						</form>
-						<div className="mt-5 flex justify-center">
-							<Button
-								variant="ghost"
-								className="h-auto max-w-full rounded-xl justify-center border border-border bg-surface px-4 py-3 hover:bg-surface-secondary"
-								onPress={() => navigate("/integrations")}
-							>
-								<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
-									<Plug size={16} />
-								</span>
-								<span>
-									<span className="block text-sm font-medium">
-										Connect your apps
-									</span>
-									<span className="block text-xs text-muted">
-										Bring in context from GitHub and manage
-										access in one place.
-									</span>
-								</span>
-							</Button>
+								))}
+							</div>
 						</div>
-						<div className="mt-4 flex flex-wrap justify-center gap-2">
-							{starterPrompts.map((template) => (
-								<Button
-									key={template.id}
-									size="sm"
-									variant="outline"
-									className="rounded-full"
-									onPress={() => setPrompt(template.prompt)}
-								>
-									{template.label}
-								</Button>
-							))}
-						</div>
-					</div>
 					</div>
 				)}
 				{!isIntegrations && error && (
