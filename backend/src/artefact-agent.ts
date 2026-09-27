@@ -1005,7 +1005,7 @@ export async function generateArtefact(
 				instructions,
 				reasoning: { effort: reasoningEffort, summary: "concise" },
 				text: {
-					verbosity: "low",
+					verbosity: "medium",
 					format: {
 						type: "json_schema",
 						name: "artefact",

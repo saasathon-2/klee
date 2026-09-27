@@ -217,6 +217,7 @@ try {
 	});
 	assert.equal(commentary.join(""), "I’m outlining the key changes.");
 	assert.deepEqual(requestBody?.reasoning, { effort: "low", summary: "concise" });
+	assert.equal((requestBody?.text as { verbosity?: string } | undefined)?.verbosity, "medium");
 	assert.match(String(requestBody?.instructions), /choose one primary view/);
 	assert.match(String(requestBody?.instructions), /Klee is an AI workspace/);
 } finally {

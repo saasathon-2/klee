@@ -210,12 +210,10 @@ jobs:
     # Replace these with the CI jobs in this workflow.
     needs: [test, lint, build]
     if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: saasathon-2/integrations/github@main
-        with:
-          api-url: https://<api-domain>
-          pull-request: \${{ github.event.pull_request.number }}`}</CodeBlock>
+    uses: saasathon-2/integrations/.github/workflows/klee.yml@main
+    with:
+      api-url: https://<api-domain>
+      pull-request: \${{ github.event.pull_request.number }}`}</CodeBlock>
 			</Section>
 			<Section title="Example">
 				<Example document={landingSamples.review} />
