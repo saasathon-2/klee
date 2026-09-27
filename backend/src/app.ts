@@ -33,7 +33,12 @@ import {
 	snapshotUrl,
 	validSnapshotToken,
 } from "./artefact-snapshot.ts";
-import { getArtefactPreview, putArtefactPreview } from "./r2.ts";
+import {
+	getArtefactPreview,
+	getProfileAvatar,
+	putArtefactPreview,
+	putProfileAvatar,
+} from "./r2.ts";
 import { liveCheckStatuses } from "./live-status.ts";
 import {
 	addNoteEvidence,
@@ -55,7 +60,10 @@ import {
 	githubRepositoryInstallation,
 	validGitHubWebhook,
 } from "./github.ts";
-import { githubPullRequestIntent, type GenerationIntent } from "./artefact-recipes.ts";
+import {
+	githubPullRequestIntent,
+	type GenerationIntent,
+} from "./artefact-recipes.ts";
 
 const app: Express = express();
 const githubRefreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -141,6 +149,22 @@ async function sessionUser(req: Request, res: Response) {
 		return;
 	}
 	return session.user;
+}
+
+function profileImageType(body: Uint8Array) {
+	if (body[0] === 0xff && body[1] === 0xd8 && body[2] === 0xff)
+		return "image/jpeg";
+	if (
+		Buffer.from(body.subarray(0, 8)).equals(
+			Buffer.from("89504e470d0a1a0a", "hex"),
+		)
+	)
+		return "image/png";
+	if (
+		Buffer.from(body.subarray(0, 4)).toString() === "RIFF" &&
+		Buffer.from(body.subarray(8, 12)).toString() === "WEBP"
+	)
+		return "image/webp";
 }
 
 function requestTiming() {
@@ -355,8 +379,8 @@ async function refreshGitHubPullRequestArtefact(
 			owner,
 			githubPullRequestPrompt(repository, pullRequest, context),
 			true,
-		{ intent: githubPullRequestIntent() },
-		current?.artefactId ?? artefactId,
+			{ intent: githubPullRequestIntent() },
+			current?.artefactId ?? artefactId,
 			{ authorId: null, source: "github", installationId },
 		);
 		const url = `${env.corsOrigin}/artefacts/shared/${artefact.id}`;
@@ -439,6 +463,51 @@ app.get("/api/auth-providers", (_req, res) => {
 		google: Boolean(env.googleClientId && env.googleClientSecret),
 		github: Boolean(env.githubClientId && env.githubClientSecret),
 	});
+});
+
+app.put(
+	"/api/profile/avatar",
+	express.raw({
+		type: ["image/jpeg", "image/png", "image/webp"],
+		limit: "5mb",
+	}),
+	async (req, res) => {
+		const user = await sessionUser(req, res);
+		if (!user) return;
+		const contentType =
+			Buffer.isBuffer(req.body) && profileImageType(req.body);
+		if (!contentType)
+			return res
+				.status(400)
+				.json({ error: "Choose a PNG, JPEG, or WebP image." });
+		try {
+			if (!(await putProfileAvatar(user.id, req.body, contentType)))
+				return res
+					.status(503)
+					.json({ error: "Profile uploads are not configured." });
+			res.json({
+				image: `/api/profile/avatar/${user.id}?v=${Date.now()}`,
+			});
+		} catch (error) {
+			console.error("Profile avatar upload failed", error);
+			res.status(500).json({ error: "Could not save profile image." });
+		}
+	},
+);
+
+app.get("/api/profile/avatar/:userId", async (req, res) => {
+	const user = await sessionUser(req, res);
+	if (!user || user.id !== req.params.userId) return;
+	try {
+		const avatar = await getProfileAvatar(user.id);
+		if (!avatar) return res.sendStatus(404);
+		res.type(avatar.contentType)
+			.set("Cache-Control", "private, max-age=86400")
+			.send(Buffer.from(avatar.body));
+	} catch (error) {
+		console.error("Profile avatar read failed", error);
+		res.sendStatus(500);
+	}
 });
 
 app.get("/api/integrations/github/install", async (req, res) => {
@@ -706,11 +775,9 @@ app.post("/api/artefacts", async (req, res) => {
 	if (!prompt) return res.status(400).json({ error: "prompt is required" });
 	const googleFileIds = selectedGoogleFileIds(req.body?.googleFileIds);
 	if (!googleFileIds)
-		return res
-			.status(400)
-			.json({
-				error: "googleFileIds must contain up to five Google file IDs.",
-			});
+		return res.status(400).json({
+			error: "googleFileIds must contain up to five Google file IDs.",
+		});
 	let artefact;
 	try {
 		artefact = await createGeneratedArtefact(user.id, prompt, false, {
@@ -741,11 +808,9 @@ app.post("/api/artefacts/stream", async (req, res) => {
 	if (!prompt) return res.status(400).json({ error: "prompt is required" });
 	const googleFileIds = selectedGoogleFileIds(req.body?.googleFileIds);
 	if (!googleFileIds)
-		return res
-			.status(400)
-			.json({
-				error: "googleFileIds must contain up to five Google file IDs.",
-			});
+		return res.status(400).json({
+			error: "googleFileIds must contain up to five Google file IDs.",
+		});
 
 	res.status(200).set({
 		"Cache-Control": "no-cache",
@@ -1002,11 +1067,9 @@ app.patch("/api/artefacts/:id/comments/:commentId", async (req, res) => {
 	if (typeof req.body?.body === "string") {
 		const body = req.body.body.trim();
 		if (!body || body.length > 5000)
-			return res
-				.status(400)
-				.json({
-					error: "Comments must be between 1 and 5000 characters.",
-				});
+			return res.status(400).json({
+				error: "Comments must be between 1 and 5000 characters.",
+			});
 		const { rows } = await pool.query(
 			"update artefact_comment set body = $1 where id = $2 and artefact_id = $3 and author_id = $4 returning id",
 			[body, req.params.commentId, req.params.id, user.id],
@@ -1076,11 +1139,9 @@ app.post("/api/artefacts/:id/comments", async (req, res) => {
 		anchor !== null &&
 		!validCommentAnchor(anchor)
 	) {
-		return res
-			.status(400)
-			.json({
-				error: "Select a valid area of the artefact for this comment.",
-			});
+		return res.status(400).json({
+			error: "Select a valid area of the artefact for this comment.",
+		});
 	}
 	const id = randomUUID();
 	const { rows } = await timing.measure("comment", () =>

@@ -4,7 +4,7 @@ export const authClient = createAuthClient({
 	basePath: "/api/auth",
 });
 
-export const { signIn, signUp, signOut, useSession } = authClient;
+export const { signIn, signUp, signOut, updateUser, useSession } = authClient;
 
 export type SocialProvider = "google" | "github";
 
@@ -50,15 +50,20 @@ export function authErrorMessage(code: string) {
 	const messages: Record<string, string> = {
 		access_denied: "Sign-in was cancelled.",
 		state_mismatch: "That sign-in link expired. Please try again.",
-		please_restart_the_process: "That sign-in link expired. Please try again.",
+		please_restart_the_process:
+			"That sign-in link expired. Please try again.",
 		account_not_linked:
 			"This email already has an account. Sign in the way you did before, then link this provider from Integrations.",
-		email_not_found: "Your account doesn't share an email address, so we couldn't sign you in.",
-		unable_to_link_account: "We couldn't link that account. Please try again.",
+		email_not_found:
+			"Your account doesn't share an email address, so we couldn't sign you in.",
+		unable_to_link_account:
+			"We couldn't link that account. Please try again.",
 		email_does_not_match:
 			"Use the same Google email address as your Klee account.",
 		account_already_linked_to_different_user:
 			"That Google account is already linked to a different Klee account.",
 	};
-	return messages[code] ?? "Something went wrong signing in. Please try again.";
+	return (
+		messages[code] ?? "Something went wrong signing in. Please try again."
+	);
 }

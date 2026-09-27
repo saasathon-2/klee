@@ -1,4 +1,12 @@
-import { Card, Chip, Label, Paragraph, Separator, Skeleton, Slider } from "@heroui/react";
+import {
+	Card,
+	Chip,
+	Label,
+	Paragraph,
+	Separator,
+	Skeleton,
+	Slider,
+} from "@heroui/react";
 import { ArrowRight } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { ArtefactDocument } from "../../artefacts/model";
@@ -13,7 +21,10 @@ type Version = {
 	changes: { label: string; before: string | null; after: string | null }[];
 };
 
-const sources: Record<VersionSource, { label: string; color: "default" | "accent" | "success" }> = {
+const sources: Record<
+	VersionSource,
+	{ label: string; color: "default" | "accent" | "success" }
+> = {
 	generated: { label: "Generated", color: "accent" },
 	edit: { label: "Edited", color: "success" },
 	revision: { label: "AI revision", color: "accent" },
@@ -46,8 +57,12 @@ export function VersionHistory({
 	const documents = useRef(new Map<number, ArtefactDocument>());
 
 	useEffect(() => {
-		fetch(`/api/artefacts/${artefactId}/versions`, { credentials: "include" })
-			.then((response) => (response.ok ? response.json() : Promise.reject()))
+		fetch(`/api/artefacts/${artefactId}/versions`, {
+			credentials: "include",
+		})
+			.then((response) =>
+				response.ok ? response.json() : Promise.reject(),
+			)
 			.then((result: Version[]) => {
 				setVersions(result);
 				setSelected(result.length);
@@ -60,21 +75,38 @@ export function VersionHistory({
 		if (!versions || version === versions.length) return onView(undefined);
 		const cached = documents.current.get(version);
 		if (cached) return onView(cached);
-		const response = await fetch(`/api/artefacts/${artefactId}/versions/${version}`, {
-			credentials: "include",
-		});
+		const response = await fetch(
+			`/api/artefacts/${artefactId}/versions/${version}`,
+			{
+				credentials: "include",
+			},
+		);
 		if (!response.ok) return setError("Could not load that version.");
-		const { content } = (await response.json()) as { content: ArtefactDocument };
+		const { content } = (await response.json()) as {
+			content: ArtefactDocument;
+		};
 		documents.current.set(version, content);
 		onView(content);
 	}
 
-	if (error) return <Paragraph size="sm" className="text-danger">{error}</Paragraph>;
+	if (error)
+		return (
+			<Paragraph size="sm" className="text-danger">
+				{error}
+			</Paragraph>
+		);
 	if (!versions)
 		return (
-			<div role="status" aria-label="Loading history" className="space-y-3">
+			<div
+				role="status"
+				aria-label="Loading history"
+				className="space-y-3"
+			>
 				<Skeleton animationType="pulse" className="h-4 w-1/3 rounded" />
-				<Skeleton animationType="pulse" className="h-2 w-full rounded-full" />
+				<Skeleton
+					animationType="pulse"
+					className="h-2 w-full rounded-full"
+				/>
 			</div>
 		);
 	const current = versions[selected - 1];
@@ -105,6 +137,7 @@ export function VersionHistory({
 				<UserAvatar
 					image={current.author?.image}
 					name={current.author?.name ?? "GitHub"}
+					accountId={current.author?.id ?? "github"}
 					size="sm"
 				/>
 				<Paragraph size="sm" weight="medium">
@@ -114,7 +147,10 @@ export function VersionHistory({
 					{source.label}
 				</Chip>
 				<Paragraph size="xs" color="muted">
-					{new Date(current.createdAt).toLocaleString(undefined, dateFormat)}
+					{new Date(current.createdAt).toLocaleString(
+						undefined,
+						dateFormat,
+					)}
 				</Paragraph>
 				{versions.length === 1 && (
 					<Paragraph size="xs" color="muted">
@@ -141,12 +177,21 @@ export function VersionHistory({
 								</Paragraph>
 								<div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
 									{change.before !== null && (
-										<span className="text-muted line-through">{change.before}</span>
+										<span className="text-muted line-through">
+											{change.before}
+										</span>
 									)}
-									{change.before !== null && change.after !== null && (
-										<ArrowRight size={14} className="shrink-0 text-muted" />
-									)}
-									<span>{change.after ?? "Removed or restructured"}</span>
+									{change.before !== null &&
+										change.after !== null && (
+											<ArrowRight
+												size={14}
+												className="shrink-0 text-muted"
+											/>
+										)}
+									<span>
+										{change.after ??
+											"Removed or restructured"}
+									</span>
 								</div>
 							</div>
 						</Fragment>
