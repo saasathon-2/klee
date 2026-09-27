@@ -4,7 +4,7 @@ import { authClient, linkGitHub } from "../../lib/auth-client";
 
 /** Enables organisation access after the GitHub App is connected. */
 export function GitHubAccountLink({
-	returnTo = "/?panel=integrations",
+	returnTo = "/integrations",
 }: {
 	/** Where GitHub sends the user back to after linking. */
 	returnTo?: string;

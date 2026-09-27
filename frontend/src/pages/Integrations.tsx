@@ -4,9 +4,9 @@ import {
 	Card,
 	Chip,
 	Link,
-	Modal,
 	Paragraph,
 	Skeleton,
+	Tabs,
 } from "@heroui/react";
 import { ExternalLink, FileText, PlugZap } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -96,16 +96,16 @@ function IntegrationCard({
 	);
 }
 
-export function IntegrationsModal({
-	onClose,
+export function IntegrationsPage({
+	onFilesSelected,
 	onGoogleFilesSelected,
 }: {
-	onClose: () => void;
+	onFilesSelected: () => void;
 	onGoogleFilesSelected: (files: GoogleFile[]) => void;
 }) {
 	const [searchParams] = useSearchParams();
 	const [installations, setInstallations] = useState<GitHubInstallation[]>();
-	const [disconnecting, setDisconnecting] = useState<"github" | "google">();
+	const [disconnecting, setDisconnecting] = useState<string>();
 	const [error, setError] = useState("");
 	const [googleConnected, setGoogleConnected] = useState(false);
 	const [googleLoading, setGoogleLoading] = useState(true);
@@ -149,30 +149,29 @@ export function IntegrationsModal({
 		if (oauthError) setError(authErrorMessage(oauthError));
 	}, [searchParams]);
 
-	async function disconnectGitHub() {
-		if (!installations?.length) return;
-		setDisconnecting("github");
+	async function disconnectGitHub(installation: GitHubInstallation) {
+		setDisconnecting(installation.installationId);
 		setError("");
-		const disconnected = await Promise.all(
-			installations.map(async (installation) => {
-				const response = await fetch(
-					`/api/integrations/github/${installation.installationId}`,
-					{ method: "DELETE", credentials: "include" },
-				).catch(() => undefined);
-				return response?.ok;
-			}),
-		);
-		setInstallations((apps) =>
-			apps?.filter((_, index) => !disconnected[index]),
-		);
-		if (disconnected.some((result) => !result))
-			setError("Couldn't disconnect all GitHub accounts. Try again.");
+		const response = await fetch(
+			`/api/integrations/github/${installation.installationId}`,
+			{ method: "DELETE", credentials: "include" },
+		).catch(() => undefined);
+		if (response?.ok)
+			setInstallations((apps) =>
+				apps?.filter(
+					(app) => app.installationId !== installation.installationId,
+				),
+			);
+		else
+			setError(
+				`Couldn't remove the GitHub App from ${installation.accountLogin}. Try again.`,
+			);
 		setDisconnecting(undefined);
 	}
 
 	const connectGitHub = () =>
 		window.location.assign("/api/integrations/github/install");
-	const isConnected = Boolean(installations?.length);
+	const hasGitHubInstallations = Boolean(installations?.length);
 
 	async function connectGoogle() {
 		setError("");
@@ -251,7 +250,7 @@ export function IntegrationsModal({
 				})
 				.build();
 			picker.setVisible(true);
-			onClose();
+			onFilesSelected();
 		} catch (pickerError) {
 			setError(
 				pickerError instanceof Error
@@ -262,47 +261,59 @@ export function IntegrationsModal({
 	}
 
 	return (
-		<Modal>
-			<Modal.Backdrop
-				isOpen
-				onOpenChange={(open) => !open && onClose()}
-				variant="blur"
-			>
-				<Modal.Container placement="center" scroll="inside" size="lg">
-					<Modal.Dialog aria-label="Apps and integrations">
-						<Modal.CloseTrigger aria-label="Close apps and integrations" />
-						<Modal.Header className="flex-row items-center gap-3">
-							<Modal.Icon className="bg-accent text-accent-foreground">
-								<PlugZap size={20} />
-							</Modal.Icon>
-							<div className="min-w-0">
-								<Modal.Heading>
-									Apps & integrations
-								</Modal.Heading>
-								<Paragraph size="sm" color="muted">
-									Bring context in from the tools your team
-									already uses.
+		<div className="mx-auto w-full max-w-5xl pb-12">
+			<div className="flex items-center gap-3">
+				<div className="grid size-12 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
+					<PlugZap size={22} />
+				</div>
+				<div className="min-w-0">
+					<h1 className="text-3xl font-semibold tracking-tight">
+						Apps & integrations
+					</h1>
+					<Paragraph size="sm" color="muted" className="mt-1">
+						Connect sources for context and install apps where Klee
+						works.
+					</Paragraph>
+				</div>
+			</div>
+			<div className="mt-8">
+				{error && (
+					<Alert status="danger">
+						<Alert.Indicator />
+						<Alert.Content>
+							<Alert.Description>{error}</Alert.Description>
+						</Alert.Content>
+					</Alert>
+				)}
+				<Tabs defaultSelectedKey="context">
+					<Tabs.ListContainer>
+						<Tabs.List aria-label="Integration categories">
+							<Tabs.Tab id="context">Context sources</Tabs.Tab>
+							<Tabs.Tab id="apps">Apps & automations</Tabs.Tab>
+						</Tabs.List>
+					</Tabs.ListContainer>
+					<Tabs.Panel id="context" className="pt-4">
+						<section aria-labelledby="context-sources">
+							<div className="px-1">
+								<h2 id="context-sources" className="sr-only">
+									Context sources
+								</h2>
+								<Paragraph
+									size="xs"
+									color="muted"
+									className="mt-1"
+								>
+									Choose the information Klee can use in an
+									artefact.
 								</Paragraph>
 							</div>
-						</Modal.Header>
-						<Modal.Body className="flex flex-col gap-3">
-							{error && (
-								<Alert status="danger">
-									<Alert.Indicator />
-									<Alert.Content>
-										<Alert.Description>
-											{error}
-										</Alert.Description>
-									</Alert.Content>
-								</Alert>
-							)}
-							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+									<div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
 								<IntegrationCard
 									icon={<FileText size={20} />}
 									name="Google Docs & Sheets"
 									summary={
 										googleConnected
-											? "Add context to your next artefact."
+											? "Select development notes for your next artefact."
 											: "Use selected development notes to explain code changes."
 									}
 									status={
@@ -342,7 +353,7 @@ export function IntegrationsModal({
 														void disconnectGoogle()
 													}
 												>
-													Disconnect app
+													Disconnect Google
 												</Button>
 											)
 										) : (
@@ -352,50 +363,103 @@ export function IntegrationsModal({
 													void connectGoogle()
 												}
 											>
-												Connect app
+												Connect Google
 											</Button>
 										)
 									}
 								/>
+							</div>
+						</section>
+					</Tabs.Panel>
+					<Tabs.Panel id="apps" className="pt-4">
+						<section aria-labelledby="apps-and-automations">
+							<div className="px-1">
+								<h2
+									id="apps-and-automations"
+									className="sr-only"
+								>
+									Apps & automations
+								</h2>
+								<Paragraph
+									size="xs"
+									color="muted"
+									className="mt-1"
+								>
+									Install apps that post updates or react to
+									work in your tools.
+								</Paragraph>
+							</div>
+							<div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
 								<IntegrationCard
 									icon={<GitHubIcon size={20} />}
-									name="GitHub"
-									summary="Generate an artefact for every pull request."
+									name="GitHub pull requests"
+									summary="Create artefacts and comments for pull requests."
 									status={
 										installations === undefined ? (
 											<Skeleton
 												animationType="pulse"
 												className="h-5 w-16 rounded"
 											/>
-										) : isConnected ? (
+										) : hasGitHubInstallations ? (
 											<Chip size="sm" color="success">
-												Connected
+												{installations.length}{" "}
+												{installations.length === 1
+													? "installation"
+													: "installations"}
 											</Chip>
 										) : null
 									}
-									connected={isConnected}
+									connected={hasGitHubInstallations}
 									action={
-										installations ===
-										undefined ? null : isConnected ? (
-											<Button
-												fullWidth
-												variant="danger"
-												isPending={
-													disconnecting === "github"
-												}
-												onPress={() =>
-													void disconnectGitHub()
-												}
-											>
-												Disconnect app
-											</Button>
-										) : (
-											<Button
-												fullWidth
-												onPress={connectGitHub}
-											>
-												Connect app
-											</Button>
+										installations === undefined ? null : (
+											<>
+												<Button
+													fullWidth
+													onPress={connectGitHub}
+												>
+													{hasGitHubInstallations
+														? "Add organisation"
+														: "Install GitHub App"}
+												</Button>
+												{hasGitHubInstallations && (
+													<div className="mt-3 space-y-2">
+														{installations.map(
+															(installation) => (
+																<div
+																	key={
+																		installation.installationId
+																	}
+																	className="flex items-center justify-between gap-2 rounded-lg bg-surface px-3 py-2"
+																>
+																	<Paragraph
+																		size="xs"
+																		weight="medium"
+																	>
+																		{
+																			installation.accountLogin
+																		}
+																	</Paragraph>
+																	<Button
+																		size="sm"
+																		variant="danger"
+																		isPending={
+																			disconnecting ===
+																			installation.installationId
+																		}
+																		onPress={() =>
+																			void disconnectGitHub(
+																				installation,
+																			)
+																		}
+																	>
+																		Remove
+																	</Button>
+																</div>
+															),
+														)}
+													</div>
+												)}
+											</>
 										)
 									}
 								/>
@@ -410,7 +474,7 @@ export function IntegrationsModal({
 												openExternal(slackInstallUrl)
 											}
 										>
-											Connect app
+											Install app
 											<ExternalLink size={14} />
 										</Button>
 									}
@@ -426,31 +490,35 @@ export function IntegrationsModal({
 												openExternal(jiraInstallUrl)
 											}
 										>
-											Connect app
+											Install app
 											<ExternalLink size={14} />
 										</Button>
 									}
 								/>
 							</div>
-							{isConnected && (
-								<div className="rounded-xl border border-border px-4 py-1">
+						</section>
+						{hasGitHubInstallations && (
+							<section aria-labelledby="workspace-access">
+								<div className="px-1">
+									<h2
+										id="workspace-access"
+										className="text-sm font-semibold"
+									>
+										Workspace access
+									</h2>
+								</div>
+								<div className="mt-3 rounded-xl border border-border px-4 py-1">
 									<GitHubAccountLink />
 								</div>
-							)}
-							<Paragraph
-								size="sm"
-								color="muted"
-								className="px-1 pt-1"
-							>
-								Need help connecting an app?{" "}
-								<Link href="/docs" onPress={onClose}>
-									See the docs for additional help.
-								</Link>
-							</Paragraph>
-						</Modal.Body>
-					</Modal.Dialog>
-				</Modal.Container>
-			</Modal.Backdrop>
-		</Modal>
+							</section>
+						)}
+					</Tabs.Panel>
+				</Tabs>
+				<Paragraph size="sm" color="muted" className="px-1 pt-1">
+					Need help connecting an app?{" "}
+					<Link href="/docs">See the docs for additional help.</Link>
+				</Paragraph>
+			</div>
+		</div>
 	);
 }

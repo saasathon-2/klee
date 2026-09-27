@@ -486,7 +486,7 @@ async function completeGitHubInstallation(req: Request, res: Response) {
 			.send(
 				"This GitHub installation is connected to another Klee account.",
 			);
-	res.redirect(`${env.corsOrigin}/integrations?github=connected`);
+	res.redirect(`${env.corsOrigin}/integrations`);
 }
 
 app.get("/api/integrations/github/setup", completeGitHubInstallation);

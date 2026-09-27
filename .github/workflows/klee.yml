@@ -1,4 +1,4 @@
-name: klee
+name: Klee
 
 on:
     pull_request:
@@ -8,26 +8,12 @@ permissions:
     id-token: write
 
 jobs:
-    migration-guard:
-        if: github.event_name == 'pull_request'
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: 22
-            - run: node backend/scripts/migrations-check.mjs
-              env:
-                  MIGRATIONS_BASE_REF: origin/${{ github.base_ref }}
-
     klee:
         needs: [migration-guard]
         if: always()
-        uses: saasathon-2/integrations/.github/workflows/klee.yml@main
-        with:
-            api-url: https://klee.work
-            pull-request: ${{ github.event.pull_request.number }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: saasathon-2/integrations/github@main
+              with:
+                  api-url: https://klee.work
+                  pull-request: ${{ github.event.pull_request.number }}

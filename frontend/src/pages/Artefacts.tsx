@@ -23,6 +23,7 @@ import type { FormEvent } from "react";
 import { useDrop } from "react-aria-components";
 import {
 	Navigate,
+	useLocation,
 	useNavigate,
 	useParams,
 	useSearchParams,
@@ -35,7 +36,7 @@ import { takeLinkPaste } from "../lib/links";
 import type { ArtefactDocument } from "../artefacts/model";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { IntegrationsModal, type GoogleFile } from "./Integrations";
+import { IntegrationsPage, type GoogleFile } from "./Integrations";
 import { OrganisationsModal } from "./Organisations";
 import { useMediaQuery } from "../lib/use-media-query";
 import { ArtefactSkeleton } from "./artefact/ArtefactSkeleton";
@@ -120,6 +121,7 @@ function textareaCaretPoint(textarea: HTMLTextAreaElement) {
 
 export function Artefacts() {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { id: routeId, shareId } = useParams();
 	const [searchParams] = useSearchParams();
 	const id = routeId ?? searchParams.get("artefact") ?? undefined;
@@ -129,7 +131,7 @@ export function Artefacts() {
 	const viewerId = session?.user?.id;
 	const isShared = Boolean(shareId);
 	const panel = searchParams.get("panel");
-	const isIntegrations = panel === "integrations";
+	const isIntegrations = location.pathname === "/integrations";
 	const isOrganisations = panel === "organisations";
 	const [artefacts, setArtefacts] = useState<Artefact[]>([]);
 	const [artefactsLoaded, setArtefactsLoaded] = useState(false);
@@ -747,7 +749,7 @@ export function Artefacts() {
 			user={user}
 			isIntegrations={isIntegrations}
 			isOrganisations={isOrganisations}
-			onIntegrations={() => go("/?panel=integrations")}
+			onIntegrations={() => go("/integrations")}
 			onOrganisations={() => go("/?panel=organisations")}
 			onCreate={() => go("/")}
 			onOpenArtefact={(artefactId) => go(`/?artefact=${artefactId}`)}
@@ -802,7 +804,15 @@ export function Artefacts() {
 					</Button>
 					<ThemeToggle className="ml-auto" />
 				</header>
-				<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
+				{isIntegrations ? (
+					<main className="flex-1 overflow-y-auto px-6 py-8 sm:px-8">
+						<IntegrationsPage
+							onFilesSelected={() => navigate("/")}
+							onGoogleFilesSelected={setGoogleFiles}
+						/>
+					</main>
+				) : (
+					<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-20 sm:px-8">
 					<div className="mx-auto w-full max-w-2xl">
 						<div className="mb-8 text-center">
 							<KleeLogo
@@ -881,7 +891,7 @@ export function Artefacts() {
 											variant="ghost"
 											onPress={() =>
 												navigate(
-													"/?panel=integrations&select=google",
+													"/integrations?select=google",
 												)
 											}
 										>
@@ -921,7 +931,7 @@ export function Artefacts() {
 							<Button
 								variant="ghost"
 								className="h-auto max-w-full rounded-xl justify-center border border-border bg-surface px-4 py-3 hover:bg-surface-secondary"
-								onPress={() => navigate("/?panel=integrations")}
+								onPress={() => navigate("/integrations")}
 							>
 								<span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-foreground">
 									<Plug size={16} />
@@ -951,8 +961,9 @@ export function Artefacts() {
 							))}
 						</div>
 					</div>
-				</div>
-				{error && (
+					</div>
+				)}
+				{!isIntegrations && error && (
 					<p className="absolute bottom-8 left-8 text-sm text-danger">
 						{error}
 					</p>
@@ -982,12 +993,6 @@ export function Artefacts() {
 					onProjectChange={updateCurrent}
 					folders={folders}
 					onError={setError}
-				/>
-			)}
-			{isIntegrations && (
-				<IntegrationsModal
-					onClose={() => navigate("/")}
-					onGoogleFilesSelected={setGoogleFiles}
 				/>
 			)}
 			{isOrganisations && (
