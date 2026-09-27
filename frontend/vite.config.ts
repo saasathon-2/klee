@@ -6,6 +6,12 @@ export default defineConfig(({ mode }) => {
 	// Reads .env and .env.local, so the dev proxy follows the local API address.
 	const env = loadEnv(mode, process.cwd());
 	return {
+		define: {
+			__BUILD_VERSION__: JSON.stringify(
+				process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
+			),
+			__BUILD_UPDATED_AT__: JSON.stringify(new Date().toISOString()),
+		},
 		plugins: [react(), tailwindcss()],
 		server: {
 			proxy: {

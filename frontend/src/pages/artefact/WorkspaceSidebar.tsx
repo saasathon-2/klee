@@ -1,6 +1,6 @@
 import { Button, Label, ListBox, Popover, Separator } from "@heroui/react";
-import { Building2, LogOut, Plug, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Building2, LogOut, Plug, Plus, Settings } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { KleeIcon } from "../../components/KleeLogo";
 import { UserAvatar } from "../../components/UserAvatar";
 import { useTheme } from "../../lib/use-theme";
@@ -37,7 +37,12 @@ export function WorkspaceSidebar({
 	onDeleteFolder: (id: string) => Promise<unknown>;
 	onMoveArtefact: (id: string, folderId: string | null) => void;
 	selectedId?: string;
-	user: { name?: string | null; email: string; image?: string | null };
+	user: {
+		id: string;
+		name?: string | null;
+		email: string;
+		image?: string | null;
+	};
 	isIntegrations: boolean;
 	isOrganisations: boolean;
 	onIntegrations: () => void;
@@ -46,6 +51,8 @@ export function WorkspaceSidebar({
 	onOpenArtefact: (id: string) => void;
 	onSignOut: () => void;
 }) {
+	const navigate = useNavigate();
+	const location = useLocation();
 	const displayName = user.name || user.email;
 	const { theme } = useTheme();
 	return (
@@ -124,6 +131,7 @@ export function WorkspaceSidebar({
 						<UserAvatar
 							image={user.image}
 							name={displayName}
+							accountId={user.id}
 							size="md"
 						/>
 						<span className="min-w-0">
@@ -141,7 +149,11 @@ export function WorkspaceSidebar({
 					<Popover.Arrow />
 					<Popover.Dialog className="p-2">
 						<div className="flex items-center gap-3 px-2 py-2">
-							<UserAvatar image={user.image} name={displayName} />
+							<UserAvatar
+								image={user.image}
+								name={displayName}
+								accountId={user.id}
+							/>
 							<span className="min-w-0">
 								<span className="block truncate font-medium">
 									{displayName}
@@ -151,6 +163,21 @@ export function WorkspaceSidebar({
 								</span>
 							</span>
 						</div>
+						<Separator className="my-1" />
+						<Button
+							variant="ghost"
+							className="w-full justify-start"
+							onPress={() =>
+								navigate("/settings", {
+									state: {
+										from: `${location.pathname}${location.search}`,
+									},
+								})
+							}
+						>
+							<Settings size={16} />
+							Settings
+						</Button>
 						<Separator className="my-1" />
 						<Button
 							variant="ghost"
