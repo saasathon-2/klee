@@ -9,7 +9,6 @@ permissions:
 
 jobs:
     klee:
-        needs: [migration-guard]
         if: always()
         uses: saasathon-2/integrations/.github/workflows/klee.yml@main
         with:
