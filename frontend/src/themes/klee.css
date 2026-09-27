@@ -154,6 +154,27 @@
 	--chart-4: #c98500;
 }
 
+/* Accent choices share the same semantic tokens, so every existing control
+ * follows the selected colour without component-specific variants. */
+[data-accent="blue"] {
+	--accent: oklch(67% 0.16 250);
+	--accent-text: oklch(48% 0.15 250);
+	--focus: var(--accent);
+	--brand: var(--accent);
+}
+[data-accent="coral"] {
+	--accent: oklch(73% 0.18 32);
+	--accent-text: oklch(52% 0.17 32);
+	--focus: var(--accent);
+	--brand: var(--accent);
+}
+[data-accent="violet"] {
+	--accent: oklch(66% 0.18 300);
+	--accent-text: oklch(48% 0.16 300);
+	--focus: var(--accent);
+	--brand: var(--accent);
+}
+
 /* 3. Mode-independent tokens --------------------------------------------- */
 
 :root {

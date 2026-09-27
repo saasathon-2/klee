@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ThemeContext, type Theme } from "./theme-context";
+import { ThemeContext, type Accent, type Theme } from "./theme-context";
 
 function getInitialTheme(): Theme {
 	const stored = localStorage.getItem("theme");
@@ -9,19 +9,30 @@ function getInitialTheme(): Theme {
 		: "light";
 }
 
+function getInitialAccent(): Accent {
+	return "yellow";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
 	const [theme, setTheme] = useState<Theme>(getInitialTheme);
+	const [accent, setAccent] = useState<Accent>(getInitialAccent);
 
 	useEffect(() => {
 		document.documentElement.setAttribute("data-theme", theme);
 		localStorage.setItem("theme", theme);
 	}, [theme]);
+	useEffect(() => {
+		document.documentElement.setAttribute("data-accent", accent);
+		localStorage.setItem("accent", accent);
+	}, [accent]);
 
 	const toggleTheme = () =>
 		setTheme((t) => (t === "dark" ? "light" : "dark"));
 
 	return (
-		<ThemeContext.Provider value={{ theme, toggleTheme }}>
+		<ThemeContext.Provider
+			value={{ theme, accent, setTheme, setAccent, toggleTheme }}
+		>
 			{children}
 		</ThemeContext.Provider>
 	);

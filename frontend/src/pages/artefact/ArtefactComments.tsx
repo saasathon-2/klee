@@ -653,11 +653,7 @@ export function ArtefactComments({
 		<div className="relative flex min-h-0 flex-1 overflow-hidden">
 			{canDraw && (
 				<div className="pointer-events-none absolute inset-x-0 top-3 z-[65] flex justify-center">
-					<Chip
-						size="sm"
-						variant="primary"
-						className="h-7 shadow-lg"
-					>
+					<Chip size="sm" variant="primary" className="h-7 shadow-lg">
 						<MessageCirclePlus size={14} />
 						Drag across the artefact to comment
 					</Chip>
@@ -775,6 +771,7 @@ export function ArtefactComments({
 									>
 										<UserAvatar
 											image={comment.author.image}
+											accountId={comment.author.id}
 											name={
 												comment.author.name ||
 												"Teammate"
@@ -801,6 +798,9 @@ export function ArtefactComments({
 													<UserAvatar
 														image={
 															comment.author.image
+														}
+														accountId={
+															comment.author.id
 														}
 														name={
 															comment.author
@@ -1031,6 +1031,7 @@ export function ArtefactComments({
 										>
 											<UserAvatar
 												image={comment.author.image}
+												accountId={comment.author.id}
 												name={
 													comment.author.name ||
 													"Teammate"
@@ -1167,6 +1168,7 @@ function CommentCard({
 			<div className="flex items-center gap-2">
 				<UserAvatar
 					image={comment.author.image}
+					accountId={comment.author.id}
 					name={comment.author.name || "Teammate"}
 					size="sm"
 				/>
