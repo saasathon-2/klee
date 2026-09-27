@@ -3,6 +3,7 @@ import { ExternalLink, LibraryBig } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useDocumentTitle } from "../useDocumentTitle";
+import { JiraIcon, SlackIcon } from "../components/BrandIcons";
 
 const sections = [
 	{ id: "overview", label: "Overview" },
@@ -14,10 +15,18 @@ const sections = [
 	{ id: "help", label: "Troubleshooting" },
 ];
 
-const integrationsSource = "https://github.com/saasathon-2/integrations/tree/main";
+const integrationsSource =
+	"https://github.com/saasathon-2/integrations/tree/main";
 
-function scrollToSection(root: HTMLElement | null, id: string, behavior: ScrollBehavior = "smooth") {
-	root?.querySelector(`#${CSS.escape(id)}`)?.scrollIntoView({ behavior, block: "start" });
+function scrollToSection(
+	root: HTMLElement | null,
+	id: string,
+	behavior: ScrollBehavior = "smooth",
+) {
+	root?.querySelector(`#${CSS.escape(id)}`)?.scrollIntoView({
+		behavior,
+		block: "start",
+	});
 }
 
 export function Docs() {
@@ -78,7 +87,11 @@ export function Docs() {
 							href={`#${section.id}`}
 							onClick={(event) => {
 								event.preventDefault();
-								window.history.replaceState(null, "", `#${section.id}`);
+								window.history.replaceState(
+									null,
+									"",
+									`#${section.id}`,
+								);
 								scrollTo(section.id);
 							}}
 							className={`-ml-3 border-l-2 px-3 py-1 text-sm transition-colors ${activeSection === section.id ? "border-brand text-foreground" : "border-transparent text-muted hover:text-foreground"}`}
@@ -96,12 +109,16 @@ export function Docs() {
 					Klee docs
 				</Heading>
 				<Paragraph className="mt-4 text-lg text-muted">
-					Create artefacts, share them with your team, and connect GitHub, Slack, and Jira.
+					Create artefacts, share them with your team, and connect
+					GitHub, Slack, and Jira.
 				</Paragraph>
 
 				<DocsSection id="overview" title="Overview">
 					<Paragraph>
-						Klee builds an artefact from your prompt, links, and connected apps. An artefact combines blocks such as code diffs, Git graphs, flowcharts, checklists, and timelines.
+						Klee builds an artefact from your prompt, links, and
+						connected apps. An artefact combines blocks such as code
+						diffs, Git graphs, flowcharts, checklists, and
+						timelines.
 					</Paragraph>
 					<DocsList
 						title="Terms"
@@ -116,10 +133,21 @@ export function Docs() {
 
 				<DocsSection id="start" title="Create and edit">
 					<ol className="list-decimal space-y-2 pl-5">
-						<li>Describe the page you need. Paste pull request, issue, or web links for source context.</li>
-						<li>Review the generated blocks as Klee builds the artefact.</li>
-						<li>Enter a follow-up prompt in the bar at the bottom of the artefact. Klee highlights each changed block.</li>
-						<li>Press Edit to change text by hand, then press Save.</li>
+						<li>
+							Describe the page you need. Paste pull request,
+							issue, or web links for source context.
+						</li>
+						<li>
+							Review the generated blocks as Klee builds the
+							artefact.
+						</li>
+						<li>
+							Enter a follow-up prompt in the bar at the bottom of
+							the artefact. Klee highlights each changed block.
+						</li>
+						<li>
+							Press Edit to change text by hand, then press Save.
+						</li>
 						<li>Open History and select a version to review it.</li>
 					</ol>
 				</DocsSection>
@@ -145,12 +173,15 @@ export function Docs() {
 						]}
 					/>
 					<Paragraph>
-						Click a linked diagram node to open its source, such as a repository or service page.
+						Click a linked diagram node to open its source, such as
+						a repository or service page.
 					</Paragraph>
 				</DocsSection>
 
 				<DocsSection id="sharing" title="Sharing and comments">
-					<Paragraph>Press Share on an artefact you own to grant access.</Paragraph>
+					<Paragraph>
+						Press Share on an artefact you own to grant access.
+					</Paragraph>
 					<DocsList
 						title="Share options"
 						items={[
@@ -161,13 +192,16 @@ export function Docs() {
 						]}
 					/>
 					<Paragraph>
-						Press Comments, then drag across text to add a comment. Press Comments again to leave comment mode.
+						Press Comments, then drag across text to add a comment.
+						Press Comments again to leave comment mode.
 					</Paragraph>
 				</DocsSection>
 
 				<DocsSection id="github" title="GitHub">
 					<Paragraph>
-						Open Integrations in your workspace and connect GitHub. Install the Klee GitHub App on the repositories you choose.
+						Open Integrations in your workspace and connect GitHub.
+						Install the Klee GitHub App on the repositories you
+						choose.
 					</Paragraph>
 					<DocsList
 						title="App permissions"
@@ -178,7 +212,9 @@ export function Docs() {
 						]}
 					/>
 					<Paragraph>
-						Add this job to your existing pull-request workflow. Replace the names in <code>needs</code> with every test, lint, and build job that should finish before Klee runs.
+						Add this job to your existing pull-request workflow.
+						Replace the names in <code>needs</code> with every test,
+						lint, and build job that should finish before Klee runs.
 					</Paragraph>
 					<pre className="overflow-x-auto rounded-xl border border-border bg-surface-secondary p-4 font-mono text-sm leading-6 text-foreground">
 						<code>{`name: Klee
@@ -213,7 +249,12 @@ jobs:
 
 				<DocsSection id="slack-jira" title="Slack and Jira">
 					<DocsList
-						title="Slack"
+						title={
+							<div className="flex flex-row items-center gap-2">
+								<SlackIcon size={16} />
+								Slack
+							</div>
+						}
 						items={[
 							"Install the Klee app from Integrations.",
 							"Paste a shared artefact link in a channel to show a preview.",
@@ -221,7 +262,12 @@ jobs:
 						]}
 					/>
 					<DocsList
-						title="Jira"
+						title={
+							<div className="flex flex-row items-center gap-2">
+								<JiraIcon size={16} />
+								Jira
+							</div>
+						}
 						items={[
 							"Install the Klee app from the Atlassian Marketplace.",
 							"Paste a shared artefact link in an issue description or comment.",
@@ -229,10 +275,18 @@ jobs:
 						]}
 					/>
 					<div className="flex gap-4 text-sm">
-						<Link href={`${integrationsSource}/slack`} target="_blank" className="inline-flex items-center gap-1">
+						<Link
+							href={`${integrationsSource}/slack`}
+							target="_blank"
+							className="inline-flex items-center gap-1"
+						>
 							Slack app source <ExternalLink size={14} />
 						</Link>
-						<Link href={`${integrationsSource}/jira`} target="_blank" className="inline-flex items-center gap-1">
+						<Link
+							href={`${integrationsSource}/jira`}
+							target="_blank"
+							className="inline-flex items-center gap-1"
+						>
 							Jira app source <ExternalLink size={14} />
 						</Link>
 					</div>
@@ -255,7 +309,8 @@ jobs:
 						]}
 					/>
 					<Paragraph>
-						Anyone with a public link can view the artefact. Turn off link sharing after you finish.
+						Anyone with a public link can view the artefact. Turn
+						off link sharing after you finish.
 					</Paragraph>
 				</DocsSection>
 			</article>
@@ -287,7 +342,7 @@ function DocsSection({
 	);
 }
 
-function DocsList({ title, items }: { title: string; items: string[] }) {
+function DocsList({ title, items }: { title: ReactNode; items: string[] }) {
 	return (
 		<div className="rounded-lg border border-border bg-surface p-5">
 			<p className="font-semibold text-foreground">{title}</p>
