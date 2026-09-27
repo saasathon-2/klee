@@ -9,11 +9,8 @@ permissions:
 
 jobs:
     klee:
-        needs: [migration-guard]
         if: always()
-        runs-on: ubuntu-latest
-        steps:
-            - uses: saasathon-2/integrations/github@main
-              with:
-                  api-url: https://klee.work
-                  pull-request: ${{ github.event.pull_request.number }}
+        uses: saasathon-2/integrations/.github/workflows/klee.yml@main
+        with:
+            api-url: https://klee.work
+            pull-request: ${{ github.event.pull_request.number }}
