@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { readFileSync } from "node:fs";
 import type { ArtefactDocument, ArtefactNode } from "./artefact-model.ts";
-import { validateRecipe, type GenerationIntent } from "./artefact-recipes.ts";
+import type { GenerationIntent } from "./artefact-recipes.ts";
 
 const shortText = z.string().trim().min(1).max(120);
 const detailText = z.string().trim().min(1).max(280);
@@ -929,11 +929,6 @@ export function toDocument(generation: Generation, intent?: GenerationIntent): A
 			},
 		});
 	}
-	if (intent)
-		validateRecipe(
-			intent,
-			blocks.filter((block) => block.template !== "glue").map((block) => block.template),
-		);
 	const nodes: ArtefactNode[] = blocks.map((block, index) => ({
 		id: `block-${index + 1}`,
 		template: block.template,
@@ -1132,7 +1127,9 @@ export async function generateArtefact(
 				providerMs: Math.round(performance.now() - startedAt),
 			},
 		};
-	} catch {
-		throw new ArtefactAgentError("invalid_agent_output");
+	} catch (error) {
+		throw new ArtefactAgentError("invalid_agent_output", {
+			message: error instanceof Error ? error.message : "Artefact validation failed",
+		});
 	}
 }

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 process.env.DATABASE_URL ??= "postgres://localhost/test";
 
 const { generateArtefact, jsonSchema, toDocument } = await import("./artefact-agent.ts");
+const { githubPullRequestIntent } = await import("./artefact-recipes.ts");
 
 function schemaFormats(value: unknown): string[] {
 	if (!value || typeof value !== "object") return [];
@@ -27,6 +28,17 @@ const document = toDocument({
 	],
 });
 assert.equal(document.root.children?.[0]?.children?.length, 1);
+assert.doesNotThrow(() =>
+	toDocument({
+		title: "PR review",
+		icon: "git-pull-request",
+		category: "developer-page",
+		eyebrow: "GitHub",
+		summary: "A review",
+		tags: ["PR"],
+		blocks: [{ template: "prose", data: { title: "Summary", body: "Relevant change." } }],
+	}, githubPullRequestIntent()),
+);
 
 const richDocument = toDocument({
 	title: "Release brief",
