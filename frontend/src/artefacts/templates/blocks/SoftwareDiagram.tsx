@@ -25,23 +25,43 @@ import type {
 	NodeProps,
 } from "@xyflow/react";
 import dagre from "dagre";
-import { Plus, Trash2 } from "lucide-react";
+import { AppWindow, Database, Globe, Layers, Plus, Server, Trash2, Workflow } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import type { SoftwareDiagramEdge, SoftwareDiagramNode } from "../../model";
 import { BlockSection } from "../page/BlockSection";
+import { DiagramDetails } from "../page/DiagramCanvas";
 import { SourceLink } from "../page/SourceLink";
 import type { TemplateProps, TemplateSelectionInfo } from "../types";
 
 const nodeWidth = 256;
-const nodeHeight = 120;
+const nodeHeight = 176;
 const handlePositions = [Position.Top, Position.Right, Position.Bottom, Position.Left];
 type NodeField = "label" | "detail";
+const componentKinds = {
+	client: { label: "Client", icon: AppWindow, color: "var(--chart-1)" },
+	service: { label: "Service", icon: Server, color: "var(--chart-2)" },
+	database: { label: "Database", icon: Database, color: "var(--chart-3)" },
+	cache: { label: "Cache", icon: Layers, color: "var(--chart-4)" },
+	queue: { label: "Queue", icon: Workflow, color: "var(--chart-1)" },
+	external: { label: "External", icon: Globe, color: "var(--chart-2)" },
+	component: { label: "Component", icon: Layers, color: "var(--brand)" },
+} as const;
+const editableKinds: NonNullable<SoftwareDiagramNode["kind"]>[] = [
+	"client",
+	"service",
+	"database",
+	"cache",
+	"queue",
+	"external",
+];
 type FlowNodeData = SoftwareDiagramNode & {
 	isEditing: boolean;
 	editingField?: NodeField;
 	onStartEdit?: (field: NodeField) => void;
 	onCommit?: (field: NodeField, value: string) => void;
+	onKindChange?: (kind: NonNullable<SoftwareDiagramNode["kind"]>) => void;
+	onUrlCommit?: (url: string | null) => void;
 	onStopEdit?: () => void;
 	onRemove?: () => void;
 	onResizeEnd?: (position: { x: number; y: number }, width: number, height: number) => void;
@@ -50,10 +70,12 @@ type FlowNode = XYFlowNode<FlowNodeData, "component">;
 type FlowEdgeData = {
 	index: number;
 	label: string;
+	url: string;
 	isEditing: boolean;
 	editing: boolean;
 	onStartEdit?: () => void;
 	onCommit?: (value: string) => void;
+	onUrlCommit?: (url: string | null) => void;
 	onStopEdit?: () => void;
 	onRemove?: () => void;
 };
@@ -143,20 +165,21 @@ function EditableNodeText({
 }
 
 function ComponentNode({ data }: NodeProps<FlowNode>) {
+	const kind = componentKinds[data.kind ?? "component"];
+	const Icon = kind.icon;
 	return (
 		<div
 			role="group"
 			aria-label={`${data.label}: ${data.detail}`}
 			className={`software-diagram-node group relative flex size-full flex-col rounded-xl border border-l-4 bg-surface p-4 text-surface-foreground shadow-sm ${data.isEditing ? "border-[color:var(--chart-1)]" : "border-divider"}`}
 			style={{
-				borderLeftColor:
-					"color-mix(in oklab, var(--brand) 35%, var(--brand-foreground))",
+				borderLeftColor: kind.color,
 			}}
 		>
 			<NodeResizer
 				isVisible={data.isEditing}
 				minWidth={160}
-				minHeight={120}
+				minHeight={176}
 				handleClassName="!size-2.5 !rounded-sm !border-brand !bg-surface"
 				lineClassName="!border-brand"
 				onResizeEnd={(_, { x, y, width, height }) =>
@@ -192,6 +215,25 @@ function ComponentNode({ data }: NodeProps<FlowNode>) {
 			)}
 			{data.isEditing ? (
 				<>
+					<div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted">
+						<Icon size={14} aria-hidden />
+						<select
+							aria-label="Component type"
+							className="nodrag nowheel rounded border border-divider bg-surface px-1 py-0.5 text-xs text-foreground outline-none"
+							value={data.kind ?? "service"}
+							onChange={(event) =>
+								data.onKindChange?.(
+									event.target.value as NonNullable<SoftwareDiagramNode["kind"]>,
+								)
+							}
+						>
+							{editableKinds.map((value) => (
+								<option key={value} value={value}>
+									{componentKinds[value].label}
+								</option>
+							))}
+						</select>
+					</div>
 					<div className="pr-5">
 						<EditableNodeText
 							field="label"
@@ -212,14 +254,28 @@ function ComponentNode({ data }: NodeProps<FlowNode>) {
 							onStopEdit={data.onStopEdit}
 						/>
 					</div>
+					<input
+						key={data.url ?? ""}
+						type="url"
+						aria-label="Component source link"
+						defaultValue={data.url ?? ""}
+						placeholder="Source link (optional)"
+						className="nodrag nowheel mt-2 w-full rounded border border-divider bg-surface px-1 py-0.5 text-xs text-muted outline-none"
+						onBlur={(event) => data.onUrlCommit?.(event.currentTarget.value.trim() || null)}
+						onClick={(event) => event.stopPropagation()}
+					/>
 				</>
 			) : (
 				// Fills the card so a linked component opens its source from anywhere on it.
 				<SourceLink href={data.url} className="-m-4 flex min-h-0 flex-1 flex-col rounded-xl p-4">
-					<div className="line-clamp-2 pr-5 text-base font-semibold leading-6">
+					<div className="flex items-center gap-1.5 text-xs font-medium text-muted">
+						<Icon size={14} aria-hidden />
+						{kind.label}
+					</div>
+					<div className="mt-1 line-clamp-2 pr-5 text-base font-semibold leading-6">
 						{data.label}
 					</div>
-					<div className="mt-2 line-clamp-2 text-sm leading-5 text-muted">
+					<div className="mt-1 line-clamp-3 text-sm leading-5 text-muted">
 						{data.detail}
 					</div>
 				</SourceLink>
@@ -230,13 +286,13 @@ function ComponentNode({ data }: NodeProps<FlowNode>) {
 
 function EditableRelationshipLabel({ data }: { data: FlowEdgeData }) {
 	const [draft, setDraft] = useState(data.label);
-	const cancelled = useRef(false);
+	const [sourceDraft, setSourceDraft] = useState(data.url);
 	useEffect(() => {
 		if (!data.editing) {
 			setDraft(data.label);
-			cancelled.current = false;
+			setSourceDraft(data.url);
 		}
-	}, [data.editing, data.label]);
+	}, [data.editing, data.label, data.url]);
 
 	if (!data.isEditing)
 		return data.label ? (
@@ -246,24 +302,39 @@ function EditableRelationshipLabel({ data }: { data: FlowEdgeData }) {
 		) : null;
 	if (data.editing)
 		return (
-			<input
-				autoFocus
-				aria-label="Relationship label"
-				className="nodrag nowheel w-32 rounded border border-[color:var(--chart-1)] bg-surface px-1 py-0.5 text-xs text-foreground outline-none"
-				value={draft}
-				onChange={(event) => setDraft(event.target.value)}
-				onBlur={() => {
-					if (!cancelled.current) data.onCommit?.(draft);
+			<form
+				className="nodrag nowheel flex w-48 flex-col gap-1 rounded border border-[color:var(--chart-1)] bg-surface p-1 shadow-sm"
+				onSubmit={(event) => {
+					event.preventDefault();
+					data.onCommit?.(draft);
+					data.onUrlCommit?.(sourceDraft.trim() || null);
 					data.onStopEdit?.();
 				}}
-				onKeyDown={(event) => {
-					if (event.key === "Enter") event.currentTarget.blur();
-					if (event.key === "Escape") {
-						cancelled.current = true;
-						data.onStopEdit?.();
-					}
-				}}
-			/>
+			>
+				<input
+					autoFocus
+					aria-label="Relationship label"
+					className="w-full rounded bg-surface px-1 py-0.5 text-xs text-foreground outline-none"
+					value={draft}
+					onChange={(event) => setDraft(event.target.value)}
+					onKeyDown={(event) => {
+						if (event.key === "Escape") {
+							data.onStopEdit?.();
+						}
+					}}
+				/>
+				<input
+					type="url"
+					aria-label="Relationship source link"
+					className="w-full rounded bg-surface px-1 py-0.5 text-xs text-muted outline-none"
+					value={sourceDraft}
+					placeholder="Source link (optional)"
+					onChange={(event) => setSourceDraft(event.target.value)}
+				/>
+				<button type="submit" className="rounded bg-brand px-1.5 py-0.5 text-xs font-medium text-brand-foreground">
+					Save
+				</button>
+			</form>
 		);
 	return (
 		<div className="artefact-editable group flex items-center gap-0.5 rounded border border-dashed px-1 py-0.5 text-xs text-foreground shadow-sm">
@@ -408,6 +479,7 @@ function layoutDiagram(nodes: SoftwareDiagramNode[], edges: SoftwareDiagramEdge[
 		data: {
 			index,
 			label: edge.label ?? "",
+			url: edge.url ?? "",
 			isEditing: false,
 			editing: false,
 		},
@@ -446,7 +518,6 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 		}
 	}, [context.isEditing]);
 
-	const labels = new Map(nodes.map((item) => [item.id, item.label]));
 	const nodeById = new Map(nodes.map((item) => [item.id, item]));
 	const update = (key: "nodes" | "edges", value: unknown) =>
 		context.onEdit?.(node.id, [key], value);
@@ -479,6 +550,7 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 				sourceHandle: connection.sourceHandle,
 				targetHandle: connection.targetHandle,
 				label: "",
+				url: null,
 			},
 		];
 		setFlowEdges((current) => [
@@ -493,6 +565,7 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 				data: {
 					index: edges.length,
 					label: "",
+					url: "",
 					isEditing: context.isEditing,
 					editing: false,
 				},
@@ -540,6 +613,7 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 			{
 				id,
 				label: "New component",
+				kind: "service",
 				detail: "Describe this component",
 				position: {
 					x: position.x - nodeWidth / 2,
@@ -570,6 +644,18 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 							item.id === flowNode.id ? { ...item, [field]: value } : item,
 						),
 					),
+				onKindChange: (kind: NonNullable<SoftwareDiagramNode["kind"]>) =>
+					updateNodes(
+						nodes.map((item) =>
+							item.id === flowNode.id ? { ...item, kind } : item,
+						),
+					),
+				onUrlCommit: (url: string | null) =>
+					updateNodes(
+						nodes.map((item) =>
+							item.id === flowNode.id ? { ...item, url } : item,
+						),
+					),
 			onStopEdit: () => setEditingNode(undefined),
 			onRemove: () => removeNode(flowNode.id),
 			onResizeEnd: (
@@ -595,6 +681,7 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 			data: {
 				index,
 				label: current?.label ?? "",
+				url: current?.url ?? "",
 				isEditing: context.isEditing,
 				editing: editingEdge === flowEdge.id,
 				onStartEdit: () => {
@@ -605,6 +692,12 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 					updateEdges(
 						edges.map((edge, edgeIndex) =>
 							edgeIndex === index ? { ...edge, label: value } : edge,
+						),
+					),
+				onUrlCommit: (url: string | null) =>
+					updateEdges(
+						edges.map((edge, edgeIndex) =>
+							edgeIndex === index ? { ...edge, url } : edge,
 						),
 					),
 				onStopEdit: () => setEditingEdge(undefined),
@@ -633,6 +726,7 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 					edgeTypes={edgeTypes}
 					fitView
 					fitViewOptions={{ padding: 0.24, maxZoom: 1 }}
+					minZoom={0.75}
 					nodesDraggable={context.isEditing}
 					nodesConnectable={context.isEditing}
 					edgesReconnectable={context.isEditing}
@@ -672,15 +766,7 @@ export function SoftwareDiagram({ node, context }: TemplateProps) {
 					{context.isEditing && <AddComponentButton onAdd={addComponent} />}
 				</ReactFlow>
 			</div>
-			<ul className="sr-only" aria-label="Component relationships">
-				{edges.map((edge, index) => (
-					<li key={`${edge.source}-${edge.target}-${index}`}>
-						{labels.get(edge.source)}{" "}
-						{edge.label ? `${edge.label} ` : "depends on "}
-						{labels.get(edge.target)}
-					</li>
-				))}
-			</ul>
+			<DiagramDetails nodes={nodes} edges={edges} />
 		</BlockSection>
 	);
 }

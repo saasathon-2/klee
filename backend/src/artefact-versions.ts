@@ -92,6 +92,15 @@ export function isTextOnlyEdit(patch: PatchOp[], before: unknown) {
 const isFiniteNumber = (value: unknown): value is number =>
 	typeof value === "number" && Number.isFinite(value);
 
+const softwareDiagramKinds = new Set([
+	"client",
+	"service",
+	"database",
+	"cache",
+	"queue",
+	"external",
+]);
+
 function isSoftwareDiagram(value: unknown) {
 	if (!isObject(value) || !Array.isArray(value.nodes) || !Array.isArray(value.edges))
 		return false;
@@ -103,6 +112,8 @@ function isSoftwareDiagram(value: unknown) {
 			!node.id ||
 			typeof node.label !== "string" ||
 			typeof node.detail !== "string" ||
+			(node.kind !== undefined &&
+				(typeof node.kind !== "string" || !softwareDiagramKinds.has(node.kind))) ||
 			ids.has(node.id)
 		)
 			return false;
@@ -128,7 +139,7 @@ function isSoftwareDiagram(value: unknown) {
 			!ids.has(edge.source) ||
 			!ids.has(edge.target) ||
 			edge.source === edge.target ||
-			![edge.sourceHandle, edge.targetHandle, edge.label].every(
+			![edge.sourceHandle, edge.targetHandle, edge.label, edge.url].every(
 				(field) => field === undefined || field === null || typeof field === "string",
 			)
 		)
@@ -144,13 +155,13 @@ export function isTextOrDiagramEdit(
 	after: unknown,
 ) {
 	return patch.every((operation) => {
-		if (isTextOnlyEdit([operation], before)) return true;
 		const dataIndex = operation.path.indexOf("data");
-		if (dataIndex < 0 || !["nodes", "edges"].includes(String(operation.path[dataIndex + 1])))
-			return false;
+		if (dataIndex < 0) return isTextOnlyEdit([operation], before);
 		const node = valueAt(before, operation.path.slice(0, dataIndex));
 		const data = valueAt(after, operation.path.slice(0, dataIndex + 1));
-		return isObject(node) && node.template === "software-diagram" && isSoftwareDiagram(data);
+		if (isObject(node) && node.template === "software-diagram")
+			return isSoftwareDiagram(data);
+		return isTextOnlyEdit([operation], before);
 	});
 }
 

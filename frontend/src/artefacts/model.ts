@@ -1,8 +1,17 @@
 export type Metric = { label: string; value: string; detail: string };
 export type FlowNode = { label: string; detail: string };
+export type SoftwareDiagramKind =
+	| "client"
+	| "service"
+	| "database"
+	| "cache"
+	| "queue"
+	| "external";
 export type SoftwareDiagramNode = {
 	id: string;
 	label: string;
+	/** Visual category for a component in a software diagram. */
+	kind?: SoftwareDiagramKind;
 	detail: string;
 	position?: { x: number; y: number };
 	width?: number;
@@ -16,6 +25,8 @@ export type SoftwareDiagramEdge = {
 	sourceHandle?: string | null;
 	targetHandle?: string | null;
 	label?: string | null;
+	/** Source that establishes this specific relationship. */
+	url?: string | null;
 };
 export type ArtefactTask = {
 	id: string;

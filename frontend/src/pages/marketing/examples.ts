@@ -440,6 +440,7 @@ const artefactExampleBlocks: Record<ArtefactExample, ArtefactNode[]> = {
 					{
 						id: "auth-client",
 						label: "Auth client",
+						kind: "client",
 						detail: "Calls the API gateway as before.",
 						change: "unchanged",
 						owner: "Identity",
@@ -447,6 +448,7 @@ const artefactExampleBlocks: Record<ArtefactExample, ArtefactNode[]> = {
 					{
 						id: "gateway",
 						label: "API gateway",
+						kind: "service",
 						detail: "Validates sessions against the key store.",
 						change: "modified",
 						owner: "Platform",
@@ -454,6 +456,7 @@ const artefactExampleBlocks: Record<ArtefactExample, ArtefactNode[]> = {
 					{
 						id: "key-store",
 						label: "Encrypted key store",
+						kind: "database",
 						detail: "Stores rotated keys with a 24-hour expiry.",
 						change: "at-risk",
 						owner: "Data",
@@ -461,6 +464,7 @@ const artefactExampleBlocks: Record<ArtefactExample, ArtefactNode[]> = {
 					{
 						id: "login",
 						label: "Login handler",
+						kind: "service",
 						detail: "Writes new session keys after sign-in.",
 						change: "added",
 						owner: "Identity",

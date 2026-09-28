@@ -16,14 +16,29 @@ const metricSchema = z
 const flowNodeSchema = z
 	.object({ label: shortText, detail: shortText })
 	.strict();
+const softwareDiagramKindSchema = z.enum([
+	"client",
+	"service",
+	"database",
+	"cache",
+	"queue",
+	"external",
+]);
 const softwareDiagramNodeSchema = z
-	.object({ id: shortText, label: shortText, detail: detailText, url: z.string().nullable() })
+	.object({
+		id: shortText,
+		label: shortText,
+		kind: softwareDiagramKindSchema,
+		detail: detailText,
+		url: z.string().nullable(),
+	})
 	.strict();
 const softwareDiagramEdgeSchema = z
 	.object({
 		source: shortText,
 		target: shortText,
 		label: z.string().trim().max(120).nullable(),
+		url: z.string().nullable(),
 	})
 	.strict();
 const taskSchema = z
@@ -152,6 +167,7 @@ const impactNodeSchema = z
 	.object({
 		id: shortText,
 		label: shortText,
+		kind: softwareDiagramKindSchema,
 		detail: detailText,
 		change: z.enum(["added", "modified", "at-risk", "unchanged"]),
 		owner: optionalText,
@@ -890,21 +906,21 @@ export function toDocument(generation: Generation, intent?: GenerationIntent): A
 			const ids = new Set(block.data.nodes.map((node) => node.id));
 			if (ids.size !== block.data.nodes.length)
 				throw new Error("Software diagram node IDs must be unique");
-			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
+			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target) || edge.source === edge.target))
 				throw new Error("Software diagram edges must reference existing nodes");
 		}
 		if (block.template === "change-impact-map" || block.template === "dependency-graph") {
 			const ids = new Set(block.data.nodes.map((node) => node.id));
 			if (ids.size !== block.data.nodes.length)
 				throw new Error("Diagram node IDs must be unique");
-			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
+			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target) || edge.source === edge.target))
 				throw new Error("Diagram edges must reference existing nodes");
 		}
 		if (block.template === "flowchart") {
 			const ids = new Set(block.data.steps.map((step) => step.id));
 			if (ids.size !== block.data.steps.length)
 				throw new Error("Flowchart step IDs must be unique");
-			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target)))
+			if (block.data.edges.some((edge) => !ids.has(edge.source) || !ids.has(edge.target) || edge.source === edge.target))
 				throw new Error("Flowchart edges must reference existing steps");
 		}
 		if (block.template === "git-graph") {

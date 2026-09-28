@@ -150,6 +150,22 @@ assert.throws(() =>
 assert.throws(() =>
 	blocksOf([
 		{
+			template: "software-diagram",
+			data: {
+				title: "Architecture",
+				description: "A self-reference is not a useful relationship.",
+				nodes: [
+					{ id: "api", label: "API", kind: "service", detail: "Serves requests", url: null },
+					{ id: "db", label: "Users", kind: "database", detail: "Stores accounts", url: null },
+				],
+				edges: [{ source: "api", target: "api", label: "calls", url: null }],
+			},
+		},
+	]),
+);
+assert.throws(() =>
+	blocksOf([
+		{
 			template: "sprint-timeline",
 			data: { title: "Sprint", start: "2026-10-10", end: "2026-10-01", today: null, milestones: [], items: [] },
 		},
