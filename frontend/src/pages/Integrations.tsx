@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { GitHubIcon, JiraIcon, SlackIcon } from "../components/BrandIcons";
-import { authErrorMessage, linkGoogleDrive } from "../lib/auth-client";
+import { authErrorMessage, linkGitHubContext, linkGoogleDrive } from "../lib/auth-client";
 import { GitHubAccountLink } from "./artefact/GitHubAccountLink";
 
 type GitHubInstallation = {
@@ -110,6 +110,7 @@ export function IntegrationsPage({
 	const [googleConnected, setGoogleConnected] = useState(false);
 	const [googleLoading, setGoogleLoading] = useState(true);
 	const [googleOAuthConfigured, setGoogleOAuthConfigured] = useState(false);
+	const [githubContextConnected, setGitHubContextConnected] = useState<boolean>();
 	const isSelectingGoogleFiles = searchParams.get("select") === "google";
 
 	useEffect(() => {
@@ -142,6 +143,14 @@ export function IntegrationsPage({
 				setGoogleOAuthConfigured(providers.google),
 			)
 			.catch(() => setGoogleOAuthConfigured(false));
+		fetch("/api/integrations/github/context", { credentials: "include" })
+			.then((response) =>
+				response.ok
+					? (response.json() as Promise<{ connected: boolean }>)
+					: { connected: false },
+			)
+			.then((data) => setGitHubContextConnected(data.connected))
+			.catch(() => setGitHubContextConnected(false));
 	}, []);
 
 	useEffect(() => {
@@ -172,6 +181,27 @@ export function IntegrationsPage({
 	const connectGitHub = () =>
 		window.location.assign("/api/integrations/github/install");
 	const hasGitHubInstallations = Boolean(installations?.length);
+
+	async function connectGitHubContext() {
+		setError("");
+		const { error: linkError } = await linkGitHubContext(
+			"/integrations?github=context-connected",
+		);
+		if (linkError)
+			setError(linkError.message ?? "Couldn't connect GitHub context.");
+	}
+
+	async function disconnectGitHubContext() {
+		setDisconnecting("github-context");
+		setError("");
+		const response = await fetch("/api/integrations/github/context", {
+			method: "DELETE",
+			credentials: "include",
+		}).catch(() => undefined);
+		if (response?.ok) setGitHubContextConnected(false);
+		else setError("Couldn't disconnect GitHub context. Try again.");
+		setDisconnecting(undefined);
+	}
 
 	async function connectGoogle() {
 		setError("");
@@ -308,6 +338,39 @@ export function IntegrationsPage({
 								</Paragraph>
 							</div>
 									<div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+								<IntegrationCard
+									icon={<GitHubIcon size={20} />}
+									name="GitHub account"
+									summary={
+										githubContextConnected
+											? "Recent repositories, open pull requests, and authored commits are used when relevant."
+											: "Use your repositories, pull requests, and commits as context. GitHub's repo permission is used read-only by Klee."
+									}
+									status={
+										githubContextConnected === undefined ? (
+											<Skeleton animationType="pulse" className="h-5 w-16 rounded" />
+										) : githubContextConnected ? (
+											<Chip size="sm" color="success">Connected</Chip>
+										) : null
+									}
+									connected={githubContextConnected}
+									action={
+										githubContextConnected === undefined ? null : githubContextConnected ? (
+											<Button
+												fullWidth
+												variant="danger"
+												isPending={disconnecting === "github-context"}
+												onPress={() => void disconnectGitHubContext()}
+											>
+												Disconnect GitHub
+											</Button>
+										) : (
+											<Button fullWidth onPress={() => void connectGitHubContext()}>
+												Connect GitHub
+											</Button>
+										)
+									}
+								/>
 								<IntegrationCard
 									icon={<FileText size={20} />}
 									name="Google Docs & Sheets"
