@@ -343,8 +343,8 @@ export function IntegrationsPage({
 									name="GitHub account"
 									summary={
 										githubContextConnected
-											? "Recent repositories, open pull requests, and authored commits are used when relevant."
-											: "Use your repositories, pull requests, and commits as context. GitHub's repo permission is used read-only by Klee."
+											? "Recent repositories, pull requests, issues, and authored commits are used when relevant."
+											: "Use your repositories, pull requests, issues, and commits as context. GitHub's repo permission is used read-only by Klee."
 									}
 									status={
 										githubContextConnected === undefined ? (

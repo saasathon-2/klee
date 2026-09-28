@@ -80,7 +80,7 @@ For optional integrations, configure their provider credentials on the API servi
 
 Use secret storage for API credentials. Treat `VITE_*` variables as public because Vite includes them in the browser bundle.
 
-GitHub account context uses the existing GitHub OAuth app. Users explicitly grant GitHub's `repo` scope before Klee can read their accessible private repositories; Klee only makes read requests. It fetches a bounded account summary only when the prompt asks for GitHub repository, pull-request, commit, or branch data, and it instead fetches exact linked GitHub resources when the user pastes their URLs. A prompt that already supplies GitHub facts does not trigger an account fetch. The fetched context is not stored.
+GitHub account context uses the existing GitHub OAuth app. Users explicitly grant GitHub's `repo` scope before Klee can read their accessible private repositories; Klee only makes read requests. It fetches a bounded account summary only when the prompt asks for GitHub repository, pull-request, issue, commit, or branch data, and it instead fetches exact linked GitHub resources when the user pastes their URLs. A prompt that already supplies GitHub facts does not trigger an account fetch. The fetched context is not stored.
 
 ## Contribute
 

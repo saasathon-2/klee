@@ -16,7 +16,9 @@ function dependencies(scope = "repo read:org", accessToken: string | null = "sto
 			{ full_name: "acme/api", description: "The API", html_url: "https://github.com/acme/api", language: "TypeScript" },
 		]));
 		if (path === "/search/issues") return new Response(JSON.stringify({ items: [
-			{ title: "Add account context", state: "open", html_url: "https://github.com/acme/api/pull/8", repository: { full_name: "acme/api" } },
+			new URL(url).searchParams.get("q")?.includes("type:issue")
+				? { title: "Improve account context", state: "open", html_url: "https://github.com/acme/api/issues/9", repository: { full_name: "acme/api" } }
+				: { title: "Add account context", state: "open", html_url: "https://github.com/acme/api/pull/8", repository: { full_name: "acme/api" } },
 		] }));
 		if (path === "/repos/acme/api/commits") return new Response(JSON.stringify([
 			{ html_url: "https://github.com/acme/api/commit/a", commit: { message: "Connect GitHub", author: { date: "2026-09-28T00:00:00Z" } } },
@@ -42,6 +44,7 @@ test("uses the existing GitHub OAuth account for bounded artefact context", asyn
 	const context = await githubAccountContext("user-1", deps);
 	assert.deepEqual(context?.repositories, [{ name: "acme/api", description: "The API", url: "https://github.com/acme/api", language: "TypeScript" }]);
 	assert.deepEqual(context?.pullRequests.map((pullRequest) => pullRequest.title), ["Add account context"]);
+	assert.deepEqual(context?.issues.map((issue) => issue.title), ["Improve account context"]);
 	assert.deepEqual(context?.commits.map((commit) => commit.message), ["Connect GitHub"]);
 	assert.ok(calls.some((path) => path.startsWith("/search/issues?")));
 	assert.match(githubAccountContextPrompt(context), /untrusted source material/);
@@ -66,6 +69,9 @@ test("uses pasted GitHub resource links directly and leaves unrelated prompts al
 	const supplied = dependencies();
 	assert.equal(await githubPromptContext("user-1", "PR data:\nTitle: Ship context\nChanges: Add a source", supplied.deps), "");
 	assert.deepEqual(supplied.calls, []);
+	const recent = dependencies();
+	assert.match(await githubPromptContext("user-1", "Show my recent issues", recent.deps), /Improve account context/);
+	assert.match(await githubPromptContext("user-1", "Recent repositories", dependencies().deps), /Recently updated repositories/);
 });
 
 test("requires explicit private-repository consent", async () => {
