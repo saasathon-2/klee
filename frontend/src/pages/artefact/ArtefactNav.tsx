@@ -24,7 +24,7 @@ import {
 	Rocket,
 	Workflow,
 } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import { useDrop } from "react-aria-components";
 import {
@@ -47,10 +47,11 @@ type NavArtefact = {
 type Preview = { artefact: NavArtefact; x: number; y: number };
 
 const closedFoldersKey = "klee.closed-artefact-folders";
+const closedProjectsKey = "klee.closed-artefact-projects";
 
-function savedClosedFolders() {
+function savedClosed(key: string) {
 	try {
-		const value = JSON.parse(localStorage.getItem(closedFoldersKey) ?? "[]");
+		const value = JSON.parse(localStorage.getItem(key) ?? "[]");
 		return new Set(Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : []);
 	} catch {
 		return new Set<string>();
@@ -194,6 +195,8 @@ function UnfiledGroup({
 	onPreview,
 	onMovePreview,
 	onHidePreview,
+	isExpanded,
+	onExpandedChange,
 }: {
 	project: string | null;
 	artefacts: NavArtefact[];
@@ -203,11 +206,13 @@ function UnfiledGroup({
 	onPreview: (artefact: NavArtefact, x: number, y: number) => void;
 	onMovePreview: (x: number, y: number) => void;
 	onHidePreview: () => void;
+	isExpanded: boolean;
+	onExpandedChange: (isExpanded: boolean) => void;
 }) {
 	const dragAndDropHooks = useArtefactDragAndDrop(onUnfile);
 	return (
 		<div className="mt-3">
-			<Disclosure defaultExpanded>
+			<Disclosure isExpanded={isExpanded} onExpandedChange={onExpandedChange}>
 				<Disclosure.Heading className="flex h-8 items-center rounded-xl hover:bg-default focus-within:bg-default">
 					<Disclosure.Trigger className="flex h-full w-full items-center gap-2 rounded-xl px-1 text-left">
 						<Paragraph
@@ -283,14 +288,20 @@ export function ArtefactNav({
 		{ kind: "create" } | { kind: "rename" | "delete"; folder: Folder }
 	>();
 	const [preview, setPreview] = useState<Preview>();
-	const [closedFolders, setClosedFolders] = useState(savedClosedFolders);
-	const setFolderExpanded = (id: string, isExpanded: boolean) => {
-		setClosedFolders((current) => {
+	const [closedFolders, setClosedFolders] = useState(() => savedClosed(closedFoldersKey));
+	const [closedProjects, setClosedProjects] = useState(() => savedClosed(closedProjectsKey));
+	const setExpanded = (
+		setClosed: Dispatch<SetStateAction<Set<string>>>,
+		key: string,
+		id: string,
+		isExpanded: boolean,
+	) => {
+		setClosed((current) => {
 			const next = new Set(current);
 			if (isExpanded) next.delete(id);
 			else next.add(id);
 			try {
-				localStorage.setItem(closedFoldersKey, JSON.stringify([...next]));
+				localStorage.setItem(key, JSON.stringify([...next]));
 			} catch {}
 			return next;
 		});
@@ -357,7 +368,7 @@ export function ArtefactNav({
 						<Disclosure
 							isExpanded={!closedFolders.has(folder.id)}
 							onExpandedChange={(isExpanded) =>
-								setFolderExpanded(folder.id, isExpanded)
+								setExpanded(setClosedFolders, closedFoldersKey, folder.id, isExpanded)
 							}
 						>
 							{({ isExpanded }) => (
@@ -455,19 +466,26 @@ export function ArtefactNav({
 				);
 			})}
 
-			{groupByProject(unfiled).map(([project, group]) => (
-				<UnfiledGroup
-					key={project ?? "own"}
-					project={project}
-					artefacts={group}
-					selectedId={selectedId}
-					onOpen={onOpen}
-					onUnfile={(id) => onMoveArtefact(id, null)}
-					onPreview={showPreview}
-					onMovePreview={movePreview}
-					onHidePreview={() => setPreview(undefined)}
-				/>
-			))}
+			{groupByProject(unfiled).map(([project, group]) => {
+				const projectId = project ?? "__unfiled__";
+				return (
+					<UnfiledGroup
+						key={projectId}
+						project={project}
+						artefacts={group}
+						selectedId={selectedId}
+						onOpen={onOpen}
+						onUnfile={(id) => onMoveArtefact(id, null)}
+						onPreview={showPreview}
+						onMovePreview={movePreview}
+						onHidePreview={() => setPreview(undefined)}
+						isExpanded={!closedProjects.has(projectId)}
+						onExpandedChange={(isExpanded) =>
+							setExpanded(setClosedProjects, closedProjectsKey, projectId, isExpanded)
+						}
+					/>
+				);
+			})}
 			{preview &&
 				createPortal(
 					<div
