@@ -1,6 +1,7 @@
 import { Chip } from "@heroui/react";
 import { Handle, Position } from "@xyflow/react";
 import type { Node as XYFlowNode, NodeProps } from "@xyflow/react";
+import { AppWindow, Database, Globe, Layers, Server, Workflow } from "lucide-react";
 import type { ChangeState, ImpactNode, SoftwareDiagramEdge } from "../../model";
 import { BlockSection } from "../page/BlockSection";
 import { DiagramCanvas } from "../page/DiagramCanvas";
@@ -21,9 +22,20 @@ const changeStates = {
 
 const changeState = (state: string) =>
 	changeStates[state as ChangeState] ?? changeStates.unchanged;
+const componentKinds = {
+	client: { label: "Client", icon: AppWindow },
+	service: { label: "Service", icon: Server },
+	database: { label: "Database", icon: Database },
+	cache: { label: "Cache", icon: Layers },
+	queue: { label: "Queue", icon: Workflow },
+	external: { label: "External", icon: Globe },
+	component: { label: "Component", icon: Layers },
+} as const;
 
 function ImpactNodeCard({ data }: NodeProps<XYFlowNode<ImpactNode, "impact">>) {
 	const state = changeState(data.change);
+	const kind = componentKinds[data.kind ?? "component"];
+	const Icon = kind.icon;
 	return (
 		<div
 			role="group"
@@ -34,7 +46,13 @@ function ImpactNodeCard({ data }: NodeProps<XYFlowNode<ImpactNode, "impact">>) {
 			<Handle type="target" position={Position.Left} className="!border-0 !bg-transparent" />
 			<SourceLink href={data.url} className="-m-4 flex min-h-0 flex-1 flex-col rounded-xl p-4">
 				<div className="flex items-start justify-between gap-2 pr-4">
-					<div className="line-clamp-1 text-base font-semibold leading-6">{data.label}</div>
+					<div className="flex min-w-0 flex-col">
+						<span className="flex items-center gap-1.5 text-xs font-medium text-muted">
+							<Icon size={13} aria-hidden />
+							{kind.label}
+						</span>
+						<span className="line-clamp-1 text-base font-semibold leading-6">{data.label}</span>
+					</div>
 					<Chip size="sm" color={state.color} className="shrink-0">
 						{state.label}
 					</Chip>
@@ -61,6 +79,7 @@ export function ChangeImpactMap({ node, context }: TemplateProps) {
 	const counts = (Object.keys(changeStates) as ChangeState[])
 		.map((state) => ({ state, count: nodes.filter((item) => item.change === state).length }))
 		.filter(({ count }) => count > 0);
+	const atRisk = nodes.filter((item) => item.change === "at-risk");
 	return (
 		<BlockSection title={title} description={description} edit={{ node, context }}>
 			<ul className="mb-3 flex flex-wrap gap-2" aria-label="Change summary">
@@ -72,6 +91,11 @@ export function ChangeImpactMap({ node, context }: TemplateProps) {
 					</li>
 				))}
 			</ul>
+			{atRisk.length > 0 && (
+				<p className="mb-3 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-foreground">
+					Watch: {atRisk.map((item) => item.label).join(", ")}.
+				</p>
+			)}
 			<DiagramCanvas
 				title={title}
 				nodes={nodes}

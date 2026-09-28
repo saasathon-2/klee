@@ -5,6 +5,7 @@ import {
 	describeChanges,
 	diffDocuments,
 	documentAtVersion,
+	isTextOrDiagramEdit,
 	isTextOnlyEdit,
 } from "./artefact-versions.ts";
 
@@ -104,6 +105,34 @@ test("text edits are allowed, structural edits are not", () => {
 	const retyped = structuredClone(document) as unknown as { version: unknown };
 	retyped.version = "1";
 	assert.equal(isTextOnlyEdit(diffDocuments(document, retyped), document), false);
+});
+
+test("diagram edits accept known component kinds and reject unknown ones", () => {
+	const before = {
+		root: {
+			template: "software-diagram",
+			data: {
+				nodes: [
+					{ id: "api", label: "API", kind: undefined as string | undefined, detail: "Serves requests" },
+					{ id: "db", label: "Users", kind: undefined as string | undefined, detail: "Stores accounts" },
+				],
+				edges: [{ source: "api", target: "db", label: "reads", url: undefined as string | undefined }],
+			},
+		},
+	};
+	const typed = structuredClone(before);
+	typed.root.data.nodes[1].kind = "database";
+	assert.equal(isTextOrDiagramEdit(diffDocuments(before, typed), before, typed), true);
+	const sourced = structuredClone(typed);
+	sourced.root.data.edges[0].url = "https://example.test/architecture";
+	assert.equal(isTextOrDiagramEdit(diffDocuments(typed, sourced), typed, sourced), true);
+
+	const invalid = structuredClone(sourced);
+	invalid.root.data.nodes[1].kind = "worker";
+	assert.equal(isTextOrDiagramEdit(diffDocuments(sourced, invalid), sourced, invalid), false);
+	const invalidSource = structuredClone(sourced) as unknown as { root: { data: { edges: Array<{ url: unknown }> } } };
+	invalidSource.root.data.edges[0].url = 1;
+	assert.equal(isTextOrDiagramEdit(diffDocuments(sourced, invalidSource), sourced, invalidSource), false);
 });
 
 test("describes changes with readable labels", () => {

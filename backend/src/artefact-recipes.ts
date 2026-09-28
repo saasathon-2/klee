@@ -27,5 +27,5 @@ export function githubPullRequestIntent(): GenerationIntent {
 }
 
 export function recipeInstructions(intent: GenerationIntent) {
-	return `Create ${intent.recipeId} for a ${intent.audience}. Lead with delivery-readiness, include prose explaining the consequential change and grounded impact, and finish with next-steps for the next owner. Use review-comments, check-list, code-diff, and commit-list only as supporting evidence. Keep raw diffs, commit history, and individual checks as linked evidence or an appendix. Do not use git-graph by default, and omit impact diagrams when the supplied context does not establish relationships.`;
+	return `Create ${intent.recipeId} for a ${intent.audience}. Lead with delivery-readiness, include prose explaining the consequential change and grounded impact, and finish with next-steps for the next owner. Use review-comments, check-list, code-diff, and commit-list only as supporting evidence. Keep raw diffs, commit history, and individual checks as linked evidence or an appendix. Do not use git-graph by default. Use at most one primary diagram: change-impact-map for systems this change affects, software-diagram for established runtime data flow, or dependency-graph for dependency health. Omit diagrams when the supplied context does not establish relationships.`;
 }

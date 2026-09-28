@@ -2,6 +2,7 @@ import {
     Background,
     Controls,
     MarkerType,
+	Panel,
     ReactFlow,
 } from "@xyflow/react";
 import type {
@@ -10,14 +11,80 @@ import type {
     NodeTypes,
 } from "@xyflow/react";
 import dagre from "dagre";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import type { SoftwareDiagramEdge } from "../../model";
+import { SourceLink } from "./SourceLink";
 
-type DiagramNode = { id: string; label: string };
+type DiagramNode = {
+    id: string;
+    label: string;
+    detail?: string | null;
+    url?: string | null;
+};
 
 /** Left-to-right suits dependency graphs; top-to-bottom suits flowcharts. */
 export type DiagramDirection = "LR" | "TB";
+
+/** A readable fallback for every interactive graph, including shared previews. */
+export function DiagramDetails<T extends DiagramNode>({
+    nodes,
+    edges,
+	focusedId,
+	onFocus,
+}: {
+    nodes: T[];
+    edges: SoftwareDiagramEdge[];
+	focusedId?: string;
+	onFocus?: (id: string) => void;
+}) {
+    const labels = new Map(nodes.map((item) => [item.id, item.label]));
+    return (
+        <details className="mt-3 rounded-xl border border-divider bg-surface px-3 py-2 text-sm">
+            <summary className="cursor-pointer font-medium text-foreground">
+                {nodes.length} {nodes.length === 1 ? "component" : "components"} · {edges.length}{" "}
+                {edges.length === 1 ? "relationship" : "relationships"}
+            </summary>
+            <div className="mt-3 grid gap-3 text-muted sm:grid-cols-2">
+                <ul aria-label="Components" className="space-y-1.5">
+                    {nodes.map((node) => (
+                        <li key={node.id}>
+							{onFocus ? (
+								<button
+									type="button"
+									aria-pressed={focusedId === node.id}
+									className="font-medium text-foreground underline-offset-2 hover:underline"
+									onClick={() => onFocus(node.id)}
+								>
+									{node.label}
+								</button>
+							) : (
+								<SourceLink href={node.url} className="relative inline font-medium text-foreground underline-offset-2 hover:underline">
+									{node.label}
+								</SourceLink>
+							)}
+							{onFocus && node.url && (
+								<SourceLink href={node.url} className="relative ml-1 text-xs underline-offset-2 hover:underline">
+									Source
+								</SourceLink>
+							)}
+                            {node.detail ? ` · ${node.detail}` : ""}
+                        </li>
+                    ))}
+                </ul>
+                <ul aria-label="Relationships" className="space-y-1.5">
+                    {edges.map((edge, index) => (
+                        <li key={`${edge.source}-${edge.target}-${index}`}>
+                            <SourceLink href={edge.url} className="relative inline text-muted underline-offset-2 hover:text-foreground hover:underline">
+                                {labels.get(edge.source)} {edge.label || "depends on"} {labels.get(edge.target)}
+                            </SourceLink>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </details>
+    );
+}
 
 function layoutDiagram<T extends DiagramNode>(
     nodes: T[],
@@ -95,28 +162,45 @@ export function DiagramCanvas<T extends DiagramNode>({
     direction?: DiagramDirection;
     minHeight?: number;
 }) {
+	const [focusedId, setFocusedId] = useState<string>();
     const diagram = useMemo(
         () => layoutDiagram(nodes, edges, type, nodeSize, direction),
         [nodes, edges, type, nodeSize, direction],
     );
-    const labels = new Map(nodes.map((item) => [item.id, item.label]));
+	const renderedEdges = diagram.edges.map((edge, index) => {
+		const relationship = edges[index];
+		const connected = Boolean(
+			focusedId &&
+				(relationship?.source === focusedId || relationship?.target === focusedId),
+		);
+		return connected
+			? {
+					...edge,
+					animated: true,
+					style: { ...edge.style, stroke: "var(--brand)", strokeWidth: 2.5 },
+				}
+			: edge;
+	});
     return (
         <>
             <div
                 role="group"
                 className="software-diagram-canvas overflow-hidden rounded-2xl border border-divider bg-background"
                 style={{ height: Math.max(minHeight, diagram.height + 80) }}
-                aria-label={`${title} component diagram`}
+                aria-label={`${title} diagram`}
             >
                 <ReactFlow
                     nodes={diagram.nodes}
-                    edges={diagram.edges}
+                    edges={renderedEdges}
                     nodeTypes={nodeTypes}
                     fitView
                     fitViewOptions={{ padding: 0.24, maxZoom: 1 }}
+					minZoom={0.75}
                     nodesDraggable={false}
                     nodesConnectable={false}
                     elementsSelectable={false}
+					onNodeClick={(_, item) => setFocusedId((current) => current === item.id ? undefined : item.id)}
+					onPaneClick={() => setFocusedId(undefined)}
                     zoomOnScroll
                     panOnDrag
                     proOptions={{ hideAttribution: false }}
@@ -130,17 +214,14 @@ export function DiagramCanvas<T extends DiagramNode>({
                         showInteractive={false}
                         className="klee-diagram-controls"
                     />
+					{focusedId && (
+						<Panel position="top-right" className="rounded-lg border border-divider bg-surface px-2 py-1 text-xs text-foreground shadow-sm">
+							Tracing {nodes.find((node) => node.id === focusedId)?.label}
+						</Panel>
+					)}
                 </ReactFlow>
             </div>
-            <ul className="sr-only" aria-label="Component relationships">
-                {edges.map((edge, index) => (
-                    <li key={`${edge.source}-${edge.target}-${index}`}>
-                        {labels.get(edge.source)}{" "}
-                        {edge.label ? `${edge.label} ` : "depends on "}
-                        {labels.get(edge.target)}
-                    </li>
-                ))}
-            </ul>
+            <DiagramDetails nodes={nodes} edges={edges} focusedId={focusedId} onFocus={setFocusedId} />
         </>
     );
 }
