@@ -33,6 +33,17 @@ export function linkGitHub(returnPath: string) {
 	});
 }
 
+/** Requests GitHub's repository scope; Klee uses it only for read-only artefact context. */
+export function linkGitHubContext(returnPath: string) {
+	const origin = window.location.origin;
+	return authClient.linkSocial({
+		provider: "github",
+		scopes: ["repo", "read:org"],
+		callbackURL: `${origin}${returnPath}`,
+		errorCallbackURL: `${origin}${returnPath}`,
+	});
+}
+
 /** Adds per-file Google Drive access to the signed-in Google account. */
 export function linkGoogleDrive(returnPath: string) {
 	const origin = window.location.origin;

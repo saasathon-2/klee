@@ -1,6 +1,6 @@
 import { Button, Chip, Paragraph } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { authClient, linkGitHub } from "../../lib/auth-client";
+import { linkGitHub } from "../../lib/auth-client";
 
 /** Enables organisation access after the GitHub App is connected. */
 export function GitHubAccountLink({
@@ -13,17 +13,13 @@ export function GitHubAccountLink({
 	const [error, setError] = useState("");
 
 	useEffect(() => {
-		authClient
-			.listAccounts()
-			.then(({ data }) =>
-				setIsLinked(
-					Boolean(
-						data?.some(
-							(account) => account.providerId === "github",
-						),
-					),
-				),
+		fetch("/api/integrations/github/account", { credentials: "include" })
+			.then((response) =>
+				response.ok
+					? (response.json() as Promise<{ connected: boolean }>)
+					: { connected: false },
 			)
+			.then((data) => setIsLinked(data.connected))
 			.catch(() => setIsLinked(false));
 	}, []);
 
