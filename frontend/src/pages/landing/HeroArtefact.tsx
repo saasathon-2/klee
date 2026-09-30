@@ -7,6 +7,7 @@ import { useSession } from "../../lib/auth-client";
 import { LandingCodeDiffStory } from "./LandingCodeDiffStory";
 import { LandingGitGraphStory } from "./LandingGitGraphStory";
 import { LandingDeliveryReadinessStory } from "./LandingDeliveryReadinessStory";
+import { LandingSprintCommentStory } from "./LandingSprintCommentStory";
 import { landingSamples } from "./samples";
 
 const blocksOf = (document: ArtefactDocument) =>
@@ -253,6 +254,8 @@ export function HeroArtefact() {
 							<LandingCodeDiffStory>{rendered}</LandingCodeDiffStory>
 						) : node.id === "tour-graph" ? (
 							<LandingGitGraphStory shas={graphShas}>{rendered}</LandingGitGraphStory>
+						) : node.id === "tour-sprint" ? (
+							<LandingSprintCommentStory>{rendered}</LandingSprintCommentStory>
 						) : node.id === "tour-readiness" ? (
 							<LandingDeliveryReadinessStory node={node} context={context} />
 						) : rendered
