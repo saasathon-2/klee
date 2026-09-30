@@ -321,12 +321,13 @@ body {
 }
 
 .landing-comment-selection {
+	--landing-comment-blue: #1687ff;
 	position: absolute;
 	left: calc(5% + 20px);
 	top: calc(56% - 15px);
-	border: 2px dashed var(--accent-text);
+	border: 2px dashed var(--landing-comment-blue);
 	border-radius: 0.5rem;
-	background: color-mix(in oklab, var(--accent) 15%, transparent);
+	background: color-mix(in oklab, var(--landing-comment-blue) 15%, transparent);
 	animation: landing-comment-selection 8s ease-in-out infinite;
 }
 
@@ -356,8 +357,8 @@ body {
 	left: calc(5% + 20px);
 	top: calc(56% - 15px);
 	z-index: 2;
-	fill: color-mix(in oklab, var(--accent-text) 20%, transparent);
-	color: var(--accent-text);
+	fill: color-mix(in oklab, #1687ff 20%, transparent);
+	color: #1687ff;
 	stroke-linecap: round;
 	stroke-linejoin: round;
 	filter: drop-shadow(0 2px 3px rgb(0 0 0 / 22%));
@@ -369,7 +370,7 @@ body {
 	left: calc(5% + 20px - 0.4rem);
 	top: calc(56% - 15px - 0.4rem);
 	size: 1.5rem;
-	border: 2px solid var(--accent-text);
+	border: 2px solid #1687ff;
 	border-radius: 9999px;
 	animation: landing-comment-click 8s ease-out infinite;
 }
