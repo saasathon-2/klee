@@ -10,7 +10,7 @@ function RenderNode({
 }: {
 	node: ArtefactNode;
 	context: RenderContext;
-	renderNode?: (node: ArtefactNode, rendered: ReactNode) => ReactNode;
+	renderNode?: (node: ArtefactNode, rendered: ReactNode, context: RenderContext) => ReactNode;
 }) {
 	const TemplateComponent = templateDefinitions[node.template].component;
 	const rendered = (
@@ -20,7 +20,7 @@ function RenderNode({
 			))}
 		</TemplateComponent>
 	);
-	return renderNode?.(node, rendered) ?? rendered;
+	return renderNode?.(node, rendered, context) ?? rendered;
 }
 
 export function ArtefactRenderer({
@@ -51,7 +51,7 @@ export function ArtefactRenderer({
 	onAction?: (label: string) => void;
 	onEdit?: (nodeId: string, path: EditPath, value: unknown) => void;
 	liveStatus?: RenderContext["liveStatus"];
-	renderNode?: (node: ArtefactNode, rendered: ReactNode) => ReactNode;
+	renderNode?: (node: ArtefactNode, rendered: ReactNode, context: RenderContext) => ReactNode;
 }) {
 	return (
 		<RenderNode

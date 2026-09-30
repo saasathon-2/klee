@@ -26,12 +26,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 		localStorage.setItem("accent", accent);
 	}, [accent]);
 
-	const toggleTheme = () =>
-		setTheme((t) => (t === "dark" ? "light" : "dark"));
-
 	return (
 		<ThemeContext.Provider
-			value={{ theme, accent, setTheme, setAccent, toggleTheme }}
+			value={{ theme, accent, setTheme, setAccent }}
 		>
 			{children}
 		</ThemeContext.Provider>

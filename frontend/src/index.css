@@ -9,6 +9,46 @@ body {
 	font-family: var(--font-sans);
 }
 
+.template-carousel-picker .tabs__tab,
+.template-carousel-picker .tabs__indicator {
+	transition: none;
+}
+
+@keyframes template-artefact-next {
+	from {
+		transform: translateX(2rem);
+		opacity: 0.5;
+	}
+}
+
+@keyframes template-artefact-previous {
+	from {
+		transform: translateX(-2rem);
+		opacity: 0.5;
+	}
+}
+
+.template-artefact-next,
+.template-artefact-previous {
+	animation-duration: 750ms;
+	animation-timing-function: ease-out;
+}
+
+.template-artefact-next {
+	animation-name: template-artefact-next;
+}
+
+.template-artefact-previous {
+	animation-name: template-artefact-previous;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.template-artefact-next,
+	.template-artefact-previous {
+		animation: none;
+	}
+}
+
 /* Edit affordances use chart blue rather than brand yellow, which can vanish
  * against artefact header and transition bands. */
 .artefact-editable {
@@ -226,6 +266,115 @@ body {
 	transform: none;
 }
 
+@keyframes delivery-readiness-complete {
+	0% { opacity: 0.25; transform: scale(0.7); }
+	65% { opacity: 1; transform: scale(1.12); }
+	100% { transform: scale(1); }
+}
+
+.delivery-readiness-animate .delivery-readiness-change {
+	animation: delivery-readiness-complete 400ms ease-out;
+}
+
+@keyframes landing-comment-selection {
+	0%, 15% { width: 0; height: 0; opacity: 0; }
+	17% { width: 0; height: 0; opacity: 1; }
+	38%, 100% { width: 300px; height: 180px; opacity: 1; }
+}
+
+@keyframes landing-comment-cursor {
+	0%, 5% { opacity: 0; left: calc(5% - 7rem + 20px); top: calc(56% - 5rem - 15px); transform: scale(1); }
+	10% { opacity: 1; left: calc(5% + 20px); top: calc(56% - 15px); transform: scale(1); }
+	14% { transform: scale(0.8); }
+	17% { left: calc(5% + 20px); top: calc(56% - 15px); transform: scale(1); }
+	38%, 56% { opacity: 1; left: calc(5% + 320px); top: calc(56% + 165px); transform: translate(-2px, -2px) scale(1); }
+	62%, 100% { opacity: 0; left: calc(5% + 320px); top: calc(56% + 165px); transform: translate(-2px, -2px) scale(1); }
+}
+
+@keyframes landing-comment-click {
+	0%, 10%, 17%, 100% { opacity: 0; transform: scale(0.5); }
+	14% { opacity: 0.8; transform: scale(1); }
+}
+
+@keyframes landing-comment-composer {
+	0%, 38% { opacity: 0; transform: translateY(-0.5rem) scale(0.96); }
+	44%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes landing-comment-typing {
+	0%, 47% { width: 0; }
+	87%, 100% { width: 39ch; }
+}
+
+@keyframes landing-comment-chip-pop {
+	from { opacity: 0; transform: scale(0.7); }
+	70% { transform: scale(1.08); }
+	to { opacity: 1; transform: scale(1); }
+}
+
+.landing-sprint-comment-chip {
+	animation: landing-comment-chip-pop 350ms ease-out both;
+}
+
+.landing-sprint-comment-chip:nth-child(2) {
+	animation-delay: 180ms;
+}
+
+.landing-comment-selection {
+	--landing-comment-blue: #1687ff;
+	position: absolute;
+	left: calc(5% + 20px);
+	top: calc(56% - 15px);
+	border: 2px dashed var(--landing-comment-blue);
+	border-radius: 0.5rem;
+	background: color-mix(in oklab, var(--landing-comment-blue) 15%, transparent);
+	animation: landing-comment-selection 8s ease-in-out infinite;
+}
+
+.landing-comment-composer {
+	position: absolute;
+	left: calc(5% + 20px);
+	top: calc(56% + 173px);
+	width: min(20rem, calc(100% - 1rem));
+	animation: landing-comment-composer 8s ease-out infinite;
+}
+
+.landing-comment-typed {
+	position: absolute;
+	left: 0.75rem;
+	top: 0.75rem;
+	overflow: hidden;
+	width: 0;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	white-space: nowrap;
+	border-right: 1px solid currentColor;
+	animation: landing-comment-typing 8s steps(39, end) infinite;
+}
+
+.landing-comment-cursor {
+	position: absolute;
+	left: calc(5% + 20px);
+	top: calc(56% - 15px);
+	z-index: 2;
+	fill: color-mix(in oklab, #1687ff 20%, transparent);
+	color: #1687ff;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	filter: drop-shadow(0 2px 3px rgb(0 0 0 / 22%));
+	animation: landing-comment-cursor 8s ease-in-out infinite;
+}
+
+.landing-comment-click {
+	position: absolute;
+	left: calc(5% + 20px - 0.4rem);
+	top: calc(56% - 15px - 0.4rem);
+	size: 1.5rem;
+	border: 2px solid #1687ff;
+	border-radius: 9999px;
+	animation: landing-comment-click 8s ease-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.generation-commentary-word {
 		opacity: 1;
@@ -238,6 +387,33 @@ body {
 		opacity: 1;
 		transform: none;
 		transition: none;
+	}
+	.delivery-readiness-animate .delivery-readiness-change {
+		animation: none;
+	}
+	.landing-comment-selection,
+	.landing-comment-composer,
+	.landing-comment-cursor,
+	.landing-comment-click,
+	.landing-comment-typed {
+		animation: none;
+	}
+	.landing-comment-selection {
+		width: 300px;
+		height: 180px;
+	}
+	.landing-comment-composer {
+		top: calc(56% + 188px);
+	}
+	.landing-comment-cursor,
+	.landing-comment-click {
+		display: none;
+	}
+	.landing-comment-typed {
+		width: 39ch;
+	}
+	.landing-sprint-comment-chip {
+		animation: none;
 	}
 }
 

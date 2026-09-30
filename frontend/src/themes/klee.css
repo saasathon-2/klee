@@ -24,8 +24,8 @@
 :root,
 .light,
 .default,
-[data-theme="light"],
-[data-theme="default"] {
+[data-theme='light'],
+[data-theme='default'] {
 	color-scheme: light;
 
 	/* Page */
@@ -92,7 +92,7 @@
 /* 2. Semantic colours, dark mode ----------------------------------------- */
 
 .dark,
-[data-theme="dark"] {
+[data-theme='dark'] {
 	color-scheme: dark;
 
 	/* Page */
@@ -156,19 +156,19 @@
 
 /* Accent choices share the same semantic tokens, so every existing control
  * follows the selected colour without component-specific variants. */
-[data-accent="blue"] {
+[data-accent='blue'] {
 	--accent: oklch(67% 0.16 250);
 	--accent-text: oklch(48% 0.15 250);
 	--focus: var(--accent);
 	--brand: var(--accent);
 }
-[data-accent="coral"] {
+[data-accent='coral'] {
 	--accent: oklch(73% 0.18 32);
 	--accent-text: oklch(52% 0.17 32);
 	--focus: var(--accent);
 	--brand: var(--accent);
 }
-[data-accent="violet"] {
+[data-accent='violet'] {
 	--accent: oklch(66% 0.18 300);
 	--accent-text: oklch(48% 0.16 300);
 	--focus: var(--accent);
@@ -293,8 +293,8 @@
 	 *   sans  Bricolage Grotesque  everything, the page default
 	 *   mono  JetBrains Mono       code, diffs, SHAs, file paths
 	 */
-	--font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-	--font-mono: "JetBrains Mono", ui-monospace, monospace;
+	--font-sans: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
 	/* Type scale. Tailwind's text-xs..text-6xl remain available; 2xs covers
 	 * the smallest mock labels. Role styles below bundle size, line height,

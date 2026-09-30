@@ -9,7 +9,7 @@ import {
 	Tabs,
 } from "@heroui/react";
 import { ArrowRight, Check, ExternalLink } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDocumentTitle } from "../useDocumentTitle";
 import type { ArtefactDocument } from "../artefacts/model";
@@ -325,35 +325,76 @@ function DevelopersPage() {
 }
 
 function TemplatesPage() {
+	const [selectedIndex, setSelectedIndex] = useState(0);
+	const [direction, setDirection] = useState<-1 | 0 | 1>(0);
+	const [slide, setSlide] = useState<-1 | 0 | 1>(0);
+	const select = (nextIndex: number) => {
+		if (nextIndex === selectedIndex || direction) return;
+		const distance = (nextIndex - selectedIndex + artefactExamples.length) % artefactExamples.length;
+		const nextDirection = distance <= artefactExamples.length / 2 ? 1 : -1;
+		setSelectedIndex(nextIndex);
+		setDirection(nextDirection);
+		setSlide(nextDirection);
+	};
+
+	useEffect(() => {
+		if (!slide) return;
+		const frame = requestAnimationFrame(() => setSlide(0));
+		return () => cancelAnimationFrame(frame);
+	}, [slide]);
+
+	const finishMove = () => {
+		setDirection(0);
+	};
+	const selected = artefactExamples[selectedIndex];
+
 	return (
 		<Page
 			title="Templates"
 			intro="Examples of artefacts built from Klee's blocks. Each one started as a prompt."
 			wide
 		>
-			<Tabs defaultSelectedKey={artefactExamples[0].id}>
-				<Tabs.ListContainer className="overflow-x-auto">
-					<Tabs.List aria-label="Examples">
-						{artefactExamples.map((example) => (
-							<Tabs.Tab key={example.id} id={example.id}>
-								{example.label}
-							</Tabs.Tab>
-						))}
-					</Tabs.List>
-				</Tabs.ListContainer>
-				{artefactExamples.map((example) => (
-					<Tabs.Panel
-						key={example.id}
-						id={example.id}
-						className="mt-6 space-y-4"
+			<section aria-label="Template gallery">
+				<Tabs
+					selectedKey={String(selectedIndex)}
+					onSelectionChange={(key) => select(Number(key))}
+					className="template-carousel-picker w-full overflow-hidden"
+				>
+					<Tabs.List
+						aria-label="Template examples"
+						className={`relative left-1/2 flex w-max min-w-0 gap-3 rounded-none bg-transparent p-1 **:data-[slot=tabs-tab]:w-64 **:data-[slot=tabs-tab]:rounded-2xl **:data-[slot=tabs-tab]:bg-surface-secondary **:data-[slot=tabs-tab]:px-8 **:data-[slot=tabs-tab]:py-5 **:data-[slot=tabs-tab]:text-lg **:data-[slot=tabs-tab]:font-medium **:data-[slot=tabs-tab]:whitespace-nowrap **:data-[slot=tabs-tab]:text-muted **:data-[slot=tabs-tab]:opacity-100 **:data-[slot=tabs-tab]:data-[hovered=true]:not-data-[selected=true]:bg-surface-tertiary **:data-[slot=tabs-tab]:data-[selected=true]:text-accent-foreground **:data-[slot=tabs-indicator]:rounded-2xl **:data-[slot=tabs-indicator]:bg-accent **:data-[slot=tabs-indicator]:shadow-none ${direction && !slide ? "transition-transform duration-750 ease-out" : ""}`}
+						style={{ transform: `translateX(calc(-50% + ${slide * 17}rem))` }}
+						onTransitionEnd={(event) => {
+							if (event.target === event.currentTarget && event.propertyName === "transform") finishMove();
+						}}
 					>
-						<Paragraph color="muted">
-							{example.description}
-						</Paragraph>
-						<Example document={artefactDocuments[example.id]} />
+						{[-3, -2, -1, 0, 1, 2, 3].map((offset) => {
+							const index = (selectedIndex + offset + artefactExamples.length) % artefactExamples.length;
+							const example = artefactExamples[index];
+							return (
+								<Tabs.Tab
+									key={index}
+									id={String(index)}
+								>
+									{example.label}
+									<Tabs.Indicator />
+								</Tabs.Tab>
+							);
+						})}
+					</Tabs.List>
+					<Tabs.Panel id={String(selectedIndex)} className="mt-8 overflow-hidden p-0">
+						<div
+							key={selected.id}
+							className={direction > 0 ? "template-artefact-next" : direction < 0 ? "template-artefact-previous" : ""}
+						>
+							<Paragraph color="muted">{selected.description}</Paragraph>
+							<div className="mt-4">
+								<Example document={artefactDocuments[selected.id]} />
+							</div>
+						</div>
 					</Tabs.Panel>
-				))}
-			</Tabs>
+				</Tabs>
+			</section>
 		</Page>
 	);
 }

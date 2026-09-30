@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "../../lib/auth-client";
 import { LandingCodeDiffStory } from "./LandingCodeDiffStory";
 import { LandingGitGraphStory } from "./LandingGitGraphStory";
+import { LandingDeliveryReadinessStory } from "./LandingDeliveryReadinessStory";
+import { LandingSprintCommentStory } from "./LandingSprintCommentStory";
 import { landingSamples } from "./samples";
 
 const blocksOf = (document: ArtefactDocument) =>
@@ -150,11 +152,11 @@ const demo: ArtefactDocument = {
 					block("tour-readiness", "delivery-readiness", {
 						title: "Can it merge?",
 						subject: "PR #482 → main",
-						summary: "Tests and approvals have passed, but the preview deploy hasn't finished, so this one is waiting.",
+						summary: "All required gates have passed. This pull request is ready to merge.",
 						gates: [
 							{ name: "Unit tests", status: "passed", detail: "412 tests in 1m 48s", url: null },
 							{ name: "Approvals", status: "passed", detail: "3 of 2 required", url: null },
-							{ name: "Preview deploy", status: "pending", detail: "Queued behind 2 builds", url: null },
+							{ name: "Preview deploy", status: "passed", detail: "Preview deployed", url: null },
 						],
 						signals: [
 							{ label: "Security scan clean", detail: "No new vulnerabilities", tone: "positive" },
@@ -246,12 +248,16 @@ export function HeroArtefact() {
 					}}
 					edgeToEdge
 					showFooter={false}
-					renderNode={(node, rendered) =>
+					renderNode={(node, rendered, context) =>
 						// The demo copies the diff to retitle it, so match by id, not identity.
 						node.id === codeDiff.id ? (
 							<LandingCodeDiffStory>{rendered}</LandingCodeDiffStory>
 						) : node.id === "tour-graph" ? (
 							<LandingGitGraphStory shas={graphShas}>{rendered}</LandingGitGraphStory>
+						) : node.id === "tour-sprint" ? (
+							<LandingSprintCommentStory>{rendered}</LandingSprintCommentStory>
+						) : node.id === "tour-readiness" ? (
+							<LandingDeliveryReadinessStory node={node} context={context} />
 						) : rendered
 					}
 				/>
