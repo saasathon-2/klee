@@ -35,7 +35,6 @@ import { PageLoader } from "../components/PageLoader";
 import { takeLinkPaste } from "../lib/links";
 import type { ArtefactDocument } from "../artefacts/model";
 import { developerExamplePrompts } from "../artefacts/examplePrompts";
-import { ThemeToggle } from "../components/ThemeToggle";
 import { IntegrationsPage, type GoogleFile } from "./Integrations";
 import { OrganisationsModal } from "./Organisations";
 import { useMediaQuery } from "../lib/use-media-query";
@@ -802,7 +801,6 @@ export function Artefacts() {
 							<PanelLeftOpen size={19} />
 						)}
 					</Button>
-					<ThemeToggle className="ml-auto" />
 				</header>
 				{isIntegrations ? (
 					<main className="flex-1 overflow-y-auto px-6 py-8 sm:px-8">

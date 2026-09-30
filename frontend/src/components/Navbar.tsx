@@ -6,7 +6,6 @@ import { useSession } from "../lib/auth-client";
 import { docsLink, navMenus, pricingPath, repositoryUrl } from "../pages/landing/links";
 import { GitHubIcon } from "./BrandIcons";
 import { KleeIcon } from "./KleeLogo";
-import { ThemeToggle } from "./ThemeToggle";
 
 const mobileLinks = [
 	docsLink,
@@ -159,7 +158,6 @@ export function Navbar() {
 							Sign in
 						</Button>
 					)}
-					<ThemeToggle />
 				</div>
 			</nav>
 		</header>

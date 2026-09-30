@@ -8,7 +8,6 @@ export interface ThemeContextValue {
 	accent: Accent;
 	setTheme: (theme: Theme) => void;
 	setAccent: (accent: Accent) => void;
-	toggleTheme: () => void;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);
