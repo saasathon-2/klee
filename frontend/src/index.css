@@ -266,6 +266,16 @@ body {
 	transform: none;
 }
 
+@keyframes delivery-readiness-complete {
+	0% { opacity: 0.25; transform: scale(0.7); }
+	65% { opacity: 1; transform: scale(1.12); }
+	100% { transform: scale(1); }
+}
+
+.delivery-readiness-animate .delivery-readiness-change {
+	animation: delivery-readiness-complete 400ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.generation-commentary-word {
 		opacity: 1;
@@ -278,6 +288,9 @@ body {
 		opacity: 1;
 		transform: none;
 		transition: none;
+	}
+	.delivery-readiness-animate .delivery-readiness-change {
+		animation: none;
 	}
 }
 

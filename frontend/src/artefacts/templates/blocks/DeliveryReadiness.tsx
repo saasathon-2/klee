@@ -41,12 +41,13 @@ export function DeliveryReadiness({ node, context }: TemplateProps) {
 	const verdict = verdictFor(gates, blockers);
 	const Verdict = verdict.icon;
 	const passed = gates.filter((gate) => gate.status === "passed").length;
+	const animateChanges = (node.data as { animateChanges?: boolean }).animateChanges;
 
 	return (
 		<BlockSection title={title} edit={{ node, context }}>
-			<Card className="gap-0 overflow-hidden p-0">
+			<Card className={`gap-0 overflow-hidden p-0 ${animateChanges ? "delivery-readiness-animate" : ""}`}>
 				<div className={`flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 ${verdict.band}`}>
-					<Verdict size={28} className={`shrink-0 ${verdict.tone}`} aria-hidden />
+					<Verdict size={28} className={`shrink-0 ${verdict.tone} ${verdict.label === "Ready" ? "delivery-readiness-change" : ""}`} aria-hidden />
 					<div className="min-w-48 flex-1">
 						<Paragraph className="text-heading-2">{verdict.label}</Paragraph>
 						<Paragraph size="sm" color="muted">
@@ -92,7 +93,7 @@ export function DeliveryReadiness({ node, context }: TemplateProps) {
 							const Icon = status.icon;
 							return (
 								<li key={index} className="flex items-start gap-3 py-2">
-										<Icon size={16} className={`mt-0.5 shrink-0 ${status.tone}`} aria-label={status.label} />
+									<Icon size={16} className={`mt-0.5 shrink-0 ${status.tone} ${gate.status === "passed" ? "delivery-readiness-change" : ""}`} aria-label={status.label} />
 										<div className="min-w-0 flex-1">
 											<Paragraph size="sm" weight="medium">
 												<ExternalLink href={context.isEditing ? null : gate.url}>
@@ -104,7 +105,7 @@ export function DeliveryReadiness({ node, context }: TemplateProps) {
 											</Paragraph>
 										</div>
 										<LiveIndicator live={gate.live} className="mt-2" />
-										<Chip size="sm" color={status.color} className="shrink-0">{status.label}</Chip>
+										<Chip size="sm" color={status.color} className={`shrink-0 ${gate.status === "passed" ? "delivery-readiness-change" : ""}`}>{status.label}</Chip>
 								</li>
 							);
 						})}
