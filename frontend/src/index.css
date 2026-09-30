@@ -9,6 +9,46 @@ body {
 	font-family: var(--font-sans);
 }
 
+.template-carousel-picker .tabs__tab,
+.template-carousel-picker .tabs__indicator {
+	transition: none;
+}
+
+@keyframes template-artefact-next {
+	from {
+		transform: translateX(2rem);
+		opacity: 0.5;
+	}
+}
+
+@keyframes template-artefact-previous {
+	from {
+		transform: translateX(-2rem);
+		opacity: 0.5;
+	}
+}
+
+.template-artefact-next,
+.template-artefact-previous {
+	animation-duration: 750ms;
+	animation-timing-function: ease-out;
+}
+
+.template-artefact-next {
+	animation-name: template-artefact-next;
+}
+
+.template-artefact-previous {
+	animation-name: template-artefact-previous;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.template-artefact-next,
+	.template-artefact-previous {
+		animation: none;
+	}
+}
+
 /* Edit affordances use chart blue rather than brand yellow, which can vanish
  * against artefact header and transition bands. */
 .artefact-editable {
