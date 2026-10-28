@@ -1,5 +1,8 @@
 # Klee
 
+> [!NOTE] Inactive project
+> This project is no longer (currently) being maintained or worked on. It may be picked up again in the future, but currently there are no plans to continue development.
+
 Klee turns a prompt, pull request, or pasted context into a private, shareable artefact. Each artefact combines blocks such as code diffs, Git graphs, flowcharts, checklists, and timelines. You can edit an artefact, refine it with a follow-up prompt, review its version history, and comment on it.
 
 The GitHub, Slack, and Jira integrations live in [saasathon-2/integrations](https://github.com/saasathon-2/integrations).
